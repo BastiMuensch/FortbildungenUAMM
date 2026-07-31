@@ -1,0 +1,119 @@
+import "server-only";
+
+import { cookies } from "next/headers";
+import { SignJWT, jwtVerify } from "jose";
+import { prisma } from "@/lib/prisma";
+import type { Rolle } from "@/constants/fortbildung";
+import { SESSION_COOKIE, SESSION_DAUER_SEKUNDEN } from "@/constants/session";
+
+export { SESSION_COOKIE };
+
+const SESSION_DAUER = `${SESSION_DAUER_SEKUNDEN}s`;
+
+function secret(): Uint8Array {
+  const wert = process.env.JWT_SECRET;
+  if (!wert || wert.length < 32) {
+    throw new Error(
+      "JWT_SECRET fehlt oder ist zu kurz. Erzeugen mit: openssl rand -base64 48",
+    );
+  }
+  return new TextEncoder().encode(wert);
+}
+
+export interface SessionUser {
+  id: string;
+  email: string;
+  name: string | null;
+  role: Rolle;
+}
+
+export async function signToken(userId: string): Promise<string> {
+  return new SignJWT({ sub: userId })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime(SESSION_DAUER)
+    .sign(secret());
+}
+
+export async function verifyToken(token: string): Promise<string | null> {
+  try {
+    const { payload } = await jwtVerify(token, secret());
+    return typeof payload.sub === "string" ? payload.sub : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Setzt das Sitzungs-Cookie. Nur aus Server Actions oder Route Handlern aufrufbar. */
+export async function setSessionCookie(token: string): Promise<void> {
+  const store = await cookies();
+  store.set(SESSION_COOKIE, token, {
+    httpOnly: true,
+    sameSite: "strict",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: SESSION_DAUER_SEKUNDEN,
+  });
+}
+
+export async function clearSessionCookie(): Promise<void> {
+  const store = await cookies();
+  store.delete(SESSION_COOKIE);
+}
+
+/**
+ * Die angemeldete Person, oder null.
+ *
+ * Liest bewusst gegen die Datenbank statt nur das Token auszuwerten: so wirkt
+ * ein deaktivierter Zugang sofort und nicht erst nach Ablauf des Tokens.
+ */
+export async function getSessionUser(): Promise<SessionUser | null> {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (!token) return null;
+
+  const userId = await verifyToken(token);
+  if (!userId) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, name: true, role: true, isActive: true },
+  });
+
+  if (!user || !user.isActive) return null;
+
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role as Rolle,
+  };
+}
+
+/**
+ * Erzwingt eine Anmeldung. Wirft, wenn niemand angemeldet ist.
+ *
+ * In JEDER Server Action und JEDEM geschützten Route Handler aufrufen — der
+ * Guard im Layout und die Prüfung in proxy.ts sind nur vorgelagert, sie
+ * schützen die Aktion selbst nicht (Server Actions sind eigene Endpunkte).
+ */
+export async function requireUser(): Promise<SessionUser> {
+  const user = await getSessionUser();
+  if (!user) throw new AuthError("Nicht angemeldet.");
+  return user;
+}
+
+/** Erzwingt eine der angegebenen Rollen. */
+export async function requireRole(...rollen: Rolle[]): Promise<SessionUser> {
+  const user = await requireUser();
+  if (!rollen.includes(user.role)) {
+    throw new AuthError("Für diese Aktion fehlt die Berechtigung.");
+  }
+  return user;
+}
+
+export class AuthError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AuthError";
+  }
+}

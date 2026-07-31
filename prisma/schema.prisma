@@ -1,0 +1,275 @@
+// Datenmodell Fortbildungs-Tool Schulamt Memmingen-Unterallgäu (UAMM)
+//
+// Konvention: Für aufzählbare Werte werden bewusst KEINE Prisma-Enums benutzt,
+// sondern String-Felder mit einem Kommentar über die erlaubten Werte. Die
+// Durchsetzung passiert zentral in den zod-Schemata unter src/lib/validation.
+// Grund: Ein neuer Wert (z. B. eine weitere Schulart) ist dann eine
+// Code-Änderung statt einer Datenbank-Migration.
+//
+// Die Konstanten dazu liegen in src/constants/ — dort und nur dort werden
+// Werte gepflegt.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Redaktion / Zugang
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  name         String?
+  role         String // ADMIN | REDAKTEUR
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  fortbildungen Fortbildung[] @relation("Ersteller")
+  auditLogs     AuditLog[]
+}
+
+// ---------------------------------------------------------------------------
+// Fortbildungen
+// ---------------------------------------------------------------------------
+
+model Fortbildung {
+  id   String @id @default(uuid())
+  /// Sprechende, stabile URL: "medienkonzept-erstellen-2026-09-15-a1b2"
+  slug String @unique
+
+  // --- Felder der Eingabemaske (FIBS-Feldlogik) ---
+  titel     String
+  kurztitel String?
+  /// Sanitisiertes HTML aus dem WYSIWYG-Editor (Allowlist in src/lib/sanitize.ts)
+  beschreibungHtml String @db.Text
+  /// Aus dem HTML abgeleiteter Klartext — ausschließlich für die Volltextsuche
+  beschreibungText String @db.Text
+
+  organisationsform String // REGIONAL | SCHILF
+  maxTn             Int
+  format            String // ESESSION | PRAESENZ
+
+  /// Immer als UTC gespeichert, immer in Europe/Berlin angezeigt
+  beginn DateTime
+  ende   DateTime
+
+  veranstaltungsortId String
+  /// Mehrfachauswahl, z. B. ["GRUNDSCHULE", "MITTELSCHULE"]
+  schularten          String[]
+  fach                String?
+
+  // --- DigCompEdu Bavaria ---
+  niveaustufe String? // NIVEAU_I_II | NIVEAU_III | NIVEAU_IV
+
+  // --- FIBS-Anbindung ---
+  fibsLehrgangsnummer String?
+  fibsUrl             String?
+  quelle              String  @default("MANUELL") // MANUELL | FIBS_IMPORT
+  /// Fremdschlüssel der Quelle, dient dem Deduplizieren beim Import
+  externalId          String? @unique
+
+  status      String   @default("ENTWURF") // ENTWURF | VEROEFFENTLICHT | ABGESAGT | ARCHIVIERT
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  veranstaltungsort Veranstaltungsort       @relation(fields: [veranstaltungsortId], references: [id])
+  ersteller         User?                   @relation("Ersteller", fields: [createdById], references: [id], onDelete: SetNull)
+  schlagworte       FortbildungSchlagwort[]
+  kompetenzen       FortbildungKompetenz[]
+  referenten        FortbildungReferent[]
+
+  @@index([beginn])
+  @@index([status, beginn])
+  @@index([organisationsform])
+  @@index([veranstaltungsortId])
+  @@index([schularten], type: Gin)
+}
+
+model Veranstaltungsort {
+  id          String  @id @default(uuid())
+  name        String
+  ort         String?
+  strasse     String?
+  /// Amtliche Schulnummer, sofern bekannt
+  schulnummer String?
+  /// Genau ein Datensatz ("Online") trägt hier true — Pflicht für eSessions
+  istOnline   Boolean @default(false)
+  aktiv       Boolean @default(true)
+  sortOrder   Int     @default(0)
+
+  fortbildungen Fortbildung[]
+
+  @@unique([name, ort])
+}
+
+// ---------------------------------------------------------------------------
+// Schlagworte
+// ---------------------------------------------------------------------------
+
+model Schlagwort {
+  id String @id @default(uuid())
+
+  name String @unique
+  /// "UAMM" und "Medienteam-UAMM": werden jeder Fortbildung automatisch
+  /// angehängt und lassen sich im Formular nicht abwählen.
+  istPflicht     Boolean  @default(false)
+  /// Steuert, mit welchen Begriffen der FIBS-Import sucht (src/lib/fibs)
+  fuerFibsImport Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  fortbildungen FortbildungSchlagwort[]
+}
+
+model FortbildungSchlagwort {
+  fortbildungId String
+  schlagwortId  String
+
+  fortbildung Fortbildung @relation(fields: [fortbildungId], references: [id], onDelete: Cascade)
+  schlagwort  Schlagwort  @relation(fields: [schlagwortId], references: [id], onDelete: Cascade)
+
+  @@id([fortbildungId, schlagwortId])
+  @@index([schlagwortId])
+}
+
+// ---------------------------------------------------------------------------
+// DigCompEdu Bavaria
+// ---------------------------------------------------------------------------
+
+/// Der Kompetenzrahmen als selbstreferenzierender Baum:
+///   code "3"   = Kompetenzbereich  (parentCode = null)
+///   code "3.2" = Unterkompetenz    (parentCode = "3")
+/// Titel und Struktur liegen damit an genau einer Stelle. Aktualisiert Bayern
+/// den Rahmen, ist das ein Seed-Update statt eines Massen-Updates auf allen
+/// Fortbildungen (wie es bei JSON-Feldern nötig wäre).
+model DigCompKompetenz {
+  code       String  @id
+  parentCode String?
+  titel      String
+  /// Kurzbeschreibung für Tooltips im Formular
+  beschreibung String?
+  sortOrder  Int
+  aktiv      Boolean @default(true)
+  /// Markiert die im Rahmen noch nicht final ausformulierten Platzhalter
+  istPlatzhalter Boolean @default(false)
+
+  parent   DigCompKompetenz?  @relation("Kompetenzbaum", fields: [parentCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  children DigCompKompetenz[] @relation("Kompetenzbaum")
+
+  fortbildungen FortbildungKompetenz[]
+
+  @@index([parentCode, sortOrder])
+}
+
+model FortbildungKompetenz {
+  fortbildungId String
+  kompetenzCode String
+
+  fortbildung Fortbildung      @relation(fields: [fortbildungId], references: [id], onDelete: Cascade)
+  kompetenz   DigCompKompetenz @relation(fields: [kompetenzCode], references: [code], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([fortbildungId, kompetenzCode])
+  @@index([kompetenzCode])
+}
+
+// ---------------------------------------------------------------------------
+// Referenten
+//
+// DSGVO: Das sind die einzigen personenbezogenen Daten des Systems (neben den
+// Redaktions-Accounts). E-Mail und Telefon sind reine Innendaten und werden
+// nie an das öffentliche Frontend ausgeliefert — siehe publicReferentSelect
+// in src/lib/queries.ts.
+// ---------------------------------------------------------------------------
+
+model Referent {
+  id           String  @id @default(uuid())
+  vorname      String
+  nachname     String
+  organisation String?
+  /// Nur intern sichtbar
+  email        String?
+  /// Nur intern sichtbar
+  telefon      String?
+  /// Interne Notiz, nie öffentlich
+  notiz        String?
+  /// Steuert, ob der Name im öffentlichen Frontend erscheint
+  oeffentlichSichtbar Boolean @default(true)
+  aktiv        Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  fortbildungen FortbildungReferent[]
+
+  @@index([nachname, vorname])
+}
+
+model FortbildungReferent {
+  fortbildungId String
+  referentId    String
+  rolle         String? // z. B. "Leitung", "Co-Referent"
+
+  fortbildung Fortbildung @relation(fields: [fortbildungId], references: [id], onDelete: Cascade)
+  referent    Referent    @relation(fields: [referentId], references: [id], onDelete: Cascade)
+
+  @@id([fortbildungId, referentId])
+  @@index([referentId])
+}
+
+// ---------------------------------------------------------------------------
+// FIBS-Import-Protokoll
+// ---------------------------------------------------------------------------
+
+model FibsImportJob {
+  id            String    @id @default(uuid())
+  startedAt     DateTime  @default(now())
+  finishedAt    DateTime?
+  status        String    @default("LAEUFT") // LAEUFT | ERFOLG | FEHLER | ABGEBROCHEN
+  dryRun        Boolean   @default(true)
+  suchbegriffe  String[]
+  gefunden      Int       @default(0)
+  neu           Int       @default(0)
+  aktualisiert  Int       @default(0)
+  uebersprungen Int       @default(0)
+  fehlermeldung String?
+  /// Vorschau-Daten des Dry-Runs, damit die Übernahme ohne zweiten Abruf geht
+  rohdaten      Json?
+
+  @@index([startedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Rechenschaftspflicht (Art. 5 Abs. 2 DSGVO)
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  at         DateTime @default(now())
+  userId     String?
+  aktion     String // CREATE | UPDATE | DELETE | LOGIN | LOGIN_FAILED | IMPORT | RETENTION
+  entitaet   String // "Fortbildung", "Referent", ...
+  entitaetId String?
+  /// Kurzbeschreibung bzw. geänderte Felder — bewusst ohne Volldaten-Kopie
+  details    Json?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([at])
+  @@index([entitaet, entitaetId])
+}
+
+/// Schlüssel-Wert-Speicher für redaktionelle Texte und Betriebs-Marker:
+/// "impressum", "datenschutz", "lastRetentionRun"
+model SystemSetting {
+  id        String   @id
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+}

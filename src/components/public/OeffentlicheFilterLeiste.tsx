@@ -1,0 +1,222 @@
+"use client";
+
+import { usePathname, useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
+
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { baueUrl, type SuchParameter } from "@/lib/filter";
+import {
+  NIVEAUSTUFEN,
+  ORGANISATIONSFORMEN,
+  SCHULARTEN,
+  VERANSTALTUNGSFORMATE,
+} from "@/constants/fortbildung";
+
+const FILTERNAMEN = [
+  "q",
+  "von",
+  "bis",
+  "organisationsform",
+  "format",
+  "schulart",
+  "niveaustufe",
+  "kb",
+  "schlagwort",
+  "vergangene",
+];
+
+export function OeffentlicheFilterLeiste({
+  params,
+  schlagworte,
+  kompetenzbereiche,
+}: {
+  params: SuchParameter;
+  schlagworte: string[];
+  kompetenzbereiche: Array<{ code: string; titel: string }>;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [laeuft, starte] = useTransition();
+
+  const wert = (name: string) => {
+    const v = params[name];
+    return (Array.isArray(v) ? v[0] : v) ?? "";
+  };
+
+  function setzen(aenderungen: Record<string, string | undefined>) {
+    starte(() => {
+      router.push(baueUrl(pathname, params, aenderungen), { scroll: false });
+    });
+  }
+
+  const aktiv = FILTERNAMEN.some((name) => wert(name));
+
+  return (
+    <div className={`space-y-4 rounded-lg border p-4 ${laeuft ? "opacity-60" : ""}`}>
+      <div className="relative">
+        <Search
+          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden
+        />
+        <Input
+          defaultValue={wert("q")}
+          placeholder="Wonach suchen Sie? Titel, Thema, Fach oder Ort"
+          aria-label="Volltextsuche"
+          className="h-10 w-full pl-9"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") setzen({ q: e.currentTarget.value || undefined });
+          }}
+          onBlur={(e) => {
+            if (e.currentTarget.value !== wert("q")) {
+              setzen({ q: e.currentTarget.value || undefined });
+            }
+          }}
+        />
+      </div>
+
+      <details className="group" open={aktiv}>
+        <summary className="flex cursor-pointer list-none items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
+          <SlidersHorizontal className="size-4" aria-hidden />
+          Filter
+          <span className="text-xs">(Schulart, Format, Kompetenzbereich …)</span>
+        </summary>
+
+        <div className="mt-4 flex flex-wrap items-end gap-3">
+          <Liste
+            label="Schulart"
+            wert={wert("schulart")}
+            optionen={SCHULARTEN.map((s) => ({ value: s.value, label: s.label }))}
+            onChange={(v) => setzen({ schulart: v })}
+          />
+          <Liste
+            label="Format"
+            wert={wert("format")}
+            optionen={VERANSTALTUNGSFORMATE.map((f) => ({
+              value: f.value,
+              label: f.label,
+            }))}
+            onChange={(v) => setzen({ format: v })}
+          />
+          <Liste
+            label="Art"
+            wert={wert("organisationsform")}
+            optionen={ORGANISATIONSFORMEN.map((o) => ({
+              value: o.value,
+              label: o.label,
+            }))}
+            onChange={(v) => setzen({ organisationsform: v })}
+          />
+          <Liste
+            label="Kompetenzbereich"
+            wert={wert("kb")}
+            optionen={kompetenzbereiche.map((k) => ({
+              value: k.code,
+              label: `KB ${k.code} · ${k.titel}`,
+            }))}
+            onChange={(v) => setzen({ kb: v })}
+          />
+          <Liste
+            label="Niveaustufe"
+            wert={wert("niveaustufe")}
+            optionen={NIVEAUSTUFEN.map((n) => ({ value: n.value, label: n.label }))}
+            onChange={(v) => setzen({ niveaustufe: v })}
+          />
+          <Liste
+            label="Schlagwort"
+            wert={wert("schlagwort")}
+            optionen={schlagworte.map((s) => ({ value: s, label: s }))}
+            onChange={(v) => setzen({ schlagwort: v })}
+          />
+
+          <Datum label="Ab" wert={wert("von")} onChange={(v) => setzen({ von: v })} />
+          <Datum label="Bis" wert={wert("bis")} onChange={(v) => setzen({ bis: v })} />
+
+          <label className="flex h-8 items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={wert("vergangene") === "1"}
+              onChange={(e) => setzen({ vergangene: e.target.checked ? "1" : undefined })}
+              className="size-4 accent-[var(--primary)]"
+            />
+            Vergangene anzeigen
+          </label>
+
+          {aktiv ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                setzen(Object.fromEntries(FILTERNAMEN.map((n) => [n, undefined])))
+              }
+            >
+              <X className="size-3.5" aria-hidden />
+              Zurücksetzen
+            </Button>
+          ) : null}
+        </div>
+      </details>
+    </div>
+  );
+}
+
+function Liste({
+  label,
+  wert,
+  optionen,
+  onChange,
+}: {
+  label: string;
+  wert: string;
+  optionen: Array<{ value: string; label: string }>;
+  onChange: (wert: string | undefined) => void;
+}) {
+  const id = `f-${label.toLowerCase()}`;
+  return (
+    <div>
+      <label htmlFor={id} className="mb-1.5 block text-xs font-medium text-muted-foreground">
+        {label}
+      </label>
+      <select
+        id={id}
+        value={wert}
+        onChange={(e) => onChange(e.target.value || undefined)}
+        className="h-8 max-w-56 rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+      >
+        <option value="">Alle</option>
+        {optionen.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function Datum({
+  label,
+  wert,
+  onChange,
+}: {
+  label: string;
+  wert: string;
+  onChange: (wert: string | undefined) => void;
+}) {
+  const id = `f-datum-${label.toLowerCase()}`;
+  return (
+    <div>
+      <label htmlFor={id} className="mb-1.5 block text-xs font-medium text-muted-foreground">
+        {label}
+      </label>
+      <Input
+        id={id}
+        type="date"
+        value={wert}
+        onChange={(e) => onChange(e.target.value || undefined)}
+        className="w-36"
+      />
+    </div>
+  );
+}

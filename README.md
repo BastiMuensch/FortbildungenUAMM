@@ -1,36 +1,208 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Fortbildungen Schulamt Memmingen-Unterallgäu
 
-## Getting Started
+Web-Anwendung zur Erfassung, Bewerbung und Darstellung von Lehrerfortbildungen
+des Staatlichen Schulamts im Landkreis Unterallgäu und in der Stadt Memmingen.
+Ersetzt die bisherige Tabellenlösung und orientiert sich an der Feldlogik von
+FIBS sowie am Kompetenzrahmen DigCompEdu Bavaria.
 
-First, run the development server:
+**Wichtig zum Zuschnitt:** Die Anwendung verwaltet das Fortbildungs*angebot*.
+Die verbindliche **Anmeldung läuft weiterhin über FIBS** — es werden keine
+personenbezogenen Daten von teilnehmenden Lehrkräften gespeichert.
+
+## Was die Anwendung kann
+
+**Für Lehrkräfte** (öffentlich, ohne Anmeldung):
+
+- Übersicht der kommenden Fortbildungen
+- Monatskalender mit bayerischen Ferien und Feiertagen
+- Suche über Titel, Beschreibung, Fach und Ort
+- Filter nach Schulart, Format, Organisationsform, Schlagwort,
+  DigCompEdu-Kompetenzbereich und Niveaustufe
+- Detailseiten mit Link zur Anmeldung in FIBS
+- Kalender-Abo (ICS) unter `/api/ics`
+
+**Für das Medienteam** (Redaktionsbereich unter `/admin`):
+
+- Erfassungsformular mit allen FIBS-Feldern, WYSIWYG-Beschreibung und
+  DigCompEdu-Zuordnung
+- Listenansicht getrennt nach regionalen Fortbildungen, SchiLf und Entwürfen
+- Duplizieren wiederkehrender Formate
+- Excel-Export der jeweiligen Filtermenge
+- Verwaltung von Referenten, Schlagworten und Veranstaltungsorten
+- Vorbereiteter FIBS-Import mit Trockenlauf
+
+## Technik
+
+| Baustein | Wahl |
+|---|---|
+| Framework | Next.js 16 (App Router, React 19, TypeScript) |
+| Styling | Tailwind CSS v4, shadcn-Komponenten auf `@base-ui/react` |
+| Datenbank | PostgreSQL 16 über Prisma |
+| Validierung | zod — ein Schema für Formular und Server Action |
+| Mutationen | Server Actions (kein eigenes API-Backend) |
+| Anmeldung | JWT im httpOnly-Cookie (`jose`), Passwort-Hash mit bcrypt |
+| Rich-Text | Tiptap, serverseitig auf eine Element-Allowlist gefiltert |
+| Export | ExcelJS (XLSX), eigener ICS-Feed |
+
+> Dieses Projekt läuft auf einer Next.js-Fassung mit Abweichungen vom
+> Trainingswissen gängiger Assistenten. Vor Änderungen an Next-spezifischem
+> Code die lokale Dokumentation unter `node_modules/next/dist/docs/` lesen —
+> siehe `AGENTS.md`. Bekannt: Die frühere `middleware.ts` heißt in Next 16
+> **`proxy.ts`**.
+
+## Einrichtung
+
+Voraussetzung: Node.js 22+ und ein erreichbares PostgreSQL 16.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+In der `.env` mindestens setzen:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `DATABASE_URL`
+- `JWT_SECRET` — erzeugen mit `openssl rand -base64 48`
+- `SEED_ADMIN_EMAIL` und `SEED_ADMIN_PASSWORD`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Datenbank anlegen und befüllen:
 
-## Learn More
+```bash
+createdb fortbildungen_uamm
+npm run db:migrate
+npm run db:seed
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Die Anwendung läuft dann auf <http://localhost:3000>, der Redaktionsbereich
+unter `/admin` (Anmeldung mit den Seed-Zugangsdaten — **Passwort danach
+ändern**).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Nützliche Skripte
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Befehl | Zweck |
+|---|---|
+| `npm run dev` | Entwicklungsserver |
+| `npm run build` | Produktionsbau |
+| `npm run typecheck` | TypeScript prüfen |
+| `npm run lint` | ESLint |
+| `npm run db:migrate` | Migration erzeugen und anwenden |
+| `npm run db:seed` | Stammdaten einspielen (idempotent) |
+| `npm run db:studio` | Prisma Studio |
 
-## Deploy on Vercel
+## Was vor dem Produktivbetrieb noch zu tun ist
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. **Veranstaltungsorte** — Die Liste in `prisma/seed-data/orte.ts` folgt dem
+   Schema „Grundschule &lt;Ort&gt;" und ist **nicht** mit dem amtlichen
+   Schulverzeichnis abgeglichen. Ersetzen oder unter `/admin/orte` pflegen.
+2. **DigCompEdu** — Kompetenzbereich 1 ist vollständig hinterlegt. Die
+   Unterkompetenzen der Bereiche 2–6 tragen die Titel des DigCompEdu-Rahmens,
+   sind aber als „vorläufig" markiert; Formulierungen mit der offiziellen
+   bayerischen Fassung abgleichen (`prisma/seed-data/digcomp.ts`).
+3. **Impressum und Datenschutzerklärung** — Platzhalter. Unter `/admin/texte`
+   durch die geprüften Fassungen ersetzen.
+4. **Schulferien** — siehe unten.
+5. **FIBS-Import** — siehe unten.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Bayerische Ferien und Feiertage
+
+`src/lib/ferien.ts` enthält beides:
+
+- **Feiertage** werden berechnet (Gaußsche Osterformel, davon abgeleitet
+  Karfreitag, Ostermontag, Christi Himmelfahrt, Pfingstmontag, Fronleichnam;
+  dazu die festen bayerischen Feiertage und der unterrichtsfreie Buß- und
+  Bettag). Das gilt unbegrenzt in die Zukunft.
+- **Schulferien** werden je Schuljahr behördlich festgelegt und sind daher
+  **nicht** berechenbar. Gepflegt sind die Schuljahre **2025/2026** und
+  **2026/2027**, also bis zum **13.09.2027**.
+
+Fällt ein Termin in Ferien, auf einen Feiertag oder aufs Wochenende, zeigt das
+Erfassungsformular direkt beim Eingeben eine Warnung — bewusst als Hinweis,
+nicht als Sperre: Ein Studientag in den Ferien kann gewollt sein, ein
+Zahlendreher im Datum nicht. Im Kalender sind Ferientage und Feiertage
+farblich hinterlegt.
+
+Liegt ein Datum jenseits des gepflegten Zeitraums, sagt die Anwendung das
+ausdrücklich, statt stillschweigend „keine Ferien" anzunehmen.
+
+**Zum Nachpflegen:** Sobald das Staatsministerium neue Termine veröffentlicht
+(<https://www.km.bayern.de/termine/ferien-und-feiertage>), das Schuljahr in
+`FERIEN_NACH_SCHULJAHR` in `src/lib/ferien.ts` ergänzen. Mehr ist nicht nötig —
+Kalender, Warnung und Hinweistexte ziehen automatisch nach.
+
+## FIBS-Import
+
+Vorbereitet unter `src/lib/fibs/`, standardmäßig **abgeschaltet**
+(`FIBS_IMPORT_ENABLED=false`).
+
+So funktioniert es:
+
+1. Unter `/admin/schlagworte` markieren, mit welchen Begriffen gesucht wird.
+2. Unter `/admin/import` einen **Trockenlauf** starten. Die Vorschau zeigt, was
+   angelegt oder aktualisiert würde — geschrieben wird nichts.
+3. Erst das ausdrückliche Häkchen „Treffer wirklich übernehmen" schreibt
+   (nur mit Administrationsrechten). Übernommene Lehrgänge landen als
+   **Entwurf**, nicht direkt im Frontend.
+
+Schutzregeln: Deduplizierung über die Lehrgangsnummer; ein Datensatz, den die
+Redaktion selbst angelegt hat (`quelle = MANUELL`), wird **nie** überschrieben;
+jeder Lauf wird protokolliert.
+
+> **Rechtlicher Hinweis.** Automatisiertes Auslesen von FIBS kann den
+> Nutzungsbedingungen des Bayerischen Staatsministeriums bzw. der ALP Dillingen
+> widersprechen. Vor dem Scharfschalten die Nutzungsbedingungen prüfen — die
+> `robots.txt` prüft die Anwendung selbst und bricht bei einem Verbot ab.
+> Besser als das Auslesen der Webseite ist eine offizielle Exportmöglichkeit;
+> danach sollte bei der ALP gefragt werden. Die Architektur ist so geschnitten,
+> dass dafür nur `src/lib/fibs/client.ts` und `parser.ts` getauscht werden.
+>
+> Solange der Import aus ist, arbeitet der Trockenlauf mit der Beispieldatei
+> `src/lib/fibs/fixtures/suchergebnis.html`. Damit lässt sich die ganze Kette
+> testen, ohne FIBS anzufassen.
+
+## Datenschutz
+
+Die Anwendung ist auf Datensparsamkeit ausgelegt:
+
+- **Keine Teilnehmerdaten.** Anmeldung läuft über FIBS.
+- **Referentinnen und Referenten** sind die einzigen personenbezogenen Daten
+  neben den Redaktionszugängen. E-Mail, Telefon und Notizen sind Innendaten und
+  werden nie an das Frontend ausgeliefert (`src/lib/queries.ts`). Ob der Name
+  öffentlich erscheint, steuert ein Schalter je Person.
+- **Keine Drittdienste.** Schriften werden selbst gehostet, es gibt kein
+  Analytics, keine CDNs, keine eingebetteten Inhalte. Durchgesetzt über die
+  Content-Security-Policy in `next.config.ts` (`default-src 'self'`).
+- **Kein Cookie-Banner nötig** — es gibt nur ein technisch notwendiges
+  Sitzungs-Cookie für den Redaktionsbereich.
+- **Löschkonzept** (`src/lib/retention.ts`): Fortbildungen nach zwei Jahren
+  archiviert, Referentenzuordnungen nach fünf Jahren aufgelöst, Protokolle nach
+  zwölf Monaten gelöscht. Läuft automatisch (`src/lib/scheduler.ts`), Zeitpunkt
+  des letzten Laufs unter `/admin/texte` einsehbar.
+- **Protokollierung** von Anlegen, Ändern, Löschen, Anmeldung und Import
+  (Rechenschaftspflicht, Art. 5 Abs. 2 DSGVO) — bewusst ohne Kopie der Daten
+  selbst.
+
+Alternativ zum eingebauten Zeitgeber lässt sich der Löschlauf extern anstoßen:
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" https://<host>/api/cron/cleanup
+```
+
+## Betrieb
+
+```bash
+docker compose up -d --build
+```
+
+Danach einmalig die Stammdaten einspielen:
+
+```bash
+docker compose exec app npx prisma db seed
+```
+
+Die Anwendung bindet sich an `127.0.0.1:3000`; davor gehört ein Reverse Proxy
+mit TLS (nginx, Caddy). HSTS ist gesetzt, die Anwendung geht also von HTTPS aus.
+
+## Lizenz
+
+Noch nicht festgelegt.

@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarOff, Info } from "lucide-react";
+import { CalendarOff, CalendarRange, Info } from "lucide-react";
 
 import {
   NIVEAUSTUFEN,
@@ -26,6 +26,7 @@ import { DigCompAccordion } from "./DigCompAccordion";
 import { ReferentenPicker } from "./ReferentenPicker";
 import { RichTextEditor } from "./RichTextEditor";
 import { SchlagwortInput } from "./SchlagwortInput";
+import { Terminumfeld } from "./Terminumfeld";
 import type { FortbildungState } from "./state";
 import type {
   FortbildungWerte,
@@ -217,6 +218,20 @@ export function EckdatenFelder({
           />
         </div>
       ) : null}
+
+      <div className="md:col-span-2">
+        <p className="mb-3 flex items-center gap-2 text-sm font-medium">
+          <CalendarRange className="size-4 text-muted-foreground" aria-hidden />
+          Was sonst an diesem Tag läuft
+        </p>
+        <Terminumfeld
+          beginn={zustand.beginn}
+          ende={zustand.ende}
+          ortId={zustand.ortId}
+          referentIds={zustand.referenten}
+          eigeneId={fortbildung?.id}
+        />
+      </div>
 
       {zeigeVeroeffentlichung ? (
         <div className="md:col-span-2">

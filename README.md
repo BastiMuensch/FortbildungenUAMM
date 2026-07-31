@@ -30,6 +30,8 @@ und Berichte.
 
 - **Wizard** zum Anlegen: sechs geprüfte Schritte, damit keine Angabe liegen
   bleibt. Bearbeitet wird danach in einer Reiteransicht
+- **Terminabgleich** beim Planen: Monatskalender mit allen bereits geplanten
+  Veranstaltungen und Warnung bei Überschneidungen (siehe unten)
 - **Nachbereitung**: nach der Veranstaltung wird die tatsächliche
   Teilnehmerzahl gemeldet
 - Listenansicht getrennt nach SchiLf, RLFB, ALP und Entwürfen
@@ -45,6 +47,28 @@ und Berichte.
 | `ADMIN` | alles, inkl. Benutzerzugänge, Löschen, Rechtstexte, FIBS-Übernahme |
 | `REDAKTEUR` | Fortbildungen und Stammdaten pflegen, FIBS-Trockenlauf |
 | `REFERENT` | **nur eigene** Fortbildungen anlegen und pflegen, eigene Teilnehmerzahlen melden |
+
+### Terminabgleich
+
+Beim Anlegen und Bearbeiten zeigt das Formular unter den Datumsfeldern den
+Monat mit allen bereits geplanten Veranstaltungen sowie die Termine des
+gewählten Tages. Überschneidungen werden in zwei Stufen gemeldet:
+
+| Stufe | Fall |
+|---|---|
+| **Konflikt** (rot) | Der Ort ist zur selben Zeit schon belegt |
+| **Konflikt** (rot) | Eine gewählte Referentin oder ein Referent ist am selben Tag schon gebucht |
+| **Hinweis** (gelb) | Am selben Tag läuft eine andere Veranstaltung — auch ohne Zeitüberschneidung, weil beide um dieselben Lehrkräfte konkurrieren |
+
+Beides sind Warnungen, keine Sperren: Ein bewusst parallel angesetztes Angebot
+für eine andere Schulart kann sinnvoll sein.
+
+Der Abgleich liest bewusst **über alle Veranstaltungen hinweg**, auch über die
+anderer Personen — sonst könnten Referenten nicht planen. Veröffentlichte
+Termine stehen ohnehin öffentlich im Frontend; fremde **Entwürfe** erscheinen
+nur als belegter Zeitraum ohne Titel und ohne Verlinkung. Der Sonderfall ist
+in `src/actions/terminumfeld.ts` dokumentiert; ein Online-Ort (ViKo) kollidiert
+nie, der lässt sich beliebig oft parallel belegen.
 
 Referentinnen und Referenten bekommen ihren Zugang über einen Einladungslink,
 den die Administration im Referentenverzeichnis erzeugt und weitergibt — es

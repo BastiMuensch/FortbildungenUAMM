@@ -19,6 +19,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
   Actions sind eigene Endpunkte.
 - **Filter leben in `searchParams`**, nicht im Client-State. Siehe
   `src/lib/filter.ts`.
+- **Eine bewusste Ausnahme von `fortbildungScope()`**: `ladeTerminumfeld()`
+  (`src/actions/terminumfeld.ts`) liest über alle Veranstaltungen hinweg —
+  sonst wäre Terminplanung unmöglich, weil Referenten die Termine der anderen
+  nicht sähen. Fremde Entwürfe werden dort auf „belegter Zeitraum" reduziert.
+  Diese Ausnahme bitte nicht auf andere Abfragen ausweiten.
 - **Nur `oeffentlicheFortbildungWhere()` entscheidet, was öffentlich sichtbar
   ist** (`src/lib/queries.ts`). Nicht in einzelnen Seiten nachbauen.
 - **Datum/Uhrzeit** immer über `src/lib/datetime.ts`. In der Datenbank steht

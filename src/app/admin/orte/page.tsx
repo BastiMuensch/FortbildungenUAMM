@@ -44,9 +44,9 @@ export default async function OrtePage() {
           Stillgelegte Orte stehen im Formular nicht mehr zur Auswahl.
         </p>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-          Die vorhandene Liste ist eine Platzhalter-Liste nach dem Schema
-          „Grundschule &lt;Ort&gt;“. Sie sollte vor dem Produktivbetrieb gegen
-          das amtliche Schulverzeichnis abgeglichen werden.
+          Die Liste entspricht dem Schulverzeichnis des Schulamts (Stand
+          31.07.2026). Bei Umbenennungen, Zusammenlegungen oder Umzügen hier
+          nachpflegen.
         </p>
       </div>
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SearchX } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import {
@@ -8,7 +9,7 @@ import {
   type SuchParameter,
 } from "@/lib/filter";
 import { fortbildungKachelSelect, oeffentlicheFortbildungWhere } from "@/lib/queries";
-import { FortbildungKarte } from "@/components/public/FortbildungKarte";
+import { MonatsGruppen } from "@/components/public/MonatsGruppen";
 import { OeffentlicheFilterLeiste } from "@/components/public/OeffentlicheFilterLeiste";
 
 export const metadata: Metadata = {
@@ -56,17 +57,20 @@ export default async function FortbildungsListe({
     }),
   ]);
 
+  const gefiltert = anzahlAktiverFilter(filter) > 0;
+
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Fortbildungen</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {fortbildungen.length}{" "}
-          {fortbildungen.length === 1 ? "Angebot" : "Angebote"}
-          {anzahlAktiverFilter(filter) > 0 ? " für die gewählten Filter" : ""}
-          {zeigeVergangene ? " (inklusive vergangener Termine)" : ""}
+      <header>
+        <h1 className="text-3xl font-semibold tracking-tight">Fortbildungen</h1>
+        <p className="mt-1.5 text-muted-foreground">
+          {fortbildungen.length === 0
+            ? "Kein Treffer"
+            : `${fortbildungen.length} ${fortbildungen.length === 1 ? "Angebot" : "Angebote"}`}
+          {gefiltert ? " für die gewählten Filter" : ""}
+          {zeigeVergangene ? ", inklusive vergangener Termine" : ""}
         </p>
-      </div>
+      </header>
 
       <OeffentlicheFilterLeiste
         params={params}
@@ -75,16 +79,20 @@ export default async function FortbildungsListe({
       />
 
       {fortbildungen.length === 0 ? (
-        <p className="rounded-lg border border-dashed py-16 text-center text-sm text-muted-foreground">
-          Für diese Suche gibt es derzeit kein Angebot. Vielleicht hilft ein
-          weiterer Filter weniger.
-        </p>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {fortbildungen.map((f) => (
-            <FortbildungKarte key={f.id} fortbildung={f} maxTn={f.maxTn} />
-          ))}
+        <div className="rounded-xl border border-dashed py-20 text-center">
+          <SearchX
+            className="mx-auto mb-3 size-7 text-muted-foreground/60"
+            aria-hidden
+          />
+          <p className="font-medium">Dazu gibt es derzeit kein Angebot.</p>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground text-pretty">
+            {gefiltert
+              ? "Vielleicht hilft ein Filter weniger — oder ein Blick auf die vergangenen Termine."
+              : "Neue Fortbildungen erscheinen hier, sobald sie veröffentlicht sind."}
+          </p>
         </div>
+      ) : (
+        <MonatsGruppen fortbildungen={fortbildungen} />
       )}
     </div>
   );

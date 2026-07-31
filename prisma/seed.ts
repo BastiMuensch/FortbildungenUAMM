@@ -70,18 +70,24 @@ async function seedOrte() {
     // einen konkreten Wert, null lässt sich nicht als Schlüssel abfragen.
     const bestehend = await prisma.veranstaltungsort.findFirst({
       where: { name: ort.name, ort: ort.ort ?? null },
+      select: { id: true, strasse: true },
     });
 
     if (bestehend) {
       await prisma.veranstaltungsort.update({
         where: { id: bestehend.id },
-        data: { istOnline: ort.istOnline ?? false, sortOrder: ort.sortOrder ?? 10 },
+        data: {
+          strasse: ort.strasse ?? bestehend.strasse,
+          istOnline: ort.istOnline ?? false,
+          sortOrder: ort.sortOrder ?? 10,
+        },
       });
     } else {
       await prisma.veranstaltungsort.create({
         data: {
           name: ort.name,
           ort: ort.ort ?? null,
+          strasse: ort.strasse ?? null,
           istOnline: ort.istOnline ?? false,
           sortOrder: ort.sortOrder ?? 10,
         },

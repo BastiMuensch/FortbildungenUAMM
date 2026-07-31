@@ -26,6 +26,7 @@ import {
 } from "@/constants/fortbildung";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DatumsBlock } from "@/components/public/DatumsBlock";
 
 async function ladeFortbildung(slug: string) {
   return prisma.fortbildung.findFirst({
@@ -70,46 +71,62 @@ export default async function FortbildungDetail({
     bereiche.set(bereich, liste);
   }
 
+  const schilf = fortbildung.organisationsform === "SCHILF";
+
   return (
     <article className="mx-auto max-w-3xl">
       <Link
         href="/fortbildungen"
-        className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        className="mb-8 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ChevronLeft className="size-4" aria-hidden />
         Zur Übersicht
       </Link>
 
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <Badge
-          variant={fortbildung.organisationsform === "SCHILF" ? "secondary" : "outline"}
-        >
-          {organisationsformLabel(fortbildung.organisationsform)}
-        </Badge>
-        <Badge variant="outline">{formatLabel(fortbildung.format)}</Badge>
-        {fortbildung.niveaustufe ? (
-          <Badge variant="outline">{niveaustufeLabel(fortbildung.niveaustufe)}</Badge>
-        ) : null}
-      </div>
+      <header className="flex gap-5">
+        <DatumsBlock
+          datum={fortbildung.beginn}
+          variante={schilf ? "schilf" : "regional"}
+          className="size-20 rounded-2xl [&>span:nth-child(2)]:text-3xl"
+        />
 
-      <h1 className="text-2xl font-semibold tracking-tight">{fortbildung.titel}</h1>
-      {fortbildung.kurztitel ? (
-        <p className="mt-1 text-muted-foreground">{fortbildung.kurztitel}</p>
-      ) : null}
+        <div className="min-w-0 flex-1">
+          <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">
+            <span
+              className={`font-medium ${schilf ? "text-schilf" : "text-regional"}`}
+            >
+              {organisationsformLabel(fortbildung.organisationsform)}
+            </span>
+            <Badge variant="outline">{formatLabel(fortbildung.format)}</Badge>
+            {fortbildung.niveaustufe ? (
+              <Badge variant="outline">
+                {niveaustufeLabel(fortbildung.niveaustufe)}
+              </Badge>
+            ) : null}
+          </div>
+
+          <h1 className="text-3xl font-semibold tracking-tight text-balance">
+            {fortbildung.titel}
+          </h1>
+          {fortbildung.kurztitel ? (
+            <p className="mt-1.5 text-muted-foreground">{fortbildung.kurztitel}</p>
+          ) : null}
+        </div>
+      </header>
 
       {abgesagt ? (
-        <p className="mt-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">
+        <p className="mt-6 rounded-xl bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">
           Diese Veranstaltung wurde abgesagt.
         </p>
       ) : null}
 
       {hinweis && (hinweis.art === "ferien" || hinweis.art === "feiertag") ? (
-        <p className="mt-4 rounded-lg bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
+        <p className="mt-6 rounded-xl bg-ferien-weich px-4 py-3 text-sm text-ferien">
           {hinweis.text}
         </p>
       ) : null}
 
-      <dl className="mt-6 grid gap-4 rounded-lg border p-5 sm:grid-cols-2">
+      <dl className="mt-8 grid gap-5 rounded-2xl border bg-card p-6 sm:grid-cols-2">
         <Angabe icon={CalendarDays} label="Termin">
           {formatZeitraum(fortbildung.beginn, fortbildung.ende)}
           <span className="block text-xs">

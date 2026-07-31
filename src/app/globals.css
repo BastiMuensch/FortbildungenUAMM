@@ -128,42 +128,175 @@
     @apply font-sans;
   }
 }
-/* ---------------------------------------------------------------------------
-   Farbakzent des Schulamts.
-   Überschreibt die neutrale Standardpalette von shadcn an genau den Stellen,
-   an denen Farbe Bedeutung trägt.
-   --------------------------------------------------------------------------- */
+/* ===========================================================================
+   Gestaltung des Fortbildungs-Tools
+
+   Die Standardpalette von shadcn ist reines Neutralgrau. Für eine Seite, die
+   Lehrkräfte freiwillig aufsuchen sollen, ist das zu kalt. Deshalb:
+
+   - Neutrale Töne mit einem Hauch Wärme (Chroma 0.004–0.012 statt 0)
+   - Ein kräftigeres Blau als Leitfarbe des Schulamts
+   - Zwei semantische Akzente für die beiden Veranstaltungsarten, damit
+     "regional" und "SchiLf" im Kalender und in Listen ohne Legende
+     unterscheidbar sind
+   =========================================================================== */
+
 :root {
-  --primary: oklch(0.47 0.12 250);
+  --background: oklch(0.99 0.003 95);
+  --foreground: oklch(0.19 0.012 260);
+
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--foreground);
+
+  --primary: oklch(0.45 0.135 252);
   --primary-foreground: oklch(0.99 0 0);
-  --ring: oklch(0.47 0.12 250);
+
+  --secondary: oklch(0.96 0.008 250);
+  --secondary-foreground: oklch(0.28 0.03 255);
+
+  --muted: oklch(0.965 0.005 250);
+  --muted-foreground: oklch(0.5 0.015 258);
+
+  --accent: oklch(0.95 0.015 250);
+  --accent-foreground: oklch(0.25 0.04 255);
+
+  --destructive: oklch(0.55 0.19 25);
+
+  --border: oklch(0.9 0.008 255);
+  --input: oklch(0.88 0.01 255);
+  --ring: oklch(0.45 0.135 252);
+
+  /* Veranstaltungsarten */
+  --regional: oklch(0.45 0.135 252);
+  --regional-weich: oklch(0.95 0.03 252);
+  --schilf: oklch(0.52 0.11 175);
+  --schilf-weich: oklch(0.95 0.04 175);
+
+  /* Kalender-Hinterlegungen */
+  --ferien: oklch(0.74 0.15 75);
+  --ferien-weich: oklch(0.965 0.045 85);
+  --feiertag: oklch(0.62 0.17 20);
+  --feiertag-weich: oklch(0.965 0.03 25);
+
+  --radius: 0.75rem;
 }
 
 .dark {
-  --primary: oklch(0.7 0.12 250);
-  --primary-foreground: oklch(0.16 0.02 250);
-  --ring: oklch(0.7 0.12 250);
+  --background: oklch(0.17 0.012 258);
+  --foreground: oklch(0.96 0.005 250);
+
+  --card: oklch(0.215 0.014 258);
+  --card-foreground: var(--foreground);
+  --popover: oklch(0.215 0.014 258);
+  --popover-foreground: var(--foreground);
+
+  --primary: oklch(0.72 0.13 250);
+  --primary-foreground: oklch(0.17 0.03 255);
+
+  --secondary: oklch(0.28 0.018 258);
+  --secondary-foreground: oklch(0.95 0.005 250);
+
+  --muted: oklch(0.27 0.015 258);
+  --muted-foreground: oklch(0.7 0.015 255);
+
+  --accent: oklch(0.3 0.025 255);
+  --accent-foreground: oklch(0.96 0.005 250);
+
+  --destructive: oklch(0.68 0.17 22);
+
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.72 0.13 250);
+
+  --regional: oklch(0.72 0.13 250);
+  --regional-weich: oklch(0.3 0.05 252);
+  --schilf: oklch(0.72 0.1 175);
+  --schilf-weich: oklch(0.3 0.04 175);
+
+  --ferien: oklch(0.78 0.13 78);
+  --ferien-weich: oklch(0.29 0.05 80);
+  --feiertag: oklch(0.7 0.15 22);
+  --feiertag-weich: oklch(0.29 0.05 22);
+}
+
+@theme inline {
+  --color-regional: var(--regional);
+  --color-regional-weich: var(--regional-weich);
+  --color-schilf: var(--schilf);
+  --color-schilf-weich: var(--schilf-weich);
+  --color-ferien: var(--ferien);
+  --color-ferien-weich: var(--ferien-weich);
+  --color-feiertag: var(--feiertag);
+  --color-feiertag-weich: var(--feiertag-weich);
+}
+
+/* ---------------------------------------------------------------------------
+   Wiederkehrende Bausteine
+   --------------------------------------------------------------------------- */
+
+/* Ruhiger Verlauf hinter dem Seitenkopf — gibt der Startseite Tiefe, ohne
+   ein Bild laden zu müssen (die CSP erlaubt ohnehin keine Fremdquellen). */
+.buehne {
+  background:
+    radial-gradient(
+      ellipse 80% 60% at 15% -10%,
+      color-mix(in oklch, var(--primary) 14%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 60% 50% at 90% 0%,
+      color-mix(in oklch, var(--schilf) 12%, transparent),
+      transparent 65%
+    );
+}
+
+/* Karten heben sich beim Überfahren leicht an. Bewusst dezent: Die Seite ist
+   ein Verzeichnis, kein Schaufenster. */
+.karte {
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease;
+}
+
+.karte:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -12px oklch(0.2 0.03 255 / 25%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .karte,
+  .karte:hover {
+    transform: none;
+    transition: none;
+  }
 }
 
 /* Darstellung der WYSIWYG-Beschreibung im Frontend. Bewusst schlank gehalten:
    der Editor erlaubt ohnehin nur wenige Elemente (siehe src/lib/sanitize.ts). */
+.beschreibung {
+  line-height: 1.7;
+}
 .beschreibung > * + * {
-  margin-top: 0.75em;
+  margin-top: 0.85em;
 }
 .beschreibung h2 {
   font-size: 1.125rem;
   font-weight: 600;
-  margin-top: 1.5em;
+  margin-top: 1.6em;
+  letter-spacing: -0.01em;
 }
 .beschreibung h3,
 .beschreibung h4 {
   font-size: 1rem;
   font-weight: 600;
-  margin-top: 1.25em;
+  margin-top: 1.3em;
 }
 .beschreibung ul,
 .beschreibung ol {
-  padding-left: 1.5rem;
+  padding-left: 1.4rem;
 }
 .beschreibung ul {
   list-style: disc;
@@ -172,7 +305,7 @@
   list-style: decimal;
 }
 .beschreibung li + li {
-  margin-top: 0.25em;
+  margin-top: 0.3em;
 }
 .beschreibung a {
   color: var(--primary);

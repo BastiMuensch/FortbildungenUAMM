@@ -1,5 +1,12 @@
 import Link from "next/link";
-import { CalendarPlus, Download, FileSpreadsheet } from "lucide-react";
+import {
+  CalendarDays,
+  CalendarPlus,
+  Clock,
+  Download,
+  FileSpreadsheet,
+  PencilLine,
+} from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
@@ -92,8 +99,7 @@ export default async function AdminDashboard({
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Fortbildungen</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Schuljahr {schuljahr} · {imSchuljahr} Termine · {entwuerfe} Entwürfe ·{" "}
-            {naechste30Tage} in den nächsten 30 Tagen
+            Schuljahr {schuljahr}
           </p>
         </div>
 
@@ -114,6 +120,26 @@ export default async function AdminDashboard({
             }
           />
         </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Kachel
+          wert={imSchuljahr}
+          label={`Termine im Schuljahr ${schuljahr}`}
+          icon={CalendarDays}
+        />
+        <Kachel
+          wert={naechste30Tage}
+          label="veröffentlicht in den nächsten 30 Tagen"
+          icon={Clock}
+        />
+        <Kachel
+          wert={entwuerfe}
+          label="Entwürfe, noch nicht veröffentlicht"
+          icon={PencilLine}
+          hervorheben={entwuerfe > 0}
+          href={baueUrl("/admin", {}, { reiter: "entwuerfe" })}
+        />
       </div>
 
       {/* Reiter als Links: teilbar, ohne JavaScript nutzbar. */}
@@ -178,6 +204,50 @@ export default async function AdminDashboard({
         </p>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * Kennzahl-Kachel. Ist sie verlinkt, führt der Klick zur passenden
+ * Vorfilterung — eine Zahl, die man nicht weiterverfolgen kann, ist nur
+ * Dekoration.
+ */
+function Kachel({
+  wert,
+  label,
+  icon: Icon,
+  hervorheben,
+  href,
+}: {
+  wert: number;
+  label: string;
+  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  hervorheben?: boolean;
+  href?: string;
+}) {
+  const inhalt = (
+    <>
+      <Icon
+        className={`mb-3 size-4 ${hervorheben ? "text-primary" : "text-muted-foreground"}`}
+        aria-hidden
+      />
+      <span className="block text-2xl font-semibold tabular-nums">{wert}</span>
+      <span className="mt-0.5 block text-sm text-muted-foreground text-pretty">
+        {label}
+      </span>
+    </>
+  );
+
+  const klassen = `rounded-xl border bg-card p-4 ${
+    hervorheben ? "border-primary/30 bg-primary/5" : ""
+  }`;
+
+  return href ? (
+    <Link href={href} className={`${klassen} karte block`}>
+      {inhalt}
+    </Link>
+  ) : (
+    <div className={klassen}>{inhalt}</div>
   );
 }
 

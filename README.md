@@ -92,17 +92,19 @@ unter `/admin` (Anmeldung mit den Seed-Zugangsdaten — **Passwort danach
 
 ## Was vor dem Produktivbetrieb noch zu tun ist
 
-1. **Veranstaltungsorte** — Die Liste in `prisma/seed-data/orte.ts` folgt dem
-   Schema „Grundschule &lt;Ort&gt;" und ist **nicht** mit dem amtlichen
-   Schulverzeichnis abgeglichen. Ersetzen oder unter `/admin/orte` pflegen.
-2. **DigCompEdu** — Kompetenzbereich 1 ist vollständig hinterlegt. Die
+1. **DigCompEdu** — Kompetenzbereich 1 ist vollständig hinterlegt. Die
    Unterkompetenzen der Bereiche 2–6 tragen die Titel des DigCompEdu-Rahmens,
    sind aber als „vorläufig" markiert; Formulierungen mit der offiziellen
    bayerischen Fassung abgleichen (`prisma/seed-data/digcomp.ts`).
-3. **Impressum und Datenschutzerklärung** — Platzhalter. Unter `/admin/texte`
+2. **Impressum und Datenschutzerklärung** — Platzhalter. Unter `/admin/texte`
    durch die geprüften Fassungen ersetzen.
-4. **Schulferien** — siehe unten.
-5. **FIBS-Import** — siehe unten.
+3. **Schulferien** — siehe unten.
+4. **FIBS-Import** — siehe unten.
+
+Die **Veranstaltungsorte** entsprechen dem Schulverzeichnis des Schulamts
+(52 Grund- und Mittelschulen, Stand 31.07.2026, Quelle in
+`prisma/seed-data/orte.ts` dokumentiert) und sind unter `/admin/orte`
+pflegbar.
 
 ## Bayerische Ferien und Feiertage
 

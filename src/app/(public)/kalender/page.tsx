@@ -92,19 +92,19 @@ export default async function KalenderSeite({
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="size-3 rounded-sm bg-primary" aria-hidden />
+          <span className="size-3 rounded-sm bg-regional" aria-hidden />
           Fortbildung (regional)
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="size-3 rounded-sm bg-secondary-foreground/40" aria-hidden />
+          <span className="size-3 rounded-sm bg-schilf" aria-hidden />
           SchiLf
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="size-3 rounded-sm bg-amber-500/25" aria-hidden />
+          <span className="size-3 rounded-sm bg-ferien" aria-hidden />
           Bayerische Schulferien
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="size-3 rounded-sm bg-destructive/20" aria-hidden />
+          <span className="size-3 rounded-sm bg-feiertag" aria-hidden />
           Feiertag
         </span>
         <span>

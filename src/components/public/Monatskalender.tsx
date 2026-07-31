@@ -62,9 +62,9 @@ export function Monatskalender({
                 key={tag.iso}
                 className={cn(
                   "min-h-28 border-r border-b p-1.5 last:border-r-0",
-                  !tag.imMonat && "bg-muted/30",
-                  status.art === "ferien" && "bg-amber-500/10",
-                  status.art === "feiertag" && "bg-destructive/10",
+                  !tag.imMonat && "bg-muted/40",
+                  status.art === "ferien" && "bg-ferien-weich",
+                  status.art === "feiertag" && "bg-feiertag-weich",
                 )}
               >
                 <div className="mb-1 flex items-baseline justify-between gap-1">
@@ -139,10 +139,8 @@ function TerminChip({ fortbildung }: { fortbildung: FortbildungKachel }) {
       href={`/fortbildungen/${fortbildung.slug}`}
       title={fortbildung.titel}
       className={cn(
-        "block truncate rounded px-1.5 py-1 text-[11px] leading-tight transition-opacity hover:opacity-80",
-        schilf
-          ? "bg-secondary text-secondary-foreground"
-          : "bg-primary text-primary-foreground",
+        "block truncate rounded-md px-1.5 py-1 text-[11px] leading-tight font-medium transition-opacity hover:opacity-80",
+        schilf ? "bg-schilf-weich text-schilf" : "bg-regional-weich text-regional",
         fortbildung.status === "ABGESAGT" && "line-through opacity-60",
       )}
     >

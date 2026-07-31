@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
-import { AuthError, requireRole } from "@/lib/auth";
+import { AuthError, ERFASSER, darfBearbeiten, requireRole } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 import { sanitizeBeschreibung, htmlZuText } from "@/lib/sanitize";
 import { bildeSlug } from "@/lib/queries";
@@ -12,6 +12,7 @@ import { PFLICHT_SCHLAGWORTE, type FortbildungStatus } from "@/constants/fortbil
 import {
   FortbildungSchema,
   formDataZuEingabe,
+  pruefeVeroeffentlichung,
   zuFeldFehlern,
   type FormularState,
 } from "@/lib/validation/fortbildung";
@@ -29,10 +30,17 @@ export async function saveFortbildung(
 ): Promise<FormularState> {
   let user;
   try {
-    user = await requireRole("ADMIN", "REDAKTEUR");
+    user = await requireRole(...ERFASSER);
   } catch (error) {
     if (error instanceof AuthError) return { fehler: { _: error.message } };
     throw error;
+  }
+
+  // Referentinnen und Referenten dürfen nur an ihre eigenen Termine.
+  if (id && !(await darfBearbeiten(user, id))) {
+    return {
+      fehler: { _: "Diese Fortbildung gehört nicht zu Ihren Veranstaltungen." },
+    };
   }
 
   const geparst = FortbildungSchema.safeParse(formDataZuEingabe(formData));
@@ -41,6 +49,9 @@ export async function saveFortbildung(
   }
 
   const daten = geparst.data;
+
+  const unvollstaendig = pruefeVeroeffentlichung(daten);
+  if (unvollstaendig) return { fehler: unvollstaendig };
 
   // --- Ort prüfen und mit dem Format abgleichen ------------------------------
   const ort = await prisma.veranstaltungsort.findUnique({
@@ -182,7 +193,8 @@ export async function saveFortbildung(
 // ---------------------------------------------------------------------------
 
 export async function statusAendern(id: string, status: FortbildungStatus) {
-  const user = await requireRole("ADMIN", "REDAKTEUR");
+  const user = await requireRole(...ERFASSER);
+  if (!(await darfBearbeiten(user, id))) return;
 
   await prisma.fortbildung.update({ where: { id }, data: { status } });
   await auditLog({
@@ -203,7 +215,8 @@ export async function statusAendern(id: string, status: FortbildungStatus) {
  * Funktion tippt das Medienteam denselben Lehrgang jedes Halbjahr neu.
  */
 export async function duplizieren(id: string) {
-  const user = await requireRole("ADMIN", "REDAKTEUR");
+  const user = await requireRole(...ERFASSER);
+  if (!(await darfBearbeiten(user, id))) return;
 
   const quelle = await prisma.fortbildung.findUnique({
     where: { id },
@@ -300,13 +313,13 @@ function pruefeFormatUndOrt(
   if (format === "ESESSION" && !ortIstOnline) {
     return {
       veranstaltungsortId:
-        'Eine eSession braucht den Veranstaltungsort "Online".',
+        "Eine eSession braucht den Veranstaltungsort ViKo (online).",
     };
   }
   if (format === "PRAESENZ" && ortIstOnline) {
     return {
       veranstaltungsortId:
-        'Für eine Präsenzveranstaltung bitte einen konkreten Ort statt "Online" wählen.',
+        "Für eine Präsenzveranstaltung bitte einen konkreten Ort statt ViKo (online) wählen.",
     };
   }
   return null;

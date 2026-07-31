@@ -11,6 +11,11 @@ personenbezogenen Daten von teilnehmenden Lehrkräften gespeichert.
 
 ## Was die Anwendung kann
 
+Fortbildungen sind nach den drei bayerischen Ebenen gegliedert: **SchiLf**
+(schulintern), **RLFB** (regional, über FIBS ausgeschrieben) und **ALP**
+(zentral, Dillingen). Diese Gliederung zieht sich durch Farbgebung, Filter
+und Berichte.
+
 **Für Lehrkräfte** (öffentlich, ohne Anmeldung):
 
 - Übersicht der kommenden Fortbildungen
@@ -23,13 +28,28 @@ personenbezogenen Daten von teilnehmenden Lehrkräften gespeichert.
 
 **Für das Medienteam** (Redaktionsbereich unter `/admin`):
 
-- Erfassungsformular mit allen FIBS-Feldern, WYSIWYG-Beschreibung und
-  DigCompEdu-Zuordnung
-- Listenansicht getrennt nach regionalen Fortbildungen, SchiLf und Entwürfen
+- **Wizard** zum Anlegen: sechs geprüfte Schritte, damit keine Angabe liegen
+  bleibt. Bearbeitet wird danach in einer Reiteransicht
+- **Nachbereitung**: nach der Veranstaltung wird die tatsächliche
+  Teilnehmerzahl gemeldet
+- Listenansicht getrennt nach SchiLf, RLFB, ALP und Entwürfen
 - Duplizieren wiederkehrender Formate
-- Excel-Export der jeweiligen Filtermenge
+- **Excel-Export** und **PDF-Bericht** (nach Ebenen gegliedert, mit Summen)
 - Verwaltung von Referenten, Schlagworten und Veranstaltungsorten
 - Vorbereiteter FIBS-Import mit Trockenlauf
+
+**Rollen:**
+
+| Rolle | Darf |
+|---|---|
+| `ADMIN` | alles, inkl. Benutzerzugänge, Löschen, Rechtstexte, FIBS-Übernahme |
+| `REDAKTEUR` | Fortbildungen und Stammdaten pflegen, FIBS-Trockenlauf |
+| `REFERENT` | **nur eigene** Fortbildungen anlegen und pflegen, eigene Teilnehmerzahlen melden |
+
+Referentinnen und Referenten bekommen ihren Zugang über einen Einladungslink,
+den die Administration im Referentenverzeichnis erzeugt und weitergibt — es
+ist bewusst **kein Mailserver** eingerichtet, statt einen vorzutäuschen.
+Der Link ist einmalig verwendbar und läuft nach 14 Tagen ab.
 
 ## Technik
 
@@ -92,14 +112,24 @@ unter `/admin` (Anmeldung mit den Seed-Zugangsdaten — **Passwort danach
 
 ## Was vor dem Produktivbetrieb noch zu tun ist
 
-1. **DigCompEdu** — Kompetenzbereich 1 ist vollständig hinterlegt. Die
+1. **Veröffentlichungspflichten** — Niveaustufe, mindestens eine
+   DigCompEdu-Kompetenz und mindestens ein Referent sind Pflicht, sobald eine
+   Fortbildung veröffentlicht wird. Als **Entwurf** lässt sich jederzeit
+   unvollständig zwischenspeichern; sonst ginge angefangene Arbeit verloren.
+   Zu ändern in `VEROEFFENTLICHUNGS_PFLICHTEN`
+   (`src/lib/validation/fortbildung.ts`).
+2. **Referenten dürfen selbst veröffentlichen.** Ein Freigabe-Schritt durch
+   die Redaktion ist bewusst nicht eingebaut — jede Änderung steht aber im
+   Protokoll. Falls gewünscht, wäre das ein zusätzlicher Status zwischen
+   Entwurf und Veröffentlicht.
+3. **DigCompEdu** — Kompetenzbereich 1 ist vollständig hinterlegt. Die
    Unterkompetenzen der Bereiche 2–6 tragen die Titel des DigCompEdu-Rahmens,
    sind aber als „vorläufig" markiert; Formulierungen mit der offiziellen
    bayerischen Fassung abgleichen (`prisma/seed-data/digcomp.ts`).
-2. **Impressum und Datenschutzerklärung** — Platzhalter. Unter `/admin/texte`
+4. **Impressum und Datenschutzerklärung** — Platzhalter. Unter `/admin/texte`
    durch die geprüften Fassungen ersetzen.
-3. **Schulferien** — siehe unten.
-4. **FIBS-Import** — siehe unten.
+5. **Schulferien** — siehe unten.
+6. **FIBS-Import** — siehe unten.
 
 Die **Veranstaltungsorte** entsprechen dem Schulverzeichnis des Schulamts
 (52 Grund- und Mittelschulen, Stand 31.07.2026, Quelle in

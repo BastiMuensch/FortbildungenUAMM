@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { berlinIsoDatum, formatZeit } from "@/lib/datetime";
 import { ferienStatus } from "@/lib/ferien";
+import { ebeneKlassen } from "@/constants/fortbildung";
 import type { FortbildungKachel } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 
@@ -132,7 +133,7 @@ export function Monatskalender({
 }
 
 function TerminChip({ fortbildung }: { fortbildung: FortbildungKachel }) {
-  const schilf = fortbildung.organisationsform === "SCHILF";
+  const ebene = ebeneKlassen(fortbildung.organisationsform);
 
   return (
     <Link
@@ -140,7 +141,7 @@ function TerminChip({ fortbildung }: { fortbildung: FortbildungKachel }) {
       title={fortbildung.titel}
       className={cn(
         "block truncate rounded-md px-1.5 py-1 text-[11px] leading-tight font-medium transition-opacity hover:opacity-80",
-        schilf ? "bg-schilf-weich text-schilf" : "bg-regional-weich text-regional",
+        ebene.flaeche,
         fortbildung.status === "ABGESAGT" && "line-through opacity-60",
       )}
     >

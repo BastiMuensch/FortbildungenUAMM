@@ -138,6 +138,54 @@ export const FortbildungSchema = z
 export type FortbildungEingabe = z.infer<typeof FortbildungSchema>;
 
 /**
+ * Zusätzliche Anforderungen an eine Fortbildung, die veröffentlicht werden soll.
+ *
+ * Bewusst nur beim Veröffentlichen, nicht beim Speichern: Ein Entwurf muss
+ * jederzeit zwischenspeicherbar sein, sonst geht angefangene Arbeit verloren,
+ * wenn eine Angabe noch fehlt. Der Wizard führt ohnehin durch alle Schritte.
+ */
+export const VEROEFFENTLICHUNGS_PFLICHTEN: Array<{
+  feld: string;
+  pruefe: (daten: FortbildungEingabe) => boolean;
+  meldung: string;
+}> = [
+  {
+    feld: "niveaustufe",
+    pruefe: (d) => Boolean(d.niveaustufe),
+    meldung: "Vor dem Veröffentlichen bitte die Niveaustufe angeben.",
+  },
+  {
+    feld: "kompetenzen",
+    pruefe: (d) => d.kompetenzen.length > 0,
+    meldung:
+      "Vor dem Veröffentlichen bitte mindestens eine DigCompEdu-Kompetenz zuordnen — sonst ist die Fortbildung über den Kompetenzfilter nicht auffindbar.",
+  },
+  {
+    feld: "referenten",
+    pruefe: (d) => d.referenten.length > 0,
+    meldung:
+      "Vor dem Veröffentlichen bitte mindestens eine Referentin oder einen Referenten zuordnen.",
+  },
+];
+
+/**
+ * Prüft die Veröffentlichungs-Pflichten. Gibt die Feldfehler zurück, oder
+ * null, wenn alles vollständig ist.
+ */
+export function pruefeVeroeffentlichung(
+  daten: FortbildungEingabe,
+): Record<string, string> | null {
+  if (daten.status === "ENTWURF") return null;
+
+  const fehler: Record<string, string> = {};
+  for (const pflicht of VEROEFFENTLICHUNGS_PFLICHTEN) {
+    if (!pflicht.pruefe(daten)) fehler[pflicht.feld] = pflicht.meldung;
+  }
+
+  return Object.keys(fehler).length > 0 ? fehler : null;
+}
+
+/**
  * Ergebnis einer Formular-Aktion.
  * `fehler` ist nach Feldnamen sortiert, damit das Formular die Meldung direkt
  * am betroffenen Feld — und den Fehler-Punkt am betroffenen Tab — anzeigen kann.

@@ -2,6 +2,8 @@ import "server-only";
 
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
+import type { Prisma } from "@prisma/client";
+
 import { prisma } from "@/lib/prisma";
 import type { Rolle } from "@/constants/fortbildung";
 import { SESSION_COOKIE, SESSION_DAUER_SEKUNDEN } from "@/constants/session";
@@ -25,7 +27,15 @@ export interface SessionUser {
   email: string;
   name: string | null;
   role: Rolle;
+  /** Bei der Rolle REFERENT: der zugehörige Eintrag im Referentenverzeichnis. */
+  referentId: string | null;
 }
+
+/** Darf alles außer Systemverwaltung — also Redaktion und Administration. */
+export const REDAKTION: Rolle[] = ["ADMIN", "REDAKTEUR"];
+
+/** Alle, die überhaupt Fortbildungen erfassen dürfen. */
+export const ERFASSER: Rolle[] = ["ADMIN", "REDAKTEUR", "REFERENT"];
 
 export async function signToken(userId: string): Promise<string> {
   return new SignJWT({ sub: userId })
@@ -76,16 +86,28 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, name: true, role: true, isActive: true },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      isActive: true,
+      referent: { select: { id: true, aktiv: true } },
+    },
   });
 
   if (!user || !user.isActive) return null;
+
+  // Ein stillgelegter Referenteneintrag beendet auch den Zugang — sonst
+  // bliebe ein ausgeschiedener Referent weiter angemeldet.
+  if (user.role === "REFERENT" && !user.referent?.aktiv) return null;
 
   return {
     id: user.id,
     email: user.email,
     name: user.name,
     role: user.role as Rolle,
+    referentId: user.referent?.id ?? null,
   };
 }
 
@@ -109,6 +131,41 @@ export async function requireRole(...rollen: Rolle[]): Promise<SessionUser> {
     throw new AuthError("Für diese Aktion fehlt die Berechtigung.");
   }
   return user;
+}
+
+/**
+ * Einschränkung, welche Fortbildungen eine Person sehen und bearbeiten darf.
+ *
+ * Redaktion und Administration sehen alles. Referentinnen und Referenten nur
+ * das, was sie selbst angelegt haben oder wo sie als Leitung eingetragen sind.
+ * Diese eine Funktion wird überall verwendet, damit die Regel nicht an jeder
+ * Abfrage neu formuliert — und irgendwann vergessen — wird.
+ */
+export function fortbildungScope(user: SessionUser): Prisma.FortbildungWhereInput {
+  if (REDAKTION.includes(user.role)) return {};
+
+  return {
+    OR: [
+      { createdById: user.id },
+      ...(user.referentId
+        ? [{ referenten: { some: { referentId: user.referentId } } }]
+        : []),
+    ],
+  };
+}
+
+/** Prüft den Zugriff auf einen konkreten Datensatz. */
+export async function darfBearbeiten(
+  user: SessionUser,
+  fortbildungId: string,
+): Promise<boolean> {
+  if (REDAKTION.includes(user.role)) return true;
+
+  const treffer = await prisma.fortbildung.findFirst({
+    where: { AND: [{ id: fortbildungId }, fortbildungScope(user)] },
+    select: { id: true },
+  });
+  return treffer !== null;
 }
 
 export class AuthError extends Error {

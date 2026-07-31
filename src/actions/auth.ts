@@ -73,12 +73,13 @@ export async function login(
   const user = await prisma.user.findUnique({ where: { email } });
 
   // Auch bei unbekannter Adresse wird gehasht: Sonst wäre an der Antwortzeit
-  // ablesbar, welche Adressen im System existieren.
-  const passt = user
-    ? await bcrypt.compare(passwort, user.passwordHash)
-    : await bcrypt.compare(passwort, "$2b$12$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidinv");
+  // ablesbar, welche Adressen im System existieren. Dasselbe gilt für Konten,
+  // deren Zugang eingerichtet, aber noch nicht mit einem Passwort versehen ist.
+  const ersatzHash =
+    "$2b$12$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidinv";
+  const passt = await bcrypt.compare(passwort, user?.passwordHash ?? ersatzHash);
 
-  if (!user || !passt || !user.isActive) {
+  if (!user || !user.passwordHash || !passt || !user.isActive) {
     await auditLog({
       userId: user?.id ?? null,
       aktion: "LOGIN_FAILED",

@@ -1,6 +1,6 @@
 /**
  * Veranstaltungsorte: Grund- und Mittelschulen im Landkreis Unterallgäu und
- * in der Stadt Memmingen, dazu der Sonderfall "Online" für eSessions.
+ * in der Stadt Memmingen, dazu der Sonderfall "ViKo (online)" für eSessions.
  *
  * Quelle: Schulverzeichnis des Staatlichen Schulamts, abgerufen am 31.07.2026
  *   https://schulamt.unterallgaeu.de/schulamt/schulverzeichnis/grundschulen-und-mittelschulen/im-landkreis-unterallgaeu
@@ -87,7 +87,7 @@ const LANDKREIS: OrtSeed[] = [
 ];
 
 export const ORTE_SEED: OrtSeed[] = [
-  { name: "Online", istOnline: true, sortOrder: SORT_ONLINE },
+  { name: "ViKo (online)", istOnline: true, sortOrder: SORT_ONLINE },
   {
     name: "Staatliches Schulamt Memmingen-Unterallgäu",
     ort: "Mindelheim",

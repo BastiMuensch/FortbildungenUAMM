@@ -2,9 +2,25 @@
 
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { Eye, EyeOff, Pencil, Trash2, UserPlus } from "lucide-react";
+import {
+  Copy,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Pencil,
+  ShieldCheck,
+  Trash2,
+  UserPlus,
+} from "lucide-react";
 
 import { entferneReferent, speichereReferent } from "@/actions/stammdaten";
+import {
+  neuerZugangslink,
+  richteZugangEin,
+  zugangEntziehen,
+  type EinladungState,
+} from "@/actions/zugang";
+import { formatDatumZeit } from "@/lib/datetime";
 import type { FormularState } from "@/lib/validation/fortbildung";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,17 +55,27 @@ export interface ReferentZeile {
   notiz: string | null;
   oeffentlichSichtbar: boolean;
   aktiv: boolean;
+  userId: string | null;
+  zugang: {
+    userId: string;
+    aktiv: boolean;
+    passwortGesetzt: boolean;
+    lastLoginAt: Date | null;
+  } | null;
   _count: { fortbildungen: number };
 }
 
 export function ReferentenVerwaltung({
   referenten,
   darfLoeschen,
+  darfZugangVerwalten,
 }: {
   referenten: ReferentZeile[];
   darfLoeschen: boolean;
+  darfZugangVerwalten: boolean;
 }) {
   const [bearbeitet, setBearbeitet] = useState<ReferentZeile | null>(null);
+  const [zugangFuer, setZugangFuer] = useState<ReferentZeile | null>(null);
   const [neuOffen, setNeuOffen] = useState(false);
 
   return (
@@ -72,8 +98,9 @@ export function ReferentenVerwaltung({
                 <TableHead className="min-w-40">Organisation</TableHead>
                 <TableHead className="min-w-48">Kontakt (intern)</TableHead>
                 <TableHead>Im Frontend</TableHead>
+                <TableHead>Zugang</TableHead>
                 <TableHead className="text-right">Termine</TableHead>
-                <TableHead className="w-20" />
+                <TableHead className="w-28" />
               </TableRow>
             </TableHeader>
 
@@ -110,11 +137,26 @@ export function ReferentenVerwaltung({
                       </span>
                     )}
                   </TableCell>
+                  <TableCell>
+                    <ZugangsStand zugang={r.zugang} />
+                  </TableCell>
+
                   <TableCell className="text-right tabular-nums">
                     {r._count.fortbildungen}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
+                      {darfZugangVerwalten ? (
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          aria-label={`Zugang für ${r.vorname} ${r.nachname} verwalten`}
+                          title="Zugang verwalten"
+                          onClick={() => setZugangFuer(r)}
+                        >
+                          <KeyRound className="size-3.5" />
+                        </Button>
+                      ) : null}
                       <Button
                         variant="ghost"
                         size="icon-xs"
@@ -163,7 +205,157 @@ export function ReferentenVerwaltung({
         onOpenChange={(offen) => !offen && setBearbeitet(null)}
         referent={bearbeitet}
       />
+      <ZugangDialog
+        key={`zugang-${zugangFuer?.id ?? "leer"}`}
+        offen={zugangFuer !== null}
+        onOpenChange={(offen) => !offen && setZugangFuer(null)}
+        referent={zugangFuer}
+      />
     </div>
+  );
+}
+
+function ZugangsStand({ zugang }: { zugang: ReferentZeile["zugang"] }) {
+  if (!zugang) {
+    return <span className="text-sm text-muted-foreground">kein Zugang</span>;
+  }
+  if (!zugang.aktiv) {
+    return <span className="text-sm text-muted-foreground">entzogen</span>;
+  }
+  if (!zugang.passwortGesetzt) {
+    return (
+      <span className="text-sm text-ferien">Einladung offen</span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-1.5 text-sm">
+      <ShieldCheck className="size-3.5 text-primary" aria-hidden />
+      aktiv
+    </span>
+  );
+}
+
+/**
+ * Zugang einrichten oder zurücksetzen.
+ *
+ * Der erzeugte Link wird genau einmal angezeigt — danach existiert nur noch
+ * sein Hash in der Datenbank. Er muss also sofort kopiert und weitergegeben
+ * werden; einen Mailversand gibt es bewusst nicht, siehe src/lib/zugang.ts.
+ */
+function ZugangDialog({
+  offen,
+  onOpenChange,
+  referent,
+}: {
+  offen: boolean;
+  onOpenChange: (offen: boolean) => void;
+  referent: ReferentZeile | null;
+}) {
+  const einrichten = richteZugangEin.bind(null, referent?.id ?? "");
+  const [einrichtenState, einrichtenAction] = useActionState<EinladungState, FormData>(
+    einrichten,
+    {},
+  );
+
+  const erneuern = neuerZugangslink.bind(null, referent?.zugang?.userId ?? "");
+  const [erneuernState, erneuernAction] = useActionState<EinladungState, FormData>(
+    erneuern,
+    {},
+  );
+
+  const state = einrichtenState.link ? einrichtenState : erneuernState;
+  const hatZugang = Boolean(referent?.zugang);
+
+  return (
+    <Dialog open={offen} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            Zugang für {referent?.vorname} {referent?.nachname}
+          </DialogTitle>
+          <DialogDescription>
+            {referent?.email
+              ? `Anmeldung mit ${referent.email}.`
+              : "Für einen Zugang wird zuerst eine E-Mail-Adresse gebraucht — sie ist die Anmeldekennung."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {state.link ? (
+            <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-4">
+              <p className="text-sm font-medium">{state.meldung}</p>
+              <p className="text-sm text-muted-foreground text-pretty">
+                Diesen Link jetzt kopieren und weitergeben — er wird nur einmal
+                angezeigt und ist bis zum{" "}
+                {state.gueltigBis
+                  ? formatDatumZeit(new Date(state.gueltigBis))
+                  : "Ablaufdatum"}{" "}
+                gültig.
+              </p>
+              <div className="flex gap-2">
+                <Input readOnly value={state.link} className="w-full font-mono text-xs" />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigator.clipboard?.writeText(state.link!)}
+                >
+                  <Copy className="size-3.5" aria-hidden />
+                  Kopieren
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          {state.fehler?._ ? (
+            <p role="alert" className="text-sm text-destructive">
+              {state.fehler._}
+            </p>
+          ) : null}
+
+          {hatZugang ? (
+            <div className="space-y-3 text-sm">
+              <p className="text-muted-foreground text-pretty">
+                {referent?.zugang?.passwortGesetzt
+                  ? "Der Zugang ist eingerichtet. Ein neuer Link setzt das Passwort zurück — das bisherige bleibt gültig, bis das neue gesetzt wurde."
+                  : "Die Einladung wurde noch nicht angenommen. Ein neuer Link entwertet den bisherigen."}
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                <form action={erneuernAction}>
+                  <Button type="submit" variant="outline">
+                    <KeyRound className="size-3.5" aria-hidden />
+                    {referent?.zugang?.passwortGesetzt
+                      ? "Passwort zurücksetzen"
+                      : "Neuen Einladungslink erzeugen"}
+                  </Button>
+                </form>
+
+                {referent?.zugang?.aktiv ? (
+                  <form action={zugangEntziehen.bind(null, referent.zugang.userId)}>
+                    <Button type="submit" variant="destructive">
+                      Zugang entziehen
+                    </Button>
+                  </form>
+                ) : null}
+              </div>
+            </div>
+          ) : (
+            <form action={einrichtenAction}>
+              <Button type="submit" disabled={!referent?.email}>
+                <KeyRound className="size-3.5" aria-hidden />
+                Zugang einrichten
+              </Button>
+            </form>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+            Schließen
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

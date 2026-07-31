@@ -23,18 +23,45 @@ datasource db {
 // ---------------------------------------------------------------------------
 
 model User {
-  id           String    @id @default(uuid())
-  email        String    @unique
-  passwordHash String
+  id String @id @default(uuid())
+
+  email String @unique
+  /// Leer, solange der Zugang eingerichtet, aber noch kein Passwort gesetzt
+  /// wurde. Eine Anmeldung ist dann nicht möglich.
+  passwordHash String?
   name         String?
-  role         String // ADMIN | REDAKTEUR
+  role         String // ADMIN | REDAKTEUR | REFERENT
   isActive     Boolean   @default(true)
   lastLoginAt  DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  fortbildungen Fortbildung[] @relation("Ersteller")
-  auditLogs     AuditLog[]
+  fortbildungen  Fortbildung[]  @relation("Ersteller")
+  tnMeldungen    Fortbildung[]  @relation("TnMeldung")
+  auditLogs      AuditLog[]
+  zugangstoken   Zugangstoken[]
+  /// Gesetzt, wenn dieses Konto zu einer Referentin oder einem Referenten gehört
+  referent       Referent?
+}
+
+/// Einmal-Token für das Einrichten eines Zugangs und für das Zurücksetzen
+/// eines Passworts.
+///
+/// Es wird nur der Hash gespeichert — wer die Datenbank liest, kann damit
+/// keinen fremden Zugang übernehmen.
+model Zugangstoken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  userId    String
+  zweck     String // EINLADUNG | PASSWORT_RESET
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 // ---------------------------------------------------------------------------
@@ -54,7 +81,8 @@ model Fortbildung {
   /// Aus dem HTML abgeleiteter Klartext — ausschließlich für die Volltextsuche
   beschreibungText String @db.Text
 
-  organisationsform String // REGIONAL | SCHILF
+  organisationsform String // SCHILF | REGIONAL (= RLFB) | ALP
+  /// Geplante Höchstzahl an Teilnehmenden
   maxTn             Int
   format            String // ESESSION | PRAESENZ
 
@@ -77,6 +105,15 @@ model Fortbildung {
   /// Fremdschlüssel der Quelle, dient dem Deduplizieren beim Import
   externalId          String? @unique
 
+  // --- Nachbereitung ---
+  /// Tatsächliche Teilnehmerzahl, nach der Veranstaltung gemeldet.
+  /// null bedeutet "noch nicht gemeldet", 0 bedeutet "niemand da gewesen".
+  tnTatsaechlich  Int?
+  tnGemeldetAm    DateTime?
+  tnGemeldetVonId String?
+  /// Freitext der meldenden Person, z. B. "zwei kurzfristige Absagen"
+  tnBemerkung     String?
+
   status      String   @default("ENTWURF") // ENTWURF | VEROEFFENTLICHT | ABGESAGT | ARCHIVIERT
   createdById String?
   createdAt   DateTime @default(now())
@@ -84,6 +121,7 @@ model Fortbildung {
 
   veranstaltungsort Veranstaltungsort       @relation(fields: [veranstaltungsortId], references: [id])
   ersteller         User?                   @relation("Ersteller", fields: [createdById], references: [id], onDelete: SetNull)
+  tnGemeldetVon     User?                   @relation("TnMeldung", fields: [tnGemeldetVonId], references: [id], onDelete: SetNull)
   schlagworte       FortbildungSchlagwort[]
   kompetenzen       FortbildungKompetenz[]
   referenten        FortbildungReferent[]
@@ -206,6 +244,11 @@ model Referent {
   aktiv        Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  /// Verknüpftes Anmeldekonto. Referentinnen und Referenten ohne Konto sind
+  /// weiterhin möglich — sie erscheinen dann nur im Verzeichnis.
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   fortbildungen FortbildungReferent[]
 

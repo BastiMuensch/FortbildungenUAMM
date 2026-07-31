@@ -286,7 +286,7 @@ async function findeOrt(daten: GemappteFortbildung): Promise<string> {
   if (ersatz) return ersatz.id;
 
   throw new Error(
-    'Es ist kein Veranstaltungsort "Online" angelegt. Bitte den Seed ausführen.',
+    "Es ist kein Online-Veranstaltungsort angelegt. Bitte den Seed ausführen.",
   );
 }
 
@@ -308,7 +308,7 @@ function vorschau(
     titel: daten.titel,
     beginn: daten.beginn.toISOString(),
     ende: daten.ende.toISOString(),
-    ort: daten.ortIstOnline ? "Online" : daten.ortName,
+    ort: daten.ortIstOnline ? "ViKo (online)" : daten.ortName,
     aktion,
     hinweis,
   };

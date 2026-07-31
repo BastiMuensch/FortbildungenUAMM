@@ -1,4 +1,5 @@
 import { berlinIsoDatum } from "@/lib/datetime";
+import { ebeneKlassen } from "@/constants/fortbildung";
 import { cn } from "@/lib/utils";
 
 const WOCHENTAG = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
@@ -22,15 +23,16 @@ const MONAT = [
  *
  * Das Datum ist die Information, nach der Lehrkräfte eine Fortbildungsliste
  * überfliegen. Als eigenständiger Block ist es auf einen Blick erfassbar,
- * während es in einer Textzeile untergeht.
+ * während es in einer Textzeile untergeht. Die Farbe zeigt zugleich die
+ * Fortbildungsebene.
  */
 export function DatumsBlock({
   datum,
-  variante = "regional",
+  organisationsform,
   className,
 }: {
   datum: Date;
-  variante?: "regional" | "schilf";
+  organisationsform: string;
   className?: string;
 }) {
   const iso = berlinIsoDatum(datum);
@@ -42,9 +44,7 @@ export function DatumsBlock({
     <div
       className={cn(
         "flex size-14 shrink-0 flex-col items-center justify-center rounded-xl leading-none",
-        variante === "schilf"
-          ? "bg-schilf-weich text-schilf"
-          : "bg-regional-weich text-regional",
+        ebeneKlassen(organisationsform).flaeche,
         className,
       )}
       // Für Screenreader steht das vollständige Datum im Fließtext der Karte.

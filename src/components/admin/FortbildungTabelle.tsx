@@ -11,7 +11,11 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { formatDatumZeit, formatZeit } from "@/lib/datetime";
-import { formatLabel, organisationsformLabel } from "@/constants/fortbildung";
+import {
+  ebeneKlassen,
+  formatLabel,
+  organisationsformKurz,
+} from "@/constants/fortbildung";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 
 interface Zeile {
@@ -23,6 +27,7 @@ interface Zeile {
   beginn: Date;
   ende: Date;
   maxTn: number;
+  tnTatsaechlich: number | null;
   status: string;
   quelle: string;
   veranstaltungsort: { name: string; ort: string | null; istOnline: boolean };
@@ -41,7 +46,9 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
             <TableHead>Format</TableHead>
             <TableHead className="min-w-40">Ort</TableHead>
             <TableHead className="min-w-40">Referenten</TableHead>
-            <TableHead className="text-right">Plätze</TableHead>
+            <TableHead className="text-right" title="Tatsächliche Teilnehmerzahl von geplanten Plätzen">
+              TN / Plätze
+            </TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="w-10" />
           </TableRow>
@@ -77,11 +84,14 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
               </TableCell>
 
               <TableCell className="whitespace-nowrap">
-                <Badge
-                  variant={f.organisationsform === "SCHILF" ? "secondary" : "outline"}
+                {/* Dieselbe Farbzuordnung wie im Frontend und im Kalender. */}
+                <span
+                  className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${
+                    ebeneKlassen(f.organisationsform).flaeche
+                  }`}
                 >
-                  {organisationsformLabel(f.organisationsform)}
-                </Badge>
+                  {organisationsformKurz(f.organisationsform)}
+                </span>
               </TableCell>
 
               <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
@@ -107,7 +117,14 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
                       .join(", ")}
               </TableCell>
 
-              <TableCell className="text-right tabular-nums">{f.maxTn}</TableCell>
+              <TableCell className="text-right tabular-nums whitespace-nowrap">
+                {f.tnTatsaechlich !== null ? (
+                  <span className="font-medium">{f.tnTatsaechlich}</span>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
+                <span className="text-muted-foreground"> / {f.maxTn}</span>
+              </TableCell>
 
               <TableCell>
                 <StatusBadge status={f.status} />

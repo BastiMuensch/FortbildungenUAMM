@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 
   for (const f of fortbildungen) {
     const ort = f.veranstaltungsort.istOnline
-      ? "Online"
+      ? f.veranstaltungsort.name
       : [f.veranstaltungsort.name, f.veranstaltungsort.ort]
           .filter(Boolean)
           .join(", ");

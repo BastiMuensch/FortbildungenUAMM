@@ -11,12 +11,77 @@ type ValueOf<T extends ReadonlyArray<{ value: string }>> = T[number]["value"];
 
 // ---------------------------------------------------------------------------
 
+/**
+ * Die drei Ebenen der bayerischen Lehrerfortbildung.
+ *
+ * Der Datenbankwert `REGIONAL` bleibt aus Rücksicht auf bestehende Einträge
+ * unverändert — nach außen heißt diese Ebene RLFB.
+ */
 export const ORGANISATIONSFORMEN = [
-  { value: "REGIONAL", label: "Fortbildung (regional)", kurz: "Regional" },
-  { value: "SCHILF", label: "SchiLf", kurz: "SchiLf" },
+  {
+    value: "SCHILF",
+    label: "SchiLf",
+    kurz: "SchiLf",
+    beschreibung: "Schulinterne Lehrerfortbildung an einer einzelnen Schule.",
+  },
+  {
+    value: "REGIONAL",
+    label: "RLFB (regional)",
+    kurz: "RLFB",
+    beschreibung:
+      "Regionale Lehrerfortbildung des Schulamts, ausgeschrieben über FIBS.",
+  },
+  {
+    value: "ALP",
+    label: "ALP Dillingen",
+    kurz: "ALP",
+    beschreibung:
+      "Zentrale Lehrerfortbildung der Akademie für Lehrerfortbildung und Personalführung.",
+  },
 ] as const;
 
 export type Organisationsform = ValueOf<typeof ORGANISATIONSFORMEN>;
+
+/** Reihenfolge für Berichte und Exporte: SchiLf, RLFB, ALP. */
+export const ORGANISATIONSFORM_REIHENFOLGE: Organisationsform[] = [
+  "SCHILF",
+  "REGIONAL",
+  "ALP",
+];
+
+/** Kurzform für Tabellen und PDF-Überschriften. */
+export function organisationsformKurz(wert: string): string {
+  return ORGANISATIONSFORMEN.find((o) => o.value === wert)?.kurz ?? wert;
+}
+
+/**
+ * Farbklassen je Ebene.
+ *
+ * Als vollständige Klassennamen hinterlegt, weil Tailwind zusammengesetzte
+ * Namen wie `bg-${wert}` nicht findet. Die Farben selbst stehen als Token in
+ * globals.css.
+ */
+const EBENE_KLASSEN = {
+  SCHILF: {
+    text: "text-schilf",
+    flaeche: "bg-schilf-weich text-schilf",
+    balken: "bg-schilf",
+  },
+  REGIONAL: {
+    text: "text-regional",
+    flaeche: "bg-regional-weich text-regional",
+    balken: "bg-regional",
+  },
+  ALP: {
+    text: "text-alp",
+    flaeche: "bg-alp-weich text-alp",
+    balken: "bg-alp",
+  },
+} as const;
+
+export function ebeneKlassen(wert: string) {
+  return EBENE_KLASSEN[wert as keyof typeof EBENE_KLASSEN] ?? EBENE_KLASSEN.REGIONAL;
+}
 
 // ---------------------------------------------------------------------------
 
@@ -114,6 +179,12 @@ export const ROLLEN = [
     value: "REDAKTEUR",
     label: "Redaktion",
     beschreibung: "Darf Fortbildungen, Referenten, Orte und Schlagworte pflegen.",
+  },
+  {
+    value: "REFERENT",
+    label: "Referent",
+    beschreibung:
+      "Darf eigene Fortbildungen anlegen und pflegen sowie Teilnehmerzahlen melden.",
   },
 ] as const;
 

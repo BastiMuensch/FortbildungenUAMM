@@ -3,6 +3,7 @@ import { ArrowRight, Clock, Globe, MapPin, Users } from "lucide-react";
 
 import { formatDatumLang, formatZeit } from "@/lib/datetime";
 import {
+  ebeneKlassen,
   formatLabel,
   organisationsformLabel,
   schulartLabel,
@@ -15,9 +16,9 @@ import { DatumsBlock } from "./DatumsBlock";
  * Ergebniskachel für Listen und Startseite.
  *
  * Aufbau: links das Datum als eigenständiger Block, rechts der Inhalt. Die
- * Farbe der linken Kante und des Datumsblocks unterscheidet regionale
- * Fortbildungen von SchiLf — dieselbe Zuordnung wie im Kalender, damit man
- * die Legende nur einmal lernen muss.
+ * Farbe der linken Kante und des Datumsblocks zeigt die Fortbildungsebene
+ * (SchiLf, RLFB, ALP) — dieselbe Zuordnung wie im Kalender, damit man die
+ * Legende nur einmal lernen muss.
  */
 export function FortbildungKarte({
   fortbildung,
@@ -26,7 +27,7 @@ export function FortbildungKarte({
   fortbildung: FortbildungKachel;
   maxTn?: number;
 }) {
-  const schilf = fortbildung.organisationsform === "SCHILF";
+  const ebene = ebeneKlassen(fortbildung.organisationsform);
   const abgesagt = fortbildung.status === "ABGESAGT";
   const online = fortbildung.veranstaltungsort.istOnline;
 
@@ -40,10 +41,7 @@ export function FortbildungKarte({
       {/* Farbige Kante als Sortiermerkmal */}
       <span
         aria-hidden
-        className={cn(
-          "absolute inset-y-0 left-0 w-1",
-          schilf ? "bg-schilf" : "bg-regional",
-        )}
+        className={cn("absolute inset-y-0 left-0 w-1", ebene.balken)}
       />
 
       <Link
@@ -52,17 +50,12 @@ export function FortbildungKarte({
       >
         <DatumsBlock
           datum={fortbildung.beginn}
-          variante={schilf ? "schilf" : "regional"}
+          organisationsform={fortbildung.organisationsform}
         />
 
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-            <span
-              className={cn(
-                "font-medium",
-                schilf ? "text-schilf" : "text-regional",
-              )}
-            >
+            <span className={cn("font-medium", ebene.text)}>
               {organisationsformLabel(fortbildung.organisationsform)}
             </span>
             <span className="text-muted-foreground" aria-hidden>

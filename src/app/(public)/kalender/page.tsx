@@ -93,11 +93,15 @@ export default async function KalenderSeite({
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <span className="size-3 rounded-sm bg-regional" aria-hidden />
-          Fortbildung (regional)
+          RLFB (regional)
         </span>
         <span className="flex items-center gap-1.5">
           <span className="size-3 rounded-sm bg-schilf" aria-hidden />
           SchiLf
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="size-3 rounded-sm bg-alp" aria-hidden />
+          ALP Dillingen
         </span>
         <span className="flex items-center gap-1.5">
           <span className="size-3 rounded-sm bg-ferien" aria-hidden />

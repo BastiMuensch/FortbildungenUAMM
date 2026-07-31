@@ -13,6 +13,21 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    rules: {
+      // Server Actions haben eine feste Signatur (bisheriger Zustand,
+      // FormData). Nicht jede Aktion braucht beide Argumente — ein
+      // Unterstrich vorne markiert das absichtlich Ungenutzte.
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

@@ -19,6 +19,7 @@ import {
 import { formatDatumLang, formatZeitraum } from "@/lib/datetime";
 import { terminWarnung } from "@/lib/ferien";
 import {
+  ebeneKlassen,
   formatLabel,
   niveaustufeLabel,
   organisationsformLabel,
@@ -71,7 +72,7 @@ export default async function FortbildungDetail({
     bereiche.set(bereich, liste);
   }
 
-  const schilf = fortbildung.organisationsform === "SCHILF";
+  const ebene = ebeneKlassen(fortbildung.organisationsform);
 
   return (
     <article className="mx-auto max-w-3xl">
@@ -86,15 +87,13 @@ export default async function FortbildungDetail({
       <header className="flex gap-5">
         <DatumsBlock
           datum={fortbildung.beginn}
-          variante={schilf ? "schilf" : "regional"}
+          organisationsform={fortbildung.organisationsform}
           className="size-20 rounded-2xl [&>span:nth-child(2)]:text-3xl"
         />
 
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">
-            <span
-              className={`font-medium ${schilf ? "text-schilf" : "text-regional"}`}
-            >
+            <span className={`font-medium ${ebene.text}`}>
               {organisationsformLabel(fortbildung.organisationsform)}
             </span>
             <Badge variant="outline">{formatLabel(fortbildung.format)}</Badge>

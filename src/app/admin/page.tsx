@@ -2,14 +2,15 @@ import Link from "next/link";
 import {
   CalendarDays,
   CalendarPlus,
-  Clock,
+  ClipboardCheck,
   Download,
   FileSpreadsheet,
+  FileText,
   PencilLine,
 } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { ERFASSER, fortbildungScope, requireRole } from "@/lib/auth";
 import { baueUrl, filterZuWhere, leseFilter, type SuchParameter } from "@/lib/filter";
 import { aktuellesSchuljahr, schuljahrZeitraum } from "@/lib/datetime";
 import { Button } from "@/components/ui/button";
@@ -18,15 +19,19 @@ import { FortbildungTabelle } from "@/components/admin/FortbildungTabelle";
 
 export const metadata = { title: "Fortbildungen verwalten" };
 
-/** Die Reiter der Listenansicht. Jeder setzt eine feste Vorfilterung. */
+/**
+ * Die Reiter der Listenansicht. Jeder setzt eine feste Vorfilterung.
+ * Reihenfolge wie im Bericht: SchiLf, RLFB, ALP.
+ */
 const REITER = [
   { id: "alle", label: "Alle", filter: {} },
   {
-    id: "regional",
-    label: "Fortbildung (regional)",
-    filter: { organisationsform: "REGIONAL" as string | undefined },
+    id: "schilf",
+    label: "SchiLf",
+    filter: { organisationsform: "SCHILF" as string | undefined },
   },
-  { id: "schilf", label: "SchiLf", filter: { organisationsform: "SCHILF" } },
+  { id: "regional", label: "RLFB", filter: { organisationsform: "REGIONAL" } },
+  { id: "alp", label: "ALP", filter: { organisationsform: "ALP" } },
   { id: "entwuerfe", label: "Entwürfe", filter: { status: "ENTWURF" } },
 ] as const;
 
@@ -35,7 +40,7 @@ export default async function AdminDashboard({
 }: {
   searchParams: Promise<SuchParameter>;
 }) {
-  await requireRole("ADMIN", "REDAKTEUR");
+  const user = await requireRole(...ERFASSER);
 
   const params = await searchParams;
   const aktiverReiter =
@@ -43,7 +48,10 @@ export default async function AdminDashboard({
 
   const filter = leseFilter(params);
   const reiterFilter = REITER.find((r) => r.id === aktiverReiter)!.filter;
-  const where = filterZuWhere({ ...filter, ...reiterFilter });
+
+  // Referentinnen und Referenten sehen ausschließlich ihre eigenen Termine.
+  const scope = fortbildungScope(user);
+  const where = { AND: [scope, filterZuWhere({ ...filter, ...reiterFilter })] };
 
   const schuljahr = aktuellesSchuljahr();
   const { start, ende } = schuljahrZeitraum(schuljahr);
@@ -65,6 +73,7 @@ export default async function AdminDashboard({
         beginn: true,
         ende: true,
         maxTn: true,
+        tnTatsaechlich: true,
         status: true,
         quelle: true,
         veranstaltungsort: { select: { name: true, ort: true, istOnline: true } },
@@ -80,18 +89,25 @@ export default async function AdminDashboard({
     }),
 
     Promise.all([
-      prisma.fortbildung.count({ where: { beginn: { gte: start, lte: ende } } }),
-      prisma.fortbildung.count({ where: { status: "ENTWURF" } }),
+      prisma.fortbildung.count({
+        where: { AND: [scope, { beginn: { gte: start, lte: ende } }] },
+      }),
+      prisma.fortbildung.count({ where: { AND: [scope, { status: "ENTWURF" }] } }),
+      // Offene Teilnehmermeldungen: vergangen, nicht abgesagt, keine Zahl.
       prisma.fortbildung.count({
         where: {
-          status: "VEROEFFENTLICHT",
-          beginn: { gte: new Date(), lte: in30Tagen },
+          AND: [
+            scope,
+            { ende: { lt: new Date() } },
+            { status: { not: "ABGESAGT" } },
+            { tnTatsaechlich: null },
+          ],
         },
       }),
     ]),
   ]);
 
-  const [imSchuljahr, entwuerfe, naechste30Tage] = kennzahlen;
+  const [imSchuljahr, entwuerfe, offeneMeldungen] = kennzahlen;
 
   return (
     <div className="space-y-6">
@@ -103,12 +119,21 @@ export default async function AdminDashboard({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button nativeButton={false}
             variant="outline"
-            render={<a href={exportLink(params, aktiverReiter)}>
+            render={<a href={exportLink("/api/admin/export", params, aktiverReiter)}>
                 <FileSpreadsheet className="size-4" aria-hidden />
-                Excel-Export
+                Excel
+              </a>
+            }
+          />
+          <Button nativeButton={false}
+            variant="outline"
+            title="Bericht nach SchiLf, RLFB und ALP gegliedert"
+            render={<a href={exportLink("/api/admin/export/pdf", params, aktiverReiter)}>
+                <FileText className="size-4" aria-hidden />
+                PDF-Bericht
               </a>
             }
           />
@@ -129,16 +154,17 @@ export default async function AdminDashboard({
           icon={CalendarDays}
         />
         <Kachel
-          wert={naechste30Tage}
-          label="veröffentlicht in den nächsten 30 Tagen"
-          icon={Clock}
-        />
-        <Kachel
           wert={entwuerfe}
           label="Entwürfe, noch nicht veröffentlicht"
           icon={PencilLine}
-          hervorheben={entwuerfe > 0}
           href={baueUrl("/admin", {}, { reiter: "entwuerfe" })}
+        />
+        <Kachel
+          wert={offeneMeldungen}
+          label="Teilnehmerzahlen noch nicht gemeldet"
+          icon={ClipboardCheck}
+          hervorheben={offeneMeldungen > 0}
+          href="/admin/nachbereitung"
         />
       </div>
 
@@ -251,8 +277,8 @@ function Kachel({
   );
 }
 
-function exportLink(params: SuchParameter, reiter: string): string {
-  return baueUrl("/api/admin/export", params, {
+function exportLink(basis: string, params: SuchParameter, reiter: string): string {
+  return baueUrl(basis, params, {
     reiter: reiter === "alle" ? undefined : reiter,
   });
 }

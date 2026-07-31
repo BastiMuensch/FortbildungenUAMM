@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import ExcelJS from "exceljs";
 
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/auth";
+import { fortbildungScope, getSessionUser } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 import { filterZuWhere, leseFilter, type SuchParameter } from "@/lib/filter";
 import { formatDatumZeit } from "@/lib/datetime";
@@ -19,6 +19,7 @@ export const dynamic = "force-dynamic";
 const REITER_FILTER: Record<string, Record<string, string>> = {
   regional: { organisationsform: "REGIONAL" },
   schilf: { organisationsform: "SCHILF" },
+  alp: { organisationsform: "ALP" },
   entwuerfe: { status: "ENTWURF" },
 };
 
@@ -33,14 +34,19 @@ export async function GET(request: NextRequest) {
   );
   const reiter = typeof params.reiter === "string" ? params.reiter : "";
 
-  const where = filterZuWhere({
-    ...leseFilter(params),
-    ...(REITER_FILTER[reiter] ?? {}),
-  });
+  const where = {
+    AND: [
+      // Referentinnen und Referenten exportieren nur ihre eigenen Termine.
+      fortbildungScope(user),
+      filterZuWhere({ ...leseFilter(params), ...(REITER_FILTER[reiter] ?? {}) }),
+    ],
+  };
 
   const fortbildungen = await prisma.fortbildung.findMany({
     where,
-    orderBy: { beginn: "asc" },
+    // Nach Ebene gruppiert, innerhalb der Ebene nach Datum — dieselbe
+    // Gliederung wie im PDF-Bericht.
+    orderBy: [{ organisationsform: "asc" }, { beginn: "asc" }],
     include: {
       veranstaltungsort: true,
       schlagworte: { include: { schlagwort: true } },
@@ -65,7 +71,9 @@ export async function GET(request: NextRequest) {
     { header: "Organisationsform", key: "organisationsform", width: 20 },
     { header: "Format", key: "format", width: 12 },
     { header: "Veranstaltungsort", key: "ort", width: 30 },
-    { header: "Max. TN", key: "maxTn", width: 9 },
+    { header: "Plätze geplant", key: "maxTn", width: 13 },
+    { header: "TN tatsächlich", key: "tnIst", width: 13 },
+    { header: "TN-Bemerkung", key: "tnBemerkung", width: 26 },
     { header: "Schularten", key: "schularten", width: 28 },
     { header: "Fach", key: "fach", width: 16 },
     { header: "Niveaustufe", key: "niveaustufe", width: 16 },
@@ -89,6 +97,10 @@ export async function GET(request: NextRequest) {
       format: zelle(formatLabel(f.format)),
       ort: zelle(f.veranstaltungsort.name),
       maxTn: f.maxTn,
+      // Leer statt 0, wenn noch nichts gemeldet wurde — sonst verfälscht die
+      // Meldelücke jede Summenbildung in der Tabellenkalkulation.
+      tnIst: f.tnTatsaechlich ?? "",
+      tnBemerkung: zelle(f.tnBemerkung ?? ""),
       schularten: zelle(f.schularten.map(schulartLabel).join(", ")),
       fach: zelle(f.fach ?? ""),
       niveaustufe: zelle(f.niveaustufe ? niveaustufeLabel(f.niveaustufe) : ""),

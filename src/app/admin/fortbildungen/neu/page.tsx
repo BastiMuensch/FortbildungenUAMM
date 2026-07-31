@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
-import { requireRole } from "@/lib/auth";
+import { ERFASSER, requireRole } from "@/lib/auth";
 import { ladeFormularDaten } from "@/lib/formularDaten";
-import { FortbildungForm } from "@/components/admin/FortbildungForm";
+import { FortbildungWizard } from "@/components/admin/FortbildungForm/Wizard";
 
 export const metadata = { title: "Neue Fortbildung" };
 
 export default async function NeueFortbildungPage() {
-  await requireRole("ADMIN", "REDAKTEUR");
+  await requireRole(...ERFASSER);
   const daten = await ladeFormularDaten();
 
   return (
@@ -22,13 +22,13 @@ export default async function NeueFortbildungPage() {
       </Link>
 
       <h1 className="mb-1 text-2xl font-semibold tracking-tight">Neue Fortbildung</h1>
-      <p className="mb-8 text-sm text-muted-foreground">
-        Felder mit <span className="text-destructive">*</span> sind Pflichtfelder. Der
-        Eintrag ist zunächst ein Entwurf und wird erst nach dem Veröffentlichen für
-        Lehrkräfte sichtbar.
+      <p className="mb-8 max-w-2xl text-sm text-muted-foreground text-pretty">
+        In sechs Schritten zur fertigen Ausschreibung. Jeder Schritt wird
+        geprüft, bevor es weitergeht — so bleibt nichts liegen. Als Entwurf
+        lässt sich jederzeit speichern, auch wenn noch etwas fehlt.
       </p>
 
-      <FortbildungForm {...daten} />
+      <FortbildungWizard {...daten} />
     </div>
   );
 }

@@ -173,6 +173,8 @@
   --regional-weich: oklch(0.95 0.03 252);
   --schilf: oklch(0.52 0.11 175);
   --schilf-weich: oklch(0.95 0.04 175);
+  --alp: oklch(0.5 0.14 305);
+  --alp-weich: oklch(0.95 0.035 305);
 
   /* Kalender-Hinterlegungen */
   --ferien: oklch(0.74 0.15 75);
@@ -214,6 +216,8 @@
   --regional-weich: oklch(0.3 0.05 252);
   --schilf: oklch(0.72 0.1 175);
   --schilf-weich: oklch(0.3 0.04 175);
+  --alp: oklch(0.74 0.12 305);
+  --alp-weich: oklch(0.31 0.05 305);
 
   --ferien: oklch(0.78 0.13 78);
   --ferien-weich: oklch(0.29 0.05 80);
@@ -226,6 +230,8 @@
   --color-regional-weich: var(--regional-weich);
   --color-schilf: var(--schilf);
   --color-schilf-weich: var(--schilf-weich);
+  --color-alp: var(--alp);
+  --color-alp-weich: var(--alp-weich);
   --color-ferien: var(--ferien);
   --color-ferien-weich: var(--ferien-weich);
   --color-feiertag: var(--feiertag);

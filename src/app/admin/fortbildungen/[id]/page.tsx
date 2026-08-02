@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CheckCircle2, ChevronLeft, Copy, ExternalLink } from "lucide-react";
+import { CheckCircle2, ChevronLeft, Copy, ExternalLink, Undo2 } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
@@ -9,7 +9,15 @@ import { duplizieren } from "@/actions/fortbildung";
 import { FortbildungForm } from "@/components/admin/FortbildungForm";
 import { LoeschenKnopf } from "@/components/admin/LoeschenKnopf";
 import { Button } from "@/components/ui/button";
-import { STATUS_OEFFENTLICH, type FortbildungStatus } from "@/constants/fortbildung";
+import {
+  STATUS_OEFFENTLICH,
+  darfFreigeben,
+  type FortbildungStatus,
+} from "@/constants/fortbildung";
+import { formatDatumZeit } from "@/lib/datetime";
+import { FibsKennzeichen, StatusKennzeichen } from "@/components/admin/Kennzeichen";
+import { FibsSchalter } from "@/components/admin/FibsSchalter";
+import { FreigabeLeiste } from "@/components/admin/FreigabeLeiste";
 
 export const metadata = { title: "Fortbildung bearbeiten" };
 
@@ -31,6 +39,8 @@ export default async function FortbildungBearbeitenPage({
         schlagworte: { include: { schlagwort: { select: { name: true, istPflicht: true } } } },
         kompetenzen: { select: { kompetenzCode: true } },
         referenten: { select: { referentId: true } },
+        fibsEingetragenVon: { select: { name: true, email: true } },
+        freigegebenVon: { select: { name: true, email: true } },
       },
     }),
     ladeFormularDaten(),
@@ -41,6 +51,7 @@ export default async function FortbildungBearbeitenPage({
   const istOeffentlich = STATUS_OEFFENTLICH.includes(
     fortbildung.status as FortbildungStatus,
   );
+  const freigabeberechtigt = darfFreigeben(user.role);
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -64,10 +75,26 @@ export default async function FortbildungBearbeitenPage({
           <h1 className="text-2xl font-semibold tracking-tight">
             Fortbildung bearbeiten
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <StatusKennzeichen status={fortbildung.status} />
+            <FibsKennzeichen
+              inFibs={fortbildung.inFibs}
+              lehrgangsnummer={fortbildung.fibsLehrgangsnummer}
+            />
+          </div>
+
+          <p className="mt-2 text-sm text-muted-foreground">
             {fortbildung.quelle === "FIBS_IMPORT"
               ? "Aus FIBS importiert. Änderungen hier werden von einem erneuten Import nicht überschrieben."
               : "Manuell erfasst."}
+            {fortbildung.freigegebenAm
+              ? ` Freigegeben am ${formatDatumZeit(fortbildung.freigegebenAm)}${
+                  fortbildung.freigegebenVon
+                    ? ` von ${fortbildung.freigegebenVon.name ?? fortbildung.freigegebenVon.email}`
+                    : ""
+                }.`
+              : ""}
           </p>
         </div>
 
@@ -97,8 +124,52 @@ export default async function FortbildungBearbeitenPage({
         </div>
       </div>
 
+      {fortbildung.freigabeNotiz ? (
+        <div className="mb-6 rounded-xl bg-ferien-weich px-4 py-3 text-sm text-ferien">
+          <p className="flex items-start gap-2 font-medium">
+            <Undo2 className="mt-0.5 size-4 shrink-0" aria-hidden />
+            Von der Redaktion zurückgewiesen
+          </p>
+          <p className="mt-1 pl-6 text-pretty">{fortbildung.freigabeNotiz}</p>
+        </div>
+      ) : null}
+
+      {freigabeberechtigt && fortbildung.status === "EINGEREICHT" ? (
+        <div className="mb-6 rounded-xl border bg-card p-5">
+          <p className="text-sm font-medium">Zur Freigabe eingereicht</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {fortbildung.eingereichtAm
+              ? `Eingereicht am ${formatDatumZeit(fortbildung.eingereichtAm)}.`
+              : ""}{" "}
+            Nach der Freigabe erscheint die Fortbildung im Frontend.
+          </p>
+          <FreigabeLeiste
+            id={fortbildung.id}
+            titel={fortbildung.titel}
+            lehrgangsnummer={fortbildung.fibsLehrgangsnummer}
+          />
+        </div>
+      ) : null}
+
+      {freigabeberechtigt ? (
+        <div className="mb-6">
+          <FibsSchalter
+            id={fortbildung.id}
+            inFibs={fortbildung.inFibs}
+            lehrgangsnummer={fortbildung.fibsLehrgangsnummer}
+            eingetragenAm={fortbildung.fibsEingetragenAm}
+            eingetragenVon={
+              fortbildung.fibsEingetragenVon?.name ??
+              fortbildung.fibsEingetragenVon?.email ??
+              null
+            }
+          />
+        </div>
+      ) : null}
+
       <FortbildungForm
         {...daten}
+        darfVeroeffentlichen={freigabeberechtigt}
         fortbildung={{
           id: fortbildung.id,
           titel: fortbildung.titel,

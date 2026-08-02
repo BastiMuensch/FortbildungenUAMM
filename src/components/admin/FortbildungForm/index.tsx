@@ -48,12 +48,14 @@ export function FortbildungForm({
   kompetenzBereiche,
   referenten,
   schlagwortVorschlaege,
+  darfVeroeffentlichen,
 }: {
   fortbildung?: FortbildungWerte;
   orte: OrtOption[];
   kompetenzBereiche: KompetenzBereichOption[];
   referenten: ReferentOption[];
   schlagwortVorschlaege: string[];
+  darfVeroeffentlichen: boolean;
 }) {
   const action = saveFortbildung.bind(null, fortbildung?.id ?? null);
   const [state, formAction] = useActionState<FormularState, FormData>(action, {});
@@ -75,7 +77,7 @@ export function FortbildungForm({
     return menge;
   }, [fehler]);
 
-  const gemeinsam = { zustand, fehler, fortbildung };
+  const gemeinsam = { zustand, fehler, fortbildung, darfVeroeffentlichen };
 
   return (
     <form action={formAction} className="space-y-6">

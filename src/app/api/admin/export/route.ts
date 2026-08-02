@@ -20,6 +20,7 @@ const REITER_FILTER: Record<string, Record<string, string>> = {
   regional: { organisationsform: "REGIONAL" },
   schilf: { organisationsform: "SCHILF" },
   alp: { organisationsform: "ALP" },
+  eingereicht: { status: "EINGEREICHT" },
   entwuerfe: { status: "ENTWURF" },
 };
 
@@ -80,7 +81,8 @@ export async function GET(request: NextRequest) {
     { header: "Kompetenzen", key: "kompetenzen", width: 30 },
     { header: "Schlagworte", key: "schlagworte", width: 30 },
     { header: "Referenten", key: "referenten", width: 30 },
-    { header: "Status", key: "status", width: 14 },
+    { header: "Status", key: "status", width: 22 },
+    { header: "In FIBS", key: "inFibs", width: 10 },
     { header: "FIBS-Nummer", key: "fibs", width: 18 },
     { header: "FIBS-Link", key: "fibsUrl", width: 40 },
   ];
@@ -119,6 +121,7 @@ export async function GET(request: NextRequest) {
           .join(", "),
       ),
       status: zelle(statusLabel(f.status)),
+      inFibs: f.inFibs ? "ja" : "nein",
       fibs: zelle(f.fibsLehrgangsnummer ?? ""),
       fibsUrl: zelle(f.fibsUrl ?? ""),
     });

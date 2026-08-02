@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { fortbildungScope, getSessionUser } from "@/lib/auth";
+import { darfFreigeben } from "@/constants/fortbildung";
 import { Seitenleiste } from "@/components/admin/Seitenleiste";
 
 export const metadata = {
@@ -18,17 +19,23 @@ export default async function AdminLayout({
   const user = await getSessionUser();
   if (!user) redirect("/login?weiter=/admin");
 
-  // Zahl neben "Nachbereitung": vergangene Termine ohne Teilnehmermeldung.
-  const offeneMeldungen = await prisma.fortbildung.count({
-    where: {
-      AND: [
-        fortbildungScope(user),
-        { ende: { lt: new Date() } },
-        { status: { not: "ABGESAGT" } },
-        { tnTatsaechlich: null },
-      ],
-    },
-  });
+  const [offeneMeldungen, offeneFreigaben] = await Promise.all([
+    // Zahl neben "Nachbereitung": vergangene Termine ohne Teilnehmermeldung.
+    prisma.fortbildung.count({
+      where: {
+        AND: [
+          fortbildungScope(user),
+          { ende: { lt: new Date() } },
+          { status: { not: "ABGESAGT" } },
+          { tnTatsaechlich: null },
+        ],
+      },
+    }),
+    // Zahl neben "Freigaben" — nur für die Redaktion überhaupt sichtbar.
+    darfFreigeben(user.role)
+      ? prisma.fortbildung.count({ where: { status: "EINGEREICHT" } })
+      : 0,
+  ]);
 
   return (
     <div className="flex min-h-full flex-col lg:flex-row">
@@ -36,6 +43,7 @@ export default async function AdminLayout({
         name={user.name ?? user.email}
         rolle={user.role}
         offeneMeldungen={offeneMeldungen}
+        offeneFreigaben={offeneFreigaben}
       />
 
       <main className="min-w-0 flex-1 px-4 py-8 sm:px-8">

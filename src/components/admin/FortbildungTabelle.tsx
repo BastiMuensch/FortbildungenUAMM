@@ -16,7 +16,10 @@ import {
   formatLabel,
   organisationsformKurz,
 } from "@/constants/fortbildung";
-import { StatusBadge } from "@/components/admin/StatusBadge";
+import {
+  FibsKennzeichen,
+  StatusKennzeichen,
+} from "@/components/admin/Kennzeichen";
 
 interface Zeile {
   id: string;
@@ -29,6 +32,8 @@ interface Zeile {
   maxTn: number;
   tnTatsaechlich: number | null;
   status: string;
+  inFibs: boolean;
+  fibsLehrgangsnummer: string | null;
   quelle: string;
   veranstaltungsort: { name: string; ort: string | null; istOnline: boolean };
   referenten: Array<{ referent: { vorname: string; nachname: string } }>;
@@ -50,6 +55,7 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
               TN / Plätze
             </TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>FIBS</TableHead>
             <TableHead className="w-10" />
           </TableRow>
         </TableHeader>
@@ -127,7 +133,14 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
               </TableCell>
 
               <TableCell>
-                <StatusBadge status={f.status} />
+                <StatusKennzeichen status={f.status} />
+              </TableCell>
+
+              <TableCell>
+                <FibsKennzeichen
+                  inFibs={f.inFibs}
+                  lehrgangsnummer={f.fibsLehrgangsnummer}
+                />
               </TableCell>
 
               <TableCell>

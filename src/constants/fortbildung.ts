@@ -131,7 +131,13 @@ export const STATUS = [
   {
     value: "ENTWURF",
     label: "Entwurf",
-    beschreibung: "Nur intern sichtbar, erscheint nicht im Frontend.",
+    beschreibung: "In Arbeit. Nur intern sichtbar, erscheint nicht im Frontend.",
+  },
+  {
+    value: "EINGEREICHT",
+    label: "Zur Freigabe eingereicht",
+    beschreibung:
+      "Wartet auf die Freigabe durch die Redaktion. Noch nicht im Frontend.",
   },
   {
     value: "VEROEFFENTLICHT",
@@ -157,6 +163,23 @@ export const STATUS_OEFFENTLICH: FortbildungStatus[] = [
   "VEROEFFENTLICHT",
   "ABGESAGT",
 ];
+
+/**
+ * Status, die Referentinnen und Referenten selbst setzen dürfen.
+ *
+ * Veröffentlichen ist ausdrücklich der Redaktion vorbehalten — eine
+ * Ausschreibung auf der Seite des Schulamts soll niemand ohne Gegenlesen
+ * online stellen können.
+ */
+export const STATUS_FUER_REFERENTEN: FortbildungStatus[] = [
+  "ENTWURF",
+  "EINGEREICHT",
+];
+
+/** Darf diese Rolle selbst veröffentlichen und freigeben? */
+export function darfFreigeben(rolle: Rolle): boolean {
+  return rolle === "ADMIN" || rolle === "REDAKTEUR";
+}
 
 // ---------------------------------------------------------------------------
 

@@ -2,14 +2,16 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
 import { ERFASSER, requireRole } from "@/lib/auth";
+import { darfFreigeben } from "@/constants/fortbildung";
 import { ladeFormularDaten } from "@/lib/formularDaten";
 import { FortbildungWizard } from "@/components/admin/FortbildungForm/Wizard";
 
 export const metadata = { title: "Neue Fortbildung" };
 
 export default async function NeueFortbildungPage() {
-  await requireRole(...ERFASSER);
+  const user = await requireRole(...ERFASSER);
   const daten = await ladeFormularDaten();
+  const freigabeberechtigt = darfFreigeben(user.role);
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -26,9 +28,12 @@ export default async function NeueFortbildungPage() {
         In sechs Schritten zur fertigen Ausschreibung. Jeder Schritt wird
         geprüft, bevor es weitergeht — so bleibt nichts liegen. Als Entwurf
         lässt sich jederzeit speichern, auch wenn noch etwas fehlt.
+        {freigabeberechtigt
+          ? ""
+          : " Zum Schluss wird die Fortbildung zur Freigabe eingereicht; veröffentlicht wird sie von der Redaktion."}
       </p>
 
-      <FortbildungWizard {...daten} />
+      <FortbildungWizard {...daten} darfVeroeffentlichen={freigabeberechtigt} />
     </div>
   );
 }

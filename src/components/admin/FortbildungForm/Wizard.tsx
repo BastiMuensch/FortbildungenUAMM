@@ -60,11 +60,13 @@ export function FortbildungWizard({
   kompetenzBereiche,
   referenten,
   schlagwortVorschlaege,
+  darfVeroeffentlichen,
 }: {
   orte: OrtOption[];
   kompetenzBereiche: KompetenzBereichOption[];
   referenten: ReferentOption[];
   schlagwortVorschlaege: string[];
+  darfVeroeffentlichen: boolean;
 }) {
   const action = saveFortbildung.bind(null, null);
   const [state, formAction] = useActionState<FormularState, FormData>(action, {});
@@ -109,7 +111,7 @@ export function FortbildungWizard({
     setIndex(ziel);
   }
 
-  const gemeinsam = { zustand, fehler };
+  const gemeinsam = { zustand, fehler, darfVeroeffentlichen };
 
   return (
     <form ref={formularRef} action={formAction} className="space-y-8">
@@ -172,7 +174,11 @@ export function FortbildungWizard({
             referenten={referenten}
             kompetenzBereiche={kompetenzBereiche}
           />
-          <VeroeffentlichungFelder zustand={zustand} fehler={fehler} />
+          <VeroeffentlichungFelder
+            zustand={zustand}
+            fehler={fehler}
+            darfVeroeffentlichen={darfVeroeffentlichen}
+          />
         </div>
       </Abschnitt>
 
@@ -185,7 +191,10 @@ export function FortbildungWizard({
         ) : null}
 
         {letzter ? (
-          <Speichern status={zustand.status} />
+          <Speichern
+            status={zustand.status}
+            darfVeroeffentlichen={darfVeroeffentlichen}
+          />
         ) : (
           <Button type="button" onClick={weiter}>
             Weiter
@@ -273,16 +282,27 @@ function Fortschritt({
   );
 }
 
-function Speichern({ status }: { status: string }) {
+function Speichern({
+  status,
+  darfVeroeffentlichen,
+}: {
+  status: string;
+  darfVeroeffentlichen: boolean;
+}) {
   const { pending } = useFormStatus();
+
+  const beschriftung =
+    status === "ENTWURF"
+      ? "Als Entwurf speichern"
+      : status === "EINGEREICHT"
+        ? "Zur Freigabe einreichen"
+        : darfVeroeffentlichen
+          ? "Anlegen und veröffentlichen"
+          : "Speichern";
 
   return (
     <Button type="submit" disabled={pending}>
-      {pending
-        ? "Wird gespeichert …"
-        : status === "ENTWURF"
-          ? "Als Entwurf speichern"
-          : "Fortbildung anlegen und veröffentlichen"}
+      {pending ? "Wird gespeichert …" : beschriftung}
     </Button>
   );
 }
@@ -329,14 +349,15 @@ function Zusammenfassung({
         <p className="flex items-start gap-2 rounded-xl bg-ferien-weich px-4 py-3 text-sm text-ferien">
           <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
           <span>
-            Für eine Veröffentlichung fehlt noch: {luecken.join(", ")}. Als
-            Entwurf lässt sich die Fortbildung trotzdem speichern.
+            Es fehlt noch: {luecken.join(", ")}. Als Entwurf lässt sich die
+            Fortbildung trotzdem speichern — zum Einreichen oder
+            Veröffentlichen müssen die Angaben vollständig sein.
           </span>
         </p>
       ) : (
         <p className="flex items-start gap-2 rounded-xl bg-primary/10 px-4 py-3 text-sm text-primary">
           <Check className="mt-0.5 size-4 shrink-0" aria-hidden />
-          Alle Angaben vollständig — die Fortbildung kann veröffentlicht werden.
+          Alle Angaben vollständig.
         </p>
       )}
 

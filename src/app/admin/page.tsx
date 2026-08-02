@@ -6,11 +6,13 @@ import {
   Download,
   FileSpreadsheet,
   FileText,
+  Globe2,
   PencilLine,
 } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import { ERFASSER, fortbildungScope, requireRole } from "@/lib/auth";
+import { darfFreigeben } from "@/constants/fortbildung";
 import { baueUrl, filterZuWhere, leseFilter, type SuchParameter } from "@/lib/filter";
 import { aktuellesSchuljahr, schuljahrZeitraum } from "@/lib/datetime";
 import { Button } from "@/components/ui/button";
@@ -32,6 +34,7 @@ const REITER = [
   },
   { id: "regional", label: "RLFB", filter: { organisationsform: "REGIONAL" } },
   { id: "alp", label: "ALP", filter: { organisationsform: "ALP" } },
+  { id: "eingereicht", label: "Zur Freigabe", filter: { status: "EINGEREICHT" } },
   { id: "entwuerfe", label: "Entwürfe", filter: { status: "ENTWURF" } },
 ] as const;
 
@@ -51,6 +54,7 @@ export default async function AdminDashboard({
 
   // Referentinnen und Referenten sehen ausschließlich ihre eigenen Termine.
   const scope = fortbildungScope(user);
+  const freigabeberechtigt = darfFreigeben(user.role);
   const where = { AND: [scope, filterZuWhere({ ...filter, ...reiterFilter })] };
 
   const schuljahr = aktuellesSchuljahr();
@@ -75,6 +79,8 @@ export default async function AdminDashboard({
         maxTn: true,
         tnTatsaechlich: true,
         status: true,
+        inFibs: true,
+        fibsLehrgangsnummer: true,
         quelle: true,
         veranstaltungsort: { select: { name: true, ort: true, istOnline: true } },
         referenten: {
@@ -92,7 +98,21 @@ export default async function AdminDashboard({
       prisma.fortbildung.count({
         where: { AND: [scope, { beginn: { gte: start, lte: ende } }] },
       }),
-      prisma.fortbildung.count({ where: { AND: [scope, { status: "ENTWURF" }] } }),
+      prisma.fortbildung.count({
+        where: { AND: [scope, { status: "EINGEREICHT" }] },
+      }),
+      // Veröffentlicht, aber noch nicht in FIBS ausgeschrieben — dort können
+      // sich Lehrkräfte dann nicht anmelden.
+      prisma.fortbildung.count({
+        where: {
+          AND: [
+            scope,
+            { status: "VEROEFFENTLICHT" },
+            { inFibs: false },
+            { ende: { gte: new Date() } },
+          ],
+        },
+      }),
       // Offene Teilnehmermeldungen: vergangen, nicht abgesagt, keine Zahl.
       prisma.fortbildung.count({
         where: {
@@ -107,7 +127,7 @@ export default async function AdminDashboard({
     ]),
   ]);
 
-  const [imSchuljahr, entwuerfe, offeneMeldungen] = kennzahlen;
+  const [imSchuljahr, zurFreigabe, ohneFibs, offeneMeldungen] = kennzahlen;
 
   return (
     <div className="space-y-6">
@@ -147,17 +167,27 @@ export default async function AdminDashboard({
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Kachel
           wert={imSchuljahr}
           label={`Termine im Schuljahr ${schuljahr}`}
           icon={CalendarDays}
         />
+        {freigabeberechtigt ? (
+          <Kachel
+            wert={zurFreigabe}
+            label="warten auf Freigabe"
+            icon={PencilLine}
+            hervorheben={zurFreigabe > 0}
+            href="/admin/freigaben"
+          />
+        ) : null}
         <Kachel
-          wert={entwuerfe}
-          label="Entwürfe, noch nicht veröffentlicht"
-          icon={PencilLine}
-          href={baueUrl("/admin", {}, { reiter: "entwuerfe" })}
+          wert={ohneFibs}
+          label="veröffentlicht, aber nicht in FIBS"
+          icon={Globe2}
+          hervorheben={ohneFibs > 0}
+          href={baueUrl("/admin", {}, { fibs: "offen" })}
         />
         <Kachel
           wert={offeneMeldungen}

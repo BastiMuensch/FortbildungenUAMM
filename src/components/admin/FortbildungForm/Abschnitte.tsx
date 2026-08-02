@@ -7,6 +7,7 @@ import {
   ORGANISATIONSFORMEN,
   SCHULARTEN,
   STATUS,
+  STATUS_FUER_REFERENTEN,
   VERANSTALTUNGSFORMATE,
 } from "@/constants/fortbildung";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,8 @@ interface GemeinsameProps {
   zustand: FortbildungState;
   fehler: Record<string, string>;
   fortbildung?: FortbildungWerte;
+  /** Steuert, ob Veröffentlichen zur Auswahl steht. */
+  darfVeroeffentlichen?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -55,6 +58,7 @@ export function EckdatenFelder({
   zustand,
   fehler,
   fortbildung,
+  darfVeroeffentlichen = true,
   zeigeVeroeffentlichung = true,
 }: GemeinsameProps & { zeigeVeroeffentlichung?: boolean }) {
   return (
@@ -239,6 +243,7 @@ export function EckdatenFelder({
             zustand={zustand}
             fehler={fehler}
             fortbildung={fortbildung}
+            darfVeroeffentlichen={darfVeroeffentlichen}
           />
         </div>
       ) : null}
@@ -252,13 +257,27 @@ export function VeroeffentlichungFelder({
   zustand,
   fehler,
   fortbildung,
+  darfVeroeffentlichen = true,
 }: GemeinsameProps) {
+  // Referentinnen und Referenten reichen ein; veröffentlicht wird von der
+  // Redaktion. Die Server Action prüft das noch einmal.
+  const auswahl = darfVeroeffentlichen
+    ? STATUS
+    : STATUS.filter((s) => STATUS_FUER_REFERENTEN.includes(s.value));
+
   return (
     <div className="rounded-xl border bg-muted/30 p-4">
       <p className="mb-4 flex items-center gap-2 text-sm font-medium">
         <Info className="size-4 text-muted-foreground" aria-hidden />
-        Veröffentlichung und FIBS
+        {darfVeroeffentlichen ? "Veröffentlichung und FIBS" : "Freigabe und FIBS"}
       </p>
+
+      {!darfVeroeffentlichen ? (
+        <p className="mb-4 text-sm text-muted-foreground text-pretty">
+          Fertige Ausschreibungen werden zur Freigabe eingereicht. Die Redaktion
+          prüft sie, veröffentlicht sie und trägt sie in FIBS ein.
+        </p>
+      ) : null}
 
       <div className="grid gap-5 md:grid-cols-3">
         <Feld label="Status" fehler={fehler.status}>
@@ -266,13 +285,13 @@ export function VeroeffentlichungFelder({
             name="status"
             value={zustand.status}
             onValueChange={(wert) => zustand.setStatus(String(wert))}
-            items={STATUS.map((s) => ({ value: s.value, label: s.label }))}
+            items={auswahl.map((s) => ({ value: s.value, label: s.label }))}
           >
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {STATUS.map((s) => (
+              {auswahl.map((s) => (
                 <SelectItem key={s.value} value={s.value}>
                   {s.label}
                 </SelectItem>

@@ -38,6 +38,8 @@ model User {
 
   fortbildungen  Fortbildung[]  @relation("Ersteller")
   tnMeldungen    Fortbildung[]  @relation("TnMeldung")
+  freigaben      Fortbildung[]  @relation("Freigabe")
+  fibsEintraege  Fortbildung[]  @relation("FibsEintrag")
   auditLogs      AuditLog[]
   zugangstoken   Zugangstoken[]
   /// Gesetzt, wenn dieses Konto zu einer Referentin oder einem Referenten gehört
@@ -101,6 +103,12 @@ model Fortbildung {
   // --- FIBS-Anbindung ---
   fibsLehrgangsnummer String?
   fibsUrl             String?
+  /// Ist die Fortbildung tatsächlich in FIBS ausgeschrieben? Bewusst ein
+  /// eigenes Feld und nicht aus der Lehrgangsnummer abgeleitet: Eine Nummer
+  /// kann vorgemerkt sein, bevor der Eintrag in FIBS wirklich steht.
+  inFibs                 Boolean   @default(false)
+  fibsEingetragenAm      DateTime?
+  fibsEingetragenVonId   String?
   quelle              String  @default("MANUELL") // MANUELL | FIBS_IMPORT
   /// Fremdschlüssel der Quelle, dient dem Deduplizieren beim Import
   externalId          String? @unique
@@ -114,7 +122,20 @@ model Fortbildung {
   /// Freitext der meldenden Person, z. B. "zwei kurzfristige Absagen"
   tnBemerkung     String?
 
-  status      String   @default("ENTWURF") // ENTWURF | VEROEFFENTLICHT | ABGESAGT | ARCHIVIERT
+  // --- Freigabe ---
+  /// ENTWURF | EINGEREICHT | VEROEFFENTLICHT | ABGESAGT | ARCHIVIERT
+  ///
+  /// EINGEREICHT liegt zwischen Entwurf und Veröffentlichung: Referentinnen
+  /// und Referenten reichen dorthin ein, die Redaktion gibt frei. Öffentlich
+  /// sichtbar sind weiterhin nur VEROEFFENTLICHT und ABGESAGT.
+  status          String    @default("ENTWURF")
+  eingereichtAm   DateTime?
+  freigegebenAm   DateTime?
+  freigegebenVonId String?
+  /// Begründung bei einer Zurückweisung — die einreichende Person soll
+  /// erfahren, was noch fehlt.
+  freigabeNotiz   String?
+
   createdById String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -122,6 +143,8 @@ model Fortbildung {
   veranstaltungsort Veranstaltungsort       @relation(fields: [veranstaltungsortId], references: [id])
   ersteller         User?                   @relation("Ersteller", fields: [createdById], references: [id], onDelete: SetNull)
   tnGemeldetVon     User?                   @relation("TnMeldung", fields: [tnGemeldetVonId], references: [id], onDelete: SetNull)
+  freigegebenVon    User?                   @relation("Freigabe", fields: [freigegebenVonId], references: [id], onDelete: SetNull)
+  fibsEingetragenVon User?                  @relation("FibsEintrag", fields: [fibsEingetragenVonId], references: [id], onDelete: SetNull)
   schlagworte       FortbildungSchlagwort[]
   kompetenzen       FortbildungKompetenz[]
   referenten        FortbildungReferent[]

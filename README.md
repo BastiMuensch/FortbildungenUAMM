@@ -46,7 +46,42 @@ und Berichte.
 |---|---|
 | `ADMIN` | alles, inkl. Benutzerzugänge, Löschen, Rechtstexte, FIBS-Übernahme |
 | `REDAKTEUR` | Fortbildungen und Stammdaten pflegen, FIBS-Trockenlauf |
-| `REFERENT` | **nur eigene** Fortbildungen anlegen und pflegen, eigene Teilnehmerzahlen melden |
+| `REFERENT` | **nur eigene** Fortbildungen anlegen und **zur Freigabe einreichen**, eigene Teilnehmerzahlen melden |
+
+### Freigabe und FIBS-Status
+
+Fortbildungen durchlaufen fünf Zustände:
+
+```
+Entwurf  →  Zur Freigabe eingereicht  →  Veröffentlicht  →  Archiviert
+   ↑                    │                      │
+   └── zurückgewiesen ──┘                  Abgesagt
+```
+
+Referentinnen und Referenten kommen nur bis **Eingereicht** — veröffentlicht
+wird ausschließlich von der Redaktion. Eine bereits freigegebene Ausschreibung
+können sie auch nicht mehr ändern; die Teilnehmerzahl melden sie weiterhin
+selbst.
+
+Unter `/admin/freigaben` liegt die Warteschlange, älteste zuerst. Freigeben
+prüft dieselben Vollständigkeitsregeln wie das direkte Veröffentlichen — fehlt
+etwas, fällt der Eintrag mit einer erklärenden Notiz auf Entwurf zurück.
+Zurückweisen verlangt eine Begründung, die der einreichenden Person beim
+Öffnen angezeigt wird.
+
+**Der FIBS-Eintrag ist ein eigener Schritt.** Ob eine Fortbildung tatsächlich
+in FIBS ausgeschrieben ist, steht im Feld `inFibs` — bewusst nicht aus der
+Lehrgangsnummer abgeleitet, weil eine Nummer vorgemerkt sein kann, bevor der
+Eintrag steht. Jede Fortbildung trägt im Redaktionsbereich eines von zwei
+Kennzeichen:
+
+- **in FIBS** — dort eingetragen, mit Zeitpunkt und Person festgehalten
+- **nicht in FIBS** — noch nicht ausgeschrieben, Lehrkräfte können sich also
+  nicht anmelden
+
+Die Kennzeichen erscheinen in Liste, Detailansicht und beiden Exporten. Eine
+Kennzahl auf dem Dashboard zählt, was veröffentlicht, aber noch nicht in FIBS
+ist; der Filter „FIBS" grenzt die Liste darauf ein.
 
 ### Terminabgleich
 
@@ -142,18 +177,14 @@ unter `/admin` (Anmeldung mit den Seed-Zugangsdaten — **Passwort danach
    unvollständig zwischenspeichern; sonst ginge angefangene Arbeit verloren.
    Zu ändern in `VEROEFFENTLICHUNGS_PFLICHTEN`
    (`src/lib/validation/fortbildung.ts`).
-2. **Referenten dürfen selbst veröffentlichen.** Ein Freigabe-Schritt durch
-   die Redaktion ist bewusst nicht eingebaut — jede Änderung steht aber im
-   Protokoll. Falls gewünscht, wäre das ein zusätzlicher Status zwischen
-   Entwurf und Veröffentlicht.
-3. **DigCompEdu** — Kompetenzbereich 1 ist vollständig hinterlegt. Die
+2. **DigCompEdu** — Kompetenzbereich 1 ist vollständig hinterlegt. Die
    Unterkompetenzen der Bereiche 2–6 tragen die Titel des DigCompEdu-Rahmens,
    sind aber als „vorläufig" markiert; Formulierungen mit der offiziellen
    bayerischen Fassung abgleichen (`prisma/seed-data/digcomp.ts`).
-4. **Impressum und Datenschutzerklärung** — Platzhalter. Unter `/admin/texte`
+3. **Impressum und Datenschutzerklärung** — Platzhalter. Unter `/admin/texte`
    durch die geprüften Fassungen ersetzen.
-5. **Schulferien** — siehe unten.
-6. **FIBS-Import** — siehe unten.
+4. **Schulferien** — siehe unten.
+5. **FIBS-Import** — siehe unten.
 
 Die **Veranstaltungsorte** entsprechen dem Schulverzeichnis des Schulamts
 (52 Grund- und Mittelschulen, Stand 31.07.2026, Quelle in

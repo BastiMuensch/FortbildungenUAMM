@@ -53,6 +53,7 @@ export function AdminFilterLeiste({
     "schulart",
     "status",
     "schlagwort",
+    "fibs",
   ].some((name) => wert(name));
 
   return (
@@ -139,6 +140,16 @@ export function AdminFilterLeiste({
         ) : null}
 
         <Liste
+          label="FIBS"
+          wert={wert("fibs")}
+          optionen={[
+            { value: "offen", label: "noch nicht eingetragen" },
+            { value: "erledigt", label: "eingetragen" },
+          ]}
+          onChange={(v) => setzen({ fibs: v })}
+        />
+
+        <Liste
           label="Schlagwort"
           wert={wert("schlagwort")}
           optionen={schlagworte.map((s) => ({ value: s, label: s }))}
@@ -159,6 +170,7 @@ export function AdminFilterLeiste({
                 schulart: undefined,
                 status: undefined,
                 schlagwort: undefined,
+                fibs: undefined,
               })
             }
           >

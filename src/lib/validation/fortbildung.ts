@@ -144,9 +144,21 @@ export type FortbildungEingabe = z.infer<typeof FortbildungSchema>;
  * jederzeit zwischenspeicherbar sein, sonst geht angefangene Arbeit verloren,
  * wenn eine Angabe noch fehlt. Der Wizard führt ohnehin durch alle Schritte.
  */
+/**
+ * Nur die Felder, auf die es beim Veröffentlichen ankommt — so lässt sich die
+ * Prüfung sowohl auf ein Formular als auch auf einen Datenbankdatensatz
+ * anwenden (siehe freigeben() in src/actions/freigabe.ts).
+ */
+export interface VeroeffentlichungsDaten {
+  status: string;
+  niveaustufe?: string | null;
+  kompetenzen: string[];
+  referenten: string[];
+}
+
 export const VEROEFFENTLICHUNGS_PFLICHTEN: Array<{
   feld: string;
-  pruefe: (daten: FortbildungEingabe) => boolean;
+  pruefe: (daten: VeroeffentlichungsDaten) => boolean;
   meldung: string;
 }> = [
   {
@@ -173,7 +185,7 @@ export const VEROEFFENTLICHUNGS_PFLICHTEN: Array<{
  * null, wenn alles vollständig ist.
  */
 export function pruefeVeroeffentlichung(
-  daten: FortbildungEingabe,
+  daten: VeroeffentlichungsDaten,
 ): Record<string, string> | null {
   if (daten.status === "ENTWURF") return null;
 

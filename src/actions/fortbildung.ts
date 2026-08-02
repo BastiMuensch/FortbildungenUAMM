@@ -8,7 +8,12 @@ import { AuthError, ERFASSER, darfBearbeiten, requireRole } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 import { sanitizeBeschreibung, htmlZuText } from "@/lib/sanitize";
 import { bildeSlug } from "@/lib/queries";
-import { PFLICHT_SCHLAGWORTE, type FortbildungStatus } from "@/constants/fortbildung";
+import {
+  PFLICHT_SCHLAGWORTE,
+  STATUS_FUER_REFERENTEN,
+  darfFreigeben,
+  type FortbildungStatus,
+} from "@/constants/fortbildung";
 import {
   FortbildungSchema,
   formDataZuEingabe,
@@ -49,6 +54,34 @@ export async function saveFortbildung(
   }
 
   const daten = geparst.data;
+
+  // --- Was diese Rolle mit dem Status tun darf ------------------------------
+  if (!darfFreigeben(user.role)) {
+    if (!STATUS_FUER_REFERENTEN.includes(daten.status)) {
+      return {
+        fehler: {
+          status:
+            "Das Veröffentlichen übernimmt die Redaktion. Bitte zur Freigabe einreichen.",
+        },
+      };
+    }
+
+    // Eine bereits veröffentlichte Ausschreibung darf nicht unbemerkt
+    // umgeschrieben werden — sonst wäre die Freigabe wertlos.
+    if (id) {
+      const bisher = await prisma.fortbildung.findUnique({
+        where: { id },
+        select: { status: true },
+      });
+      if (bisher && !STATUS_FUER_REFERENTEN.includes(bisher.status as never)) {
+        return {
+          fehler: {
+            _: "Diese Fortbildung ist bereits freigegeben und lässt sich nur noch von der Redaktion ändern. Die Teilnehmerzahl können Sie weiterhin unter Nachbereitung melden.",
+          },
+        };
+      }
+    }
+  }
 
   const unvollstaendig = pruefeVeroeffentlichung(daten);
   if (unvollstaendig) return { fehler: unvollstaendig };
@@ -100,6 +133,13 @@ export async function saveFortbildung(
     fibsLehrgangsnummer: daten.fibsLehrgangsnummer,
     fibsUrl: daten.fibsUrl,
     status: daten.status,
+    // Zeitpunkt der Einreichung festhalten, damit die Freigabe-Warteschlange
+    // nach Wartezeit sortiert werden kann.
+    ...(daten.status === "EINGEREICHT" ? { eingereichtAm: new Date() } : {}),
+    // Wer selbst veröffentlicht, gibt damit auch frei.
+    ...(daten.status === "VEROEFFENTLICHT" && darfFreigeben(user.role)
+      ? { freigegebenAm: new Date(), freigegebenVonId: user.id, freigabeNotiz: null }
+      : {}),
   };
 
   const verknuepfungen = {

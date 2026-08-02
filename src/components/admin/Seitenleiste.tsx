@@ -13,6 +13,7 @@ import {
   LogOut,
   MapPin,
   Menu,
+  ShieldCheck,
   Tags,
   Users,
   X,
@@ -31,8 +32,8 @@ interface Eintrag {
   label: string;
   icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
   rollen: Rolle[];
-  /** Zahl neben dem Eintrag, etwa offene Meldungen. */
-  zaehler?: "offeneMeldungen";
+  /** Zahl neben dem Eintrag. */
+  zaehler?: "offeneMeldungen" | "offeneFreigaben";
 }
 
 /**
@@ -45,6 +46,13 @@ const GRUPPEN: Array<{ titel: string; eintraege: Eintrag[] }> = [
     titel: "Arbeit",
     eintraege: [
       { href: "/admin", label: "Fortbildungen", icon: CalendarDays, rollen: ALLE },
+      {
+        href: "/admin/freigaben",
+        label: "Freigaben",
+        icon: ShieldCheck,
+        rollen: REDAKTION,
+        zaehler: "offeneFreigaben",
+      },
       {
         href: "/admin/nachbereitung",
         label: "Nachbereitung",
@@ -75,10 +83,12 @@ export function Seitenleiste({
   name,
   rolle,
   offeneMeldungen,
+  offeneFreigaben,
 }: {
   name: string;
   rolle: Rolle;
   offeneMeldungen: number;
+  offeneFreigaben: number;
 }) {
   const [offen, setOffen] = useState(false);
 
@@ -141,7 +151,7 @@ export function Seitenleiste({
                     <li key={eintrag.href}>
                       <Punkt
                         eintrag={eintrag}
-                        offeneMeldungen={offeneMeldungen}
+                        zaehler={{ offeneMeldungen, offeneFreigaben }}
                         onNavigate={() => setOffen(false)}
                       />
                     </li>
@@ -193,11 +203,11 @@ export function Seitenleiste({
 
 function Punkt({
   eintrag,
-  offeneMeldungen,
+  zaehler,
   onNavigate,
 }: {
   eintrag: Eintrag;
-  offeneMeldungen: number;
+  zaehler: { offeneMeldungen: number; offeneFreigaben: number };
   onNavigate: () => void;
 }) {
   const pfad = usePathname();
@@ -208,7 +218,7 @@ function Punkt({
       ? pfad === "/admin" || pfad.startsWith("/admin/fortbildungen")
       : pfad.startsWith(eintrag.href);
 
-  const zahl = eintrag.zaehler === "offeneMeldungen" ? offeneMeldungen : 0;
+  const zahl = eintrag.zaehler ? zaehler[eintrag.zaehler] : 0;
   const Icon = eintrag.icon;
 
   return (
@@ -227,7 +237,7 @@ function Punkt({
       <span className="flex-1 truncate">{eintrag.label}</span>
       {zahl > 0 ? (
         <span
-          title={`${zahl} offene Meldungen`}
+          title={`${zahl} offen`}
           className="flex min-w-5 items-center justify-center rounded-full bg-ferien px-1.5 text-xs font-medium text-white tabular-nums"
         >
           {zahl}

@@ -28,6 +28,8 @@ export interface FortbildungFilter {
   kb?: string;
   schlagwort?: string;
   status?: string;
+  /** "offen" = noch nicht in FIBS, "erledigt" = eingetragen. */
+  fibs?: string;
 }
 
 export type SuchParameter = Record<string, string | string[] | undefined>;
@@ -50,6 +52,7 @@ export function leseFilter(params: SuchParameter): FortbildungFilter {
     kb: /^[1-6]$/.test(einzeln("kb") ?? "") ? einzeln("kb") : undefined,
     schlagwort: einzeln("schlagwort"),
     status: erlaubt(einzeln("status"), STATUS_VALUES),
+    fibs: erlaubt(einzeln("fibs"), ["offen", "erledigt"]),
   };
 }
 
@@ -95,6 +98,9 @@ export function filterZuWhere(filter: FortbildungFilter): Prisma.FortbildungWher
       },
     });
   }
+
+  if (filter.fibs === "offen") und.push({ inFibs: false });
+  if (filter.fibs === "erledigt") und.push({ inFibs: true });
 
   if (filter.schlagwort) {
     und.push({

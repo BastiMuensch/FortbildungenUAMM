@@ -20,6 +20,8 @@ import { bildeSlug } from "@/lib/queries";
 import { mapFibsLehrgang } from "@/lib/fibs/mapper";
 import { parseSuchergebnis } from "@/lib/fibs/parser";
 import { readFileSync } from "node:fs";
+import jsQR from "jsqr";
+import { qrMatrix } from "@/lib/qr";
 
 let fehler = 0;
 
@@ -93,6 +95,101 @@ pruefe(
   bildeSlug("Künstliche Intelligenz für Anfänger", new Date("2026-10-15T12:00:00Z"), "abcdef123"),
   "kuenstliche-intelligenz-fuer-anfaenger-2026-10-15-abcdef",
 );
+
+console.log("\nQR-Code (gegen einen echten Decoder gelesen)");
+{
+  // Der Encoder ist selbst geschrieben (src/lib/qr.ts). Ohne Gegenprobe wäre
+  // das fahrlässig: Ein Fehler in der Reed-Solomon-Rechnung oder der
+  // Maskierung fällt sonst erst auf, wenn im Lehrerzimmer niemand den Aushang
+  // scannen kann. jsqr ist reine Entwicklungs-Abhängigkeit.
+  const proben = [
+    "https://fortbildungen.schulamt-uamm.de/fortbildungen/ki-2026-10-15-abc123",
+    "https://example.org/f/x",
+    "https://fortbildungen.schulamt-uamm.de/fortbildungen/kuenstliche-intelligenz-im-grundschulunterricht-2026-10-15-f2a91d",
+    "Umlaute prüfen: Grundschule Wörishofen, Buß- und Bettag, 30 Plätze",
+  ];
+
+  for (const text of proben) {
+    const { module, groesse, version } = qrMatrix(text, "H");
+
+    // jsqr erwartet RGBA-Pixel. Vier Module Ruhezone ringsum sind
+    // vorgeschrieben — ohne sie findet kein Lesegerät den Code.
+    const rand = 4;
+    const skala = 4;
+    const kante = (groesse + rand * 2) * skala;
+    const pixel = new Uint8ClampedArray(kante * kante * 4).fill(255);
+
+    for (let z = 0; z < groesse; z += 1) {
+      for (let s = 0; s < groesse; s += 1) {
+        if (!module[z]![s]) continue;
+        for (let dz = 0; dz < skala; dz += 1) {
+          for (let ds = 0; ds < skala; ds += 1) {
+            const y = (z + rand) * skala + dz;
+            const x = (s + rand) * skala + ds;
+            const i = (y * kante + x) * 4;
+            pixel[i] = 0;
+            pixel[i + 1] = 0;
+            pixel[i + 2] = 0;
+          }
+        }
+      }
+    }
+
+    const gelesen = jsQR(pixel, kante, kante);
+    pruefe(
+      `Version ${version} liest sich zurück (${text.length} Zeichen)`,
+      gelesen?.data,
+      text,
+    );
+  }
+
+  // Das Logo in der Mitte verdeckt echte Module. Fehlerkorrektur H verkraftet
+  // rund 30 % Verlust — hier wird nachgewiesen, dass die tatsächlich genutzte
+  // Fläche (22 % der Kantenlänge, also knapp 5 % der Module) unkritisch ist.
+  const text = "https://fortbildungen.schulamt-uamm.de/fortbildungen/ki-2026-10-15-abc123";
+  const { module, groesse } = qrMatrix(text, "H");
+
+  const rand = 4;
+  const skala = 4;
+  const kante = (groesse + rand * 2) * skala;
+  const pixel = new Uint8ClampedArray(kante * kante * 4).fill(255);
+
+  for (let z = 0; z < groesse; z += 1) {
+    for (let s = 0; s < groesse; s += 1) {
+      if (!module[z]![s]) continue;
+      for (let dz = 0; dz < skala; dz += 1) {
+        for (let ds = 0; ds < skala; ds += 1) {
+          const i = (((z + rand) * skala + dz) * kante + (s + rand) * skala + ds) * 4;
+          pixel[i] = 0;
+          pixel[i + 1] = 0;
+          pixel[i + 2] = 0;
+        }
+      }
+    }
+  }
+
+  // Weißes Feld in der Mitte, wie es das Logo hinterlässt
+  const feld = Math.round(groesse * 0.22);
+  const von = Math.floor((groesse - feld) / 2) + rand;
+  for (let z = von; z < von + feld; z += 1) {
+    for (let s = von; s < von + feld; s += 1) {
+      for (let dz = 0; dz < skala; dz += 1) {
+        for (let ds = 0; ds < skala; ds += 1) {
+          const i = ((z * skala + dz) * kante + s * skala + ds) * 4;
+          pixel[i] = 255;
+          pixel[i + 1] = 255;
+          pixel[i + 2] = 255;
+        }
+      }
+    }
+  }
+
+  pruefe(
+    `mit ${feld}×${feld} Modulen Logo-Aussparung noch lesbar`,
+    jsQR(pixel, kante, kante)?.data,
+    text,
+  );
+}
 
 console.log("\nFIBS-Import (gegen die Beispieldatei)");
 const html = readFileSync("src/lib/fibs/fixtures/suchergebnis.html", "utf8");

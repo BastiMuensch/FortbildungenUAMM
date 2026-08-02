@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 
-import { fromDatetimeLocalValue } from "@/lib/datetime";
+import { fromDatetimeLocalValue, schuljahrZeitraum } from "@/lib/datetime";
 import {
   FORMAT_VALUES,
   NIVEAUSTUFE_VALUES,
@@ -30,6 +30,8 @@ export interface FortbildungFilter {
   status?: string;
   /** "offen" = noch nicht in FIBS, "erledigt" = eingetragen. */
   fibs?: string;
+  /** Schuljahr in der Form "2026/2027". Leer bedeutet alle Jahrgänge. */
+  schuljahr?: string;
 }
 
 export type SuchParameter = Record<string, string | string[] | undefined>;
@@ -53,6 +55,9 @@ export function leseFilter(params: SuchParameter): FortbildungFilter {
     schlagwort: einzeln("schlagwort"),
     status: erlaubt(einzeln("status"), STATUS_VALUES),
     fibs: erlaubt(einzeln("fibs"), ["offen", "erledigt"]),
+    schuljahr: /^\d{4}\/\d{4}$/.test(einzeln("schuljahr") ?? "")
+      ? einzeln("schuljahr")
+      : undefined,
   };
 }
 
@@ -97,6 +102,12 @@ export function filterZuWhere(filter: FortbildungFilter): Prisma.FortbildungWher
         some: { kompetenzCode: { startsWith: filter.kb } },
       },
     });
+  }
+
+  if (filter.schuljahr) {
+    const { start, ende: schluss } = schuljahrZeitraum(filter.schuljahr);
+    // Ein Termin gehört zum Schuljahr, wenn er darin beginnt.
+    und.push({ beginn: { gte: start, lte: schluss } });
   }
 
   if (filter.fibs === "offen") und.push({ inFibs: false });

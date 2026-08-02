@@ -18,6 +18,7 @@ import { aktuellesSchuljahr, schuljahrZeitraum } from "@/lib/datetime";
 import { Button } from "@/components/ui/button";
 import { AdminFilterLeiste } from "@/components/admin/AdminFilterLeiste";
 import { FortbildungTabelle } from "@/components/admin/FortbildungTabelle";
+import { SchuljahrWahl } from "@/components/admin/SchuljahrWahl";
 
 export const metadata = { title: "Fortbildungen verwalten" };
 
@@ -57,10 +58,10 @@ export default async function AdminDashboard({
   const freigabeberechtigt = darfFreigeben(user.role);
   const where = { AND: [scope, filterZuWhere({ ...filter, ...reiterFilter })] };
 
-  const schuljahr = aktuellesSchuljahr();
-  const { start, ende } = schuljahrZeitraum(schuljahr);
-  const in30Tagen = new Date();
-  in30Tagen.setDate(in30Tagen.getDate() + 30);
+  const laufendes = aktuellesSchuljahr();
+  // Die Kennzahl folgt der Auswahl; ohne Auswahl dem laufenden Schuljahr.
+  const kennzahlJahr = filter.schuljahr ?? laufendes;
+  const { start, ende } = schuljahrZeitraum(kennzahlJahr);
 
   const [fortbildungen, schlagworte, kennzahlen] = await Promise.all([
     prisma.fortbildung.findMany({
@@ -124,19 +125,40 @@ export default async function AdminDashboard({
           ],
         },
       }),
+      // Vorhandene Jahrgänge für den Umschalter. Nur Beginn und Ende der
+      // Datenreihe nötig — daraus ergibt sich die Liste.
+      Promise.all([
+        prisma.fortbildung.findFirst({
+          where: scope,
+          orderBy: { beginn: "asc" },
+          select: { beginn: true },
+        }),
+        prisma.fortbildung.findFirst({
+          where: scope,
+          orderBy: { beginn: "desc" },
+          select: { beginn: true },
+        }),
+      ]).then(([erste, letzte]) =>
+        vorhandeneSchuljahre(erste?.beginn, letzte?.beginn, laufendes),
+      ),
     ]),
   ]);
 
-  const [imSchuljahr, zurFreigabe, ohneFibs, offeneMeldungen] = kennzahlen;
+  const [imSchuljahr, zurFreigabe, ohneFibs, offeneMeldungen, jahrgaenge] =
+    kennzahlen;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Fortbildungen</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Schuljahr {schuljahr}
-          </p>
+          <div className="mt-2">
+            <SchuljahrWahl
+              params={params}
+              jahrgaenge={jahrgaenge}
+              aktuell={laufendes}
+            />
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -170,7 +192,7 @@ export default async function AdminDashboard({
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Kachel
           wert={imSchuljahr}
-          label={`Termine im Schuljahr ${schuljahr}`}
+          label={`Termine im Schuljahr ${kennzahlJahr}`}
           icon={CalendarDays}
         />
         {freigabeberechtigt ? (
@@ -305,6 +327,27 @@ function Kachel({
   ) : (
     <div className={klassen}>{inhalt}</div>
   );
+}
+
+/**
+ * Alle Schuljahre zwischen dem ersten und dem letzten Termin, neueste zuerst.
+ * Das laufende Schuljahr ist immer dabei, auch wenn dafür noch nichts
+ * eingetragen ist — sonst ließe es sich nicht auswählen.
+ */
+function vorhandeneSchuljahre(
+  erste: Date | undefined,
+  letzte: Date | undefined,
+  laufendes: string,
+): string[] {
+  const jahre = new Set<string>([laufendes]);
+
+  if (erste && letzte) {
+    const von = Number(aktuellesSchuljahr(erste).slice(0, 4));
+    const bis = Number(aktuellesSchuljahr(letzte).slice(0, 4));
+    for (let jahr = von; jahr <= bis; jahr += 1) jahre.add(`${jahr}/${jahr + 1}`);
+  }
+
+  return [...jahre].sort().reverse();
 }
 
 function exportLink(basis: string, params: SuchParameter, reiter: string): string {

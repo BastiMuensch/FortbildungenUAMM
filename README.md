@@ -34,6 +34,9 @@ und Berichte.
   Veranstaltungen und Warnung bei Überschneidungen (siehe unten)
 - **Nachbereitung**: nach der Veranstaltung wird die tatsächliche
   Teilnehmerzahl gemeldet
+- **Aushang** als A4-PDF zum Ausdrucken, mit QR-Code zur Detailseite
+- **Änderungsverlauf** je Fortbildung
+- **Schuljahres-Umschalter** über Liste, Kennzahlen und Exporte
 - Listenansicht getrennt nach SchiLf, RLFB, ALP und Entwürfen
 - Duplizieren wiederkehrender Formate
 - **Excel-Export** und **PDF-Bericht** (nach Ebenen gegliedert, mit Summen)
@@ -82,6 +85,37 @@ Kennzeichen:
 Die Kennzeichen erscheinen in Liste, Detailansicht und beiden Exporten. Eine
 Kennzahl auf dem Dashboard zählt, was veröffentlicht, aber noch nicht in FIBS
 ist; der Filter „FIBS" grenzt die Liste darauf ein.
+
+### Aushang fürs Lehrerzimmer
+
+Jede Fortbildung lässt sich als A4-Seite ausgeben (Knopf „Aushang" in der
+Detailansicht): Titel, Termin, Ort, Beschreibung, Zielgruppe, Leitung und ein
+QR-Code zur öffentlichen Detailseite. Öffnet sich im Browser und ist direkt
+druckbar.
+
+**Der QR-Code ist selbst erzeugt** (`src/lib/qr.ts`) — Byte-Modus,
+Reed-Solomon, alle acht Masken durchgerechnet. Keine Laufzeit-Abhängigkeit;
+gestaltet mit abgerundeten Modulen und Suchern in der Hausfarbe
+(`src/lib/qrZeichnen.ts`). Die Fehlerkorrektur steht auf **H (rund 30 %)`,
+damit das Logo in der Mitte nichts zerstört.
+
+> Ein selbst gebauter QR-Encoder ohne Gegenprobe wäre fahrlässig — ein Fehler
+> in der Reed-Solomon-Rechnung fällt sonst erst auf, wenn im Lehrerzimmer
+> niemand scannen kann. `npm test` erzeugt deshalb echte Codes und liest sie
+> mit `jsqr` (reine Entwicklungs-Abhängigkeit) zurück, inklusive Nachweis,
+> dass die Logo-Aussparung die Lesbarkeit nicht kostet. Genau diese Prüfung
+> hat während der Entwicklung zwei Fehler gefunden.
+
+**Logo:** Erwartet wird `public/logo.png` (oder `.jpg`). Fehlt die Datei, wird
+der Code ohne Logo gezeichnet — bewusst kein Platzhalterbild, ein falsches
+Logo auf einem amtlichen Aushang wäre schlimmer als gar keins.
+
+### Änderungsverlauf
+
+Am Ende jeder Detailseite steht, wer wann was gemacht hat: angelegt,
+eingereicht, freigegeben, zurückgewiesen, FIBS-Eintrag gesetzt, Teilnehmerzahl
+gemeldet. Die Daten stammen aus dem Protokoll, das ohnehin für die
+Rechenschaftspflicht geschrieben wird (Art. 5 Abs. 2 DSGVO).
 
 ### Terminabgleich
 

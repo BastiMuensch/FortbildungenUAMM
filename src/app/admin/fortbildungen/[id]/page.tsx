@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CheckCircle2, ChevronLeft, Copy, ExternalLink, Undo2 } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronLeft,
+  Copy,
+  ExternalLink,
+  History,
+  Printer,
+  Undo2,
+} from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
@@ -18,6 +26,7 @@ import { formatDatumZeit } from "@/lib/datetime";
 import { FibsKennzeichen, StatusKennzeichen } from "@/components/admin/Kennzeichen";
 import { FibsSchalter } from "@/components/admin/FibsSchalter";
 import { FreigabeLeiste } from "@/components/admin/FreigabeLeiste";
+import { Aenderungsverlauf } from "@/components/admin/Aenderungsverlauf";
 
 export const metadata = { title: "Fortbildung bearbeiten" };
 
@@ -111,6 +120,22 @@ export default async function FortbildungBearbeitenPage({
             />
           ) : null}
 
+          <Button
+            nativeButton={false}
+            variant="outline"
+            size="sm"
+            title="A4-Seite zum Ausdrucken und Aushängen"
+            render={
+              <a
+                href={`/api/admin/fortbildungen/${fortbildung.id}/aushang`}
+                target="_blank"
+              >
+                <Printer className="size-3.5" aria-hidden />
+                Aushang
+              </a>
+            }
+          />
+
           <form action={duplizieren.bind(null, fortbildung.id)}>
             <Button type="submit" variant="outline" size="sm">
               <Copy className="size-3.5" aria-hidden />
@@ -196,6 +221,14 @@ export default async function FortbildungBearbeitenPage({
           referentIds: fortbildung.referenten.map((r) => r.referentId),
         }}
       />
+
+      <section className="mt-12 border-t pt-6">
+        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold">
+          <History className="size-4 text-muted-foreground" aria-hidden />
+          Änderungsverlauf
+        </h2>
+        <Aenderungsverlauf id={fortbildung.id} />
+      </section>
     </div>
   );
 }

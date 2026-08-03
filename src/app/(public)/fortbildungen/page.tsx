@@ -1,16 +1,24 @@
 import type { Metadata } from "next";
-import { SearchX } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import {
   anzahlAktiverFilter,
+  baueUrl,
+  beschreibeFilter,
   filterZuWhere,
   leseFilter,
+  ohneFilter,
   type SuchParameter,
 } from "@/lib/filter";
 import { fortbildungKachelSelect, oeffentlicheFortbildungWhere } from "@/lib/queries";
+import { aktuellesSchuljahr, berlinIsoDatum } from "@/lib/datetime";
 import { MonatsGruppen } from "@/components/public/MonatsGruppen";
 import { OeffentlicheFilterLeiste } from "@/components/public/OeffentlicheFilterLeiste";
+import {
+  Schnellzugriffe,
+  type Schnellzugriff,
+} from "@/components/public/Schnellzugriffe";
+import { LeerZustand, type Ausweg } from "@/components/public/LeerZustand";
 
 export const metadata: Metadata = {
   title: "Alle Fortbildungen",
@@ -29,6 +37,7 @@ export default async function FortbildungsListe({
   // Nur "vergangene anzeigen" schaltet zurückliegende Termine frei — sonst
   // sieht man die Liste, die einen interessiert: die kommenden.
   const zeigeVergangene = params.vergangene === "1";
+  const nurKuenftige = { ende: { gte: new Date() } };
 
   const [fortbildungen, schlagworte, bereiche] = await Promise.all([
     prisma.fortbildung.findMany({
@@ -36,7 +45,7 @@ export default async function FortbildungsListe({
         AND: [
           oeffentlicheFortbildungWhere(),
           filterZuWhere(filter),
-          zeigeVergangene ? {} : { ende: { gte: new Date() } },
+          zeigeVergangene ? {} : nurKuenftige,
         ],
       },
       orderBy: { beginn: zeigeVergangene ? "desc" : "asc" },
@@ -57,20 +66,106 @@ export default async function FortbildungsListe({
     }),
   ]);
 
-  const gefiltert = anzahlAktiverFilter(filter) > 0;
+  const gefiltert = anzahlAktiverFilter(filter) > 0 || zeigeVergangene;
+  const aktiveFilter = beschreibeFilter(params, bereiche);
+
+  // --- Schnellzugriffe ----------------------------------------------------
+  // Die Datumsgrenzen werden hier auf dem Server gebildet: Im Browser
+  // gerechnet ergäben sie beim ersten Rendern einen anderen Wert als auf dem
+  // Server und React würde die Abweichung melden.
+  const heute = new Date();
+  const schnellzugriffe: Schnellzugriff[] = [
+    {
+      id: "bald",
+      label: "Nächste 4 Wochen",
+      werte: {
+        von: berlinIsoDatum(heute),
+        bis: berlinIsoDatum(new Date(heute.getTime() + 28 * 24 * 60 * 60 * 1000)),
+      },
+    },
+    { id: "online", label: "Online", werte: { format: "ESESSION" } },
+    { id: "gs", label: "Grundschule", werte: { schulart: "GRUNDSCHULE" } },
+    { id: "ms", label: "Mittelschule", werte: { schulart: "MITTELSCHULE" } },
+    {
+      id: "schuljahr",
+      label: "Noch dieses Schuljahr",
+      werte: { schuljahr: aktuellesSchuljahr(heute) },
+    },
+  ];
+
+  // --- Auswege für den Leerzustand ---------------------------------------
+  // Nur wenn wirklich nichts gefunden wurde: dann eine Zählung je gesetztem
+  // Filter, um zu zeigen, welcher einzelne im Weg steht.
+  let auswege: Ausweg[] = [];
+
+  if (fortbildungen.length === 0) {
+    const zaehle = (suchparameter: SuchParameter, mitVergangenen: boolean) =>
+      prisma.fortbildung.count({
+        where: {
+          AND: [
+            oeffentlicheFortbildungWhere(),
+            filterZuWhere(leseFilter(suchparameter)),
+            mitVergangenen ? {} : nurKuenftige,
+          ],
+        },
+      });
+
+    // Für jeden gesetzten Filter: was brächte sein Wegfall?
+    const wegfall = await Promise.all(
+      aktiveFilter.map(async (chip) => {
+        const rest = ohneFilter(params, chip.param);
+        return {
+          schluessel: chip.param,
+          vorsatz: "ohne",
+          hervorhebung: `${chip.art}: ${chip.wert}`,
+          treffer: await zaehle(
+            rest,
+            chip.param === "vergangene" ? false : zeigeVergangene,
+          ),
+          href: baueUrl("/fortbildungen", rest, {}),
+        };
+      }),
+    );
+
+    // Und der umgekehrte Weg: den Zeitraum aufmachen. Wer nichts findet, sucht
+    // oft nach etwas, das gerade erst gelaufen ist.
+    const rueckblick: Ausweg[] = [];
+    if (!zeigeVergangene) {
+      const treffer = await zaehle(params, true);
+      if (treffer > 0) {
+        rueckblick.push({
+          schluessel: "vergangene",
+          vorsatz: "",
+          hervorhebung: "auch vergangene Termine anzeigen",
+          treffer,
+          href: baueUrl("/fortbildungen", params, { vergangene: "1" }),
+        });
+      }
+    }
+
+    auswege = [...wegfall, ...rueckblick]
+      .filter((a) => a.treffer > 0)
+      .sort((a, b) => b.treffer - a.treffer);
+  }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <header>
         <h1 className="text-3xl font-semibold tracking-tight">Fortbildungen</h1>
         <p className="mt-1.5 text-muted-foreground">
           {fortbildungen.length === 0
             ? "Kein Treffer"
             : `${fortbildungen.length} ${fortbildungen.length === 1 ? "Angebot" : "Angebote"}`}
-          {gefiltert ? " für die gewählten Filter" : ""}
+          {gefiltert ? " für die gewählte Auswahl" : ""}
           {zeigeVergangene ? ", inklusive vergangener Termine" : ""}
         </p>
       </header>
+
+      <Schnellzugriffe
+        params={params}
+        zugriffe={schnellzugriffe}
+        aktiveFilter={aktiveFilter}
+      />
 
       <OeffentlicheFilterLeiste
         params={params}
@@ -79,20 +174,15 @@ export default async function FortbildungsListe({
       />
 
       {fortbildungen.length === 0 ? (
-        <div className="rounded-xl border border-dashed py-20 text-center">
-          <SearchX
-            className="mx-auto mb-3 size-7 text-muted-foreground/60"
-            aria-hidden
-          />
-          <p className="font-medium">Dazu gibt es derzeit kein Angebot.</p>
-          <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground text-pretty">
-            {gefiltert
-              ? "Vielleicht hilft ein Filter weniger — oder ein Blick auf die vergangenen Termine."
-              : "Neue Fortbildungen erscheinen hier, sobald sie veröffentlicht sind."}
-          </p>
-        </div>
+        <LeerZustand
+          auswege={auswege}
+          alleZuruecksetzen="/fortbildungen"
+          gefiltert={gefiltert}
+        />
       ) : (
-        <MonatsGruppen fortbildungen={fortbildungen} />
+        <div className="pt-2">
+          <MonatsGruppen fortbildungen={fortbildungen} />
+        </div>
       )}
     </div>
   );

@@ -1,12 +1,20 @@
 import type { Prisma } from "@prisma/client";
 
-import { fromDatetimeLocalValue, schuljahrZeitraum } from "@/lib/datetime";
+import {
+  formatDatum,
+  fromDatetimeLocalValue,
+  schuljahrZeitraum,
+} from "@/lib/datetime";
 import {
   FORMAT_VALUES,
   NIVEAUSTUFE_VALUES,
   ORGANISATIONSFORM_VALUES,
   SCHULART_VALUES,
   STATUS_VALUES,
+  formatLabel,
+  niveaustufeLabel,
+  organisationsformLabel,
+  schulartLabel,
 } from "@/constants/fortbildung";
 
 /**
@@ -133,6 +141,90 @@ function tagesGrenze(wert: string | undefined, kante: "start" | "ende"): Date | 
 /** Zählt die aktiven Filter — für den "Filter zurücksetzen"-Hinweis. */
 export function anzahlAktiverFilter(filter: FortbildungFilter): number {
   return Object.values(filter).filter(Boolean).length;
+}
+
+/**
+ * Ein gesetzter Filter in lesbarer Form.
+ *
+ * Wird an zwei Stellen gebraucht: für die Chips über der Trefferliste und für
+ * den Leerzustand, der anbietet, einzelne Filter fallen zu lassen. Beide
+ * müssen dieselbe Bezeichnung zeigen, deshalb steht die Übersetzung hier und
+ * nicht in den Komponenten.
+ */
+export interface FilterChip {
+  /** Name des Suchparameters, etwa "schulart". */
+  param: string;
+  /** Was gefiltert wird, etwa "Schulart". */
+  art: string;
+  /** Worauf gefiltert wird, etwa "Grundschule". */
+  wert: string;
+}
+
+export function beschreibeFilter(
+  params: SuchParameter,
+  kompetenzbereiche: Array<{ code: string; titel: string }> = [],
+): FilterChip[] {
+  const filter = leseFilter(params);
+  const chips: FilterChip[] = [];
+
+  if (filter.q) chips.push({ param: "q", art: "Suche", wert: `„${filter.q}“` });
+  if (filter.schulart) {
+    chips.push({
+      param: "schulart",
+      art: "Schulart",
+      wert: schulartLabel(filter.schulart),
+    });
+  }
+  if (filter.format) {
+    chips.push({ param: "format", art: "Format", wert: formatLabel(filter.format) });
+  }
+  if (filter.organisationsform) {
+    chips.push({
+      param: "organisationsform",
+      art: "Art",
+      wert: organisationsformLabel(filter.organisationsform),
+    });
+  }
+  if (filter.kb) {
+    const bereich = kompetenzbereiche.find((k) => k.code === filter.kb);
+    chips.push({
+      param: "kb",
+      art: "Kompetenzbereich",
+      wert: bereich ? `${bereich.code} · ${bereich.titel}` : `KB ${filter.kb}`,
+    });
+  }
+  if (filter.niveaustufe) {
+    chips.push({
+      param: "niveaustufe",
+      art: "Niveaustufe",
+      wert: niveaustufeLabel(filter.niveaustufe),
+    });
+  }
+  if (filter.schlagwort) {
+    chips.push({ param: "schlagwort", art: "Schlagwort", wert: filter.schlagwort });
+  }
+  if (filter.schuljahr) {
+    chips.push({ param: "schuljahr", art: "Schuljahr", wert: filter.schuljahr });
+  }
+
+  const von = tagesGrenze(filter.von, "start");
+  const bis = tagesGrenze(filter.bis, "ende");
+  if (von) chips.push({ param: "von", art: "Ab", wert: formatDatum(von) });
+  if (bis) chips.push({ param: "bis", art: "Bis", wert: formatDatum(bis) });
+
+  const vergangene = params.vergangene;
+  if ((Array.isArray(vergangene) ? vergangene[0] : vergangene) === "1") {
+    chips.push({ param: "vergangene", art: "Zeitraum", wert: "auch vergangene" });
+  }
+
+  return chips;
+}
+
+/** Dieselben Suchparameter, aber ohne den genannten. */
+export function ohneFilter(params: SuchParameter, param: string): SuchParameter {
+  const kopie = { ...params };
+  delete kopie[param];
+  return kopie;
 }
 
 /** Baut eine URL mit geänderten Parametern, leere Werte fallen raus. */

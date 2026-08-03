@@ -21,8 +21,13 @@ und Berichte.
 - Übersicht der kommenden Fortbildungen
 - Monatskalender mit bayerischen Ferien und Feiertagen
 - Suche über Titel, Beschreibung, Fach und Ort
+- **Schnellzugriffe** für die häufigsten Fragen: nächste 4 Wochen, Online,
+  Grundschule, Mittelschule, noch dieses Schuljahr
 - Filter nach Schulart, Format, Organisationsform, Schlagwort,
-  DigCompEdu-Kompetenzbereich und Niveaustufe
+  DigCompEdu-Kompetenzbereich und Niveaustufe — gesetzte Filter stehen als
+  einzeln entfernbare Chips über der Liste
+- **Leerzustand mit Auswegen**: Statt „kein Treffer" wird gezeigt, welcher
+  einzelne Filter im Weg steht und was sein Wegfall brächte
 - Detailseiten mit Link zur Anmeldung in FIBS
 - Kalender-Abo (ICS) unter `/api/ics`
 

@@ -17,6 +17,7 @@ import {
 } from "@/lib/datetime";
 import { ferienStatus, terminWarnung } from "@/lib/ferien";
 import { bildeSlug } from "@/lib/queries";
+import { filterZuWhere, suchbegriffe } from "@/lib/filter";
 import { mapFibsLehrgang } from "@/lib/fibs/mapper";
 import { parseSuchergebnis } from "@/lib/fibs/parser";
 import { readFileSync } from "node:fs";
@@ -95,6 +96,39 @@ pruefe(
   bildeSlug("Künstliche Intelligenz für Anfänger", new Date("2026-10-15T12:00:00Z"), "abcdef123"),
   "kuenstliche-intelligenz-fuer-anfaenger-2026-10-15-abcdef",
 );
+
+console.log("\nSuche");
+pruefe("ein Begriff", suchbegriffe("ipad"), ["ipad"]);
+pruefe("zwei Begriffe werden getrennt", suchbegriffe("ipad grundschule"), [
+  "ipad",
+  "grundschule",
+]);
+pruefe("Mehrfach-Leerzeichen", suchbegriffe("  ipad   grundschule "), [
+  "ipad",
+  "grundschule",
+]);
+pruefe("Einzelbuchstaben fliegen raus", suchbegriffe("a ipad"), ["ipad"]);
+pruefe("kurze Eingabe bleibt erhalten", suchbegriffe("KI"), ["KI"]);
+pruefe("leere Eingabe", suchbegriffe(undefined), []);
+pruefe(
+  "höchstens acht Begriffe",
+  suchbegriffe("a1 a2 a3 a4 a5 a6 a7 a8 a9 a10").length,
+  8,
+);
+
+{
+  // Jeder Begriff wird zu einer eigenen UND-Bedingung; innerhalb davon darf
+  // er in einem beliebigen Feld stehen.
+  const wo = filterZuWhere({ q: "ipad grundschule" }) as {
+    AND: Array<{ OR?: unknown[] }>;
+  };
+  pruefe("zwei Begriffe ergeben zwei Bedingungen", wo.AND.length, 2);
+  pruefe(
+    "jede Bedingung durchsucht sechs Felder",
+    wo.AND.every((teil) => teil.OR?.length === 6),
+    true,
+  );
+}
 
 console.log("\nQR-Code (gegen einen echten Decoder gelesen)");
 {

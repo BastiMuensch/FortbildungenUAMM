@@ -77,14 +77,25 @@ function erlaubt(wert: string | undefined, werte: readonly string[]): string | u
 export function filterZuWhere(filter: FortbildungFilter): Prisma.FortbildungWhereInput {
   const und: Prisma.FortbildungWhereInput[] = [];
 
-  if (filter.q) {
+  // Mehrere Wörter werden UND-verknüpft, jedes darf in einem beliebigen Feld
+  // stehen. Ohne diese Aufteilung ginge der ganze Eingabetext als ein
+  // Teilstring in die Abfrage — „ipad grundschule" fände dann nichts, obwohl
+  // beide Begriffe vorkommen, nur eben in Titel und Beschreibung.
+  for (const begriff of suchbegriffe(filter.q)) {
     und.push({
       OR: [
-        { titel: { contains: filter.q, mode: "insensitive" } },
-        { kurztitel: { contains: filter.q, mode: "insensitive" } },
-        { beschreibungText: { contains: filter.q, mode: "insensitive" } },
-        { fach: { contains: filter.q, mode: "insensitive" } },
-        { veranstaltungsort: { name: { contains: filter.q, mode: "insensitive" } } },
+        { titel: { contains: begriff, mode: "insensitive" } },
+        { kurztitel: { contains: begriff, mode: "insensitive" } },
+        { beschreibungText: { contains: begriff, mode: "insensitive" } },
+        { fach: { contains: begriff, mode: "insensitive" } },
+        { veranstaltungsort: { name: { contains: begriff, mode: "insensitive" } } },
+        // Schlagworte gehören dazu: Wer „Medienkonzept" sucht, meint das
+        // Thema — auch wenn das Wort im Titel gar nicht vorkommt.
+        {
+          schlagworte: {
+            some: { schlagwort: { name: { contains: begriff, mode: "insensitive" } } },
+          },
+        },
       ],
     });
   }
@@ -128,6 +139,25 @@ export function filterZuWhere(filter: FortbildungFilter): Prisma.FortbildungWher
   }
 
   return und.length > 0 ? { AND: und } : {};
+}
+
+/** Höchstzahl an Suchbegriffen — schützt vor absurd langen Eingaben. */
+const MAX_BEGRIFFE = 8;
+
+/**
+ * Zerlegt die Sucheingabe in einzelne Begriffe.
+ *
+ * Einzelne Buchstaben fliegen raus: Sie treffen fast jeden Datensatz und
+ * kosten nur Rechenzeit. Bleibt dadurch nichts übrig — jemand sucht nach
+ * „3D" oder „KI" —, wird die Eingabe als Ganzes verwendet.
+ */
+export function suchbegriffe(eingabe: string | undefined): string[] {
+  if (!eingabe) return [];
+
+  const alle = eingabe.trim().split(/\s+/).filter(Boolean);
+  const brauchbar = alle.filter((wort) => wort.length >= 2);
+
+  return (brauchbar.length > 0 ? brauchbar : alle).slice(0, MAX_BEGRIFFE);
 }
 
 /** "2026-09-15" aus einem <input type="date"> zu Berliner Tagesgrenze. */

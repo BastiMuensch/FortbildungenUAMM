@@ -20,7 +20,8 @@ und Berichte.
 
 - Übersicht der kommenden Fortbildungen
 - Monatskalender mit bayerischen Ferien und Feiertagen
-- Suche über Titel, Beschreibung, Fach und Ort
+- Suche über Titel, Beschreibung, Fach, Ort und Schlagworte — mehrere Wörter
+  werden UND-verknüpft, jedes darf in einem anderen Feld stehen
 - **Schnellzugriffe** für die häufigsten Fragen: nächste 4 Wochen, Online,
   Grundschule, Mittelschule, noch dieses Schuljahr
 - Filter nach Schulart, Format, Organisationsform, Schlagwort,

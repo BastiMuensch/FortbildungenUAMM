@@ -54,7 +54,7 @@ export function OeffentlicheFilterLeiste({
   const aktiv = FILTERNAMEN.some((name) => wert(name));
 
   return (
-    <div className={`space-y-4 rounded-lg border p-4 ${laeuft ? "opacity-60" : ""}`}>
+    <div className={`space-y-4 border bg-card p-4 ${laeuft ? "opacity-60" : ""}`}>
       <div className="relative">
         <Search
           className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
@@ -64,7 +64,7 @@ export function OeffentlicheFilterLeiste({
           defaultValue={wert("q")}
           placeholder="Wonach suchen Sie? Titel, Thema, Fach oder Ort"
           aria-label="Volltextsuche"
-          className="h-10 w-full pl-9"
+          className="h-11 w-full border-input pl-9 text-base"
           onKeyDown={(e) => {
             if (e.key === "Enter") setzen({ q: e.currentTarget.value || undefined });
           }}
@@ -77,10 +77,10 @@ export function OeffentlicheFilterLeiste({
       </div>
 
       <details className="group" open={aktiv}>
-        <summary className="flex cursor-pointer list-none items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
+        <summary className="etikett flex cursor-pointer list-none items-center gap-2 text-muted-foreground transition-colors hover:text-foreground">
           <SlidersHorizontal className="size-4" aria-hidden />
           Filter
-          <span className="text-xs">(Schulart, Format, Kompetenzbereich …)</span>
+          <span className="font-normal normal-case tracking-normal">(Schulart, Format, Kompetenzbereich …)</span>
         </summary>
 
         <div className="mt-4 flex flex-wrap items-end gap-3">
@@ -175,14 +175,14 @@ function Liste({
   const id = `f-${label.toLowerCase()}`;
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-xs font-medium text-muted-foreground">
+      <label htmlFor={id} className="etikett mb-1.5 block text-muted-foreground">
         {label}
       </label>
       <select
         id={id}
         value={wert}
         onChange={(e) => onChange(e.target.value || undefined)}
-        className="h-8 max-w-56 rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+        className="h-9 max-w-56 border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring dark:bg-input/30"
       >
         <option value="">Alle</option>
         {optionen.map((o) => (
@@ -207,7 +207,7 @@ function Datum({
   const id = `f-datum-${label.toLowerCase()}`;
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-xs font-medium text-muted-foreground">
+      <label htmlFor={id} className="etikett mb-1.5 block text-muted-foreground">
         {label}
       </label>
       <Input
@@ -215,7 +215,7 @@ function Datum({
         type="date"
         value={wert}
         onChange={(e) => onChange(e.target.value || undefined)}
-        className="w-36"
+        className="zahl h-9 w-36"
       />
     </div>
   );

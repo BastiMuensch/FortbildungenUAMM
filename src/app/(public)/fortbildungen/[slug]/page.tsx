@@ -84,31 +84,35 @@ export default async function FortbildungDetail({
         Zur Übersicht
       </Link>
 
-      <header className="flex gap-5">
+      <header className={`flex gap-6 border-l-4 pl-5 ${ebene.kante}`}>
         <DatumsBlock
           datum={fortbildung.beginn}
           organisationsform={fortbildung.organisationsform}
-          className="size-20 rounded-2xl [&>span:nth-child(2)]:text-3xl"
+          gross
         />
 
         <div className="min-w-0 flex-1">
-          <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">
-            <span className={`font-medium ${ebene.text}`}>
+          <div className="mb-2.5 flex flex-wrap items-center gap-2">
+            <span className={`etikett px-1.5 py-0.5 ${ebene.flaeche}`}>
               {organisationsformLabel(fortbildung.organisationsform)}
             </span>
-            <Badge variant="outline">{formatLabel(fortbildung.format)}</Badge>
+            <span className="etikett border px-1.5 py-0.5 text-muted-foreground">
+              {formatLabel(fortbildung.format)}
+            </span>
             {fortbildung.niveaustufe ? (
-              <Badge variant="outline">
+              <span className="etikett border px-1.5 py-0.5 text-muted-foreground">
                 {niveaustufeLabel(fortbildung.niveaustufe)}
-              </Badge>
+              </span>
             ) : null}
           </div>
 
-          <h1 className="text-3xl font-semibold tracking-tight text-balance">
+          <h1 className="text-4xl leading-[1.05] font-bold tracking-tight text-balance">
             {fortbildung.titel}
           </h1>
           {fortbildung.kurztitel ? (
-            <p className="mt-1.5 text-muted-foreground">{fortbildung.kurztitel}</p>
+            <p className="mt-2 text-lg text-muted-foreground text-pretty">
+              {fortbildung.kurztitel}
+            </p>
           ) : null}
         </div>
       </header>
@@ -125,10 +129,12 @@ export default async function FortbildungDetail({
         </p>
       ) : null}
 
-      <dl className="mt-8 grid gap-5 rounded-2xl border bg-card p-6 sm:grid-cols-2">
+      <dl className="mt-8 grid gap-5 border-y bg-card px-1 py-6 sm:grid-cols-2">
         <Angabe icon={CalendarDays} label="Termin">
-          {formatZeitraum(fortbildung.beginn, fortbildung.ende)}
-          <span className="block text-xs">
+          <span className="zahl">
+            {formatZeitraum(fortbildung.beginn, fortbildung.ende)}
+          </span>
+          <span className="block text-xs text-muted-foreground">
             {formatDatumLang(fortbildung.beginn)}
           </span>
         </Angabe>
@@ -147,7 +153,7 @@ export default async function FortbildungDetail({
         </Angabe>
 
         <Angabe icon={Users} label="Plätze">
-          maximal {fortbildung.maxTn} Teilnehmende
+          <span className="zahl">maximal {fortbildung.maxTn}</span> Teilnehmende
         </Angabe>
 
         <Angabe label="Zielgruppe">
@@ -167,7 +173,7 @@ export default async function FortbildungDetail({
 
       {fortbildung.referenten.length > 0 ? (
         <section className="mt-8">
-          <h2 className="mb-2 text-sm font-semibold">Leitung</h2>
+          <h2 className="etikett mb-2 text-muted-foreground">Leitung</h2>
           <ul className="space-y-1 text-sm text-muted-foreground">
             {fortbildung.referenten.map(({ referent, rolle }) => (
               <li key={referent.id}>
@@ -182,7 +188,7 @@ export default async function FortbildungDetail({
 
       {bereiche.size > 0 ? (
         <section className="mt-8">
-          <h2 className="mb-2 text-sm font-semibold">
+          <h2 className="etikett mb-2 text-muted-foreground">
             Kompetenzen nach DigCompEdu Bavaria
           </h2>
           <ul className="space-y-1.5 text-sm text-muted-foreground">
@@ -205,7 +211,7 @@ export default async function FortbildungDetail({
 
       {fortbildung.schlagworte.length > 0 ? (
         <section className="mt-8">
-          <h2 className="mb-2 text-sm font-semibold">Schlagworte</h2>
+          <h2 className="etikett mb-2 text-muted-foreground">Schlagworte</h2>
           <div className="flex flex-wrap gap-1.5">
             {fortbildung.schlagworte.map(({ schlagwort }) => (
               <Link
@@ -241,7 +247,8 @@ export default async function FortbildungDetail({
 
         {fortbildung.fibsLehrgangsnummer ? (
           <span className="text-sm text-muted-foreground">
-            FIBS-Lehrgangsnummer: {fortbildung.fibsLehrgangsnummer}
+            FIBS-Nummer{" "}
+            <span className="zahl">{fortbildung.fibsLehrgangsnummer}</span>
           </span>
         ) : null}
       </div>
@@ -277,7 +284,7 @@ function Angabe({
         <span className="w-4 shrink-0" aria-hidden />
       )}
       <div>
-        <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+        <dt className="etikett text-muted-foreground">{label}</dt>
         <dd className="text-sm">{children}</dd>
       </div>
     </div>

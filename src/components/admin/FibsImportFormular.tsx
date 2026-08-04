@@ -30,7 +30,7 @@ export function FibsImportFormular({
 
   return (
     <div className="space-y-6">
-      <form action={formAction} className="rounded-lg border p-5">
+      <form action={formAction} className="border p-5">
         <h2 className="text-sm font-semibold">Import starten</h2>
 
         {darfUebernehmen ? (
@@ -61,7 +61,7 @@ export function FibsImportFormular({
       {state.fehler ? (
         <p
           role="alert"
-          className="flex items-start gap-2 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          className="flex items-start gap-2 bg-destructive/10 px-4 py-3 text-sm text-destructive"
         >
           <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
           {state.fehler}
@@ -82,11 +82,11 @@ export function FibsImportFormular({
           </div>
 
           {state.ergebnis.zeilen.length === 0 ? (
-            <p className="rounded-lg border border-dashed py-10 text-center text-sm text-muted-foreground">
+            <p className="border border-dashed py-10 text-center text-sm text-muted-foreground">
               Keine Treffer.
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-lg border">
+            <div className="overflow-x-auto border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -118,7 +118,7 @@ export function FibsImportFormular({
                         {zeile.lehrgangsnummer}
                       </TableCell>
                       <TableCell>{zeile.titel}</TableCell>
-                      <TableCell className="whitespace-nowrap tabular-nums">
+                      <TableCell className="whitespace-nowrap zahl">
                         {zeigeZeitpunkt(zeile.beginn)}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">

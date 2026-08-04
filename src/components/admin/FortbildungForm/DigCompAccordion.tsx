@@ -55,7 +55,7 @@ export function DigCompAccordion({
         <input key={code} type="hidden" name="kompetenzen" value={code} />
       ))}
 
-      <Accordion multiple defaultValue={[]} className="rounded-lg border px-4">
+      <Accordion multiple defaultValue={[]} className="border px-4">
         {bereiche.map((bereich) => {
           const anzahl = bereich.children.filter((k) => gesetzt.has(k.code)).length;
           const bereichGesetzt = gesetzt.has(bereich.code);
@@ -64,12 +64,12 @@ export function DigCompAccordion({
             <AccordionItem key={bereich.code} value={bereich.code}>
               <AccordionTrigger>
                 <span className="flex flex-1 items-center gap-2 pr-2">
-                  <span className="text-muted-foreground tabular-nums">
+                  <span className="text-muted-foreground zahl">
                     KB {bereich.code}
                   </span>
                   <span>{bereich.titel}</span>
                   {anzahl > 0 || bereichGesetzt ? (
-                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                    <span className="etikett bg-primary px-1.5 py-0.5 text-primary-foreground">
                       {anzahl > 0 ? `${anzahl} ausgewählt` : "Bereich gewählt"}
                     </span>
                   ) : null}
@@ -84,7 +84,7 @@ export function DigCompAccordion({
                     </p>
                   ) : null}
 
-                  <label className="flex items-center gap-2.5 rounded-md bg-muted/50 px-2.5 py-2">
+                  <label className="flex items-center gap-2.5 bg-muted/50 px-2.5 py-2">
                     <Checkbox
                       checked={bereichGesetzt}
                       onCheckedChange={(checked) =>
@@ -100,7 +100,7 @@ export function DigCompAccordion({
                     {bereich.children.map((kompetenz) => (
                       <label
                         key={kompetenz.code}
-                        className="flex items-start gap-2.5 rounded-md px-2.5 py-1.5 transition-colors hover:bg-accent/50"
+                        className="flex items-start gap-2.5 px-2.5 py-1.5 transition-colors hover:bg-accent/50"
                       >
                         <Checkbox
                           className="mt-0.5"
@@ -110,7 +110,7 @@ export function DigCompAccordion({
                           }
                         />
                         <span className="text-sm">
-                          <span className="text-muted-foreground tabular-nums">
+                          <span className="text-muted-foreground zahl">
                             {kompetenz.code}
                           </span>{" "}
                           {kompetenz.titel}

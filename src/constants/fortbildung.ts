@@ -59,23 +59,33 @@ export function organisationsformKurz(wert: string): string {
  *
  * Als vollständige Klassennamen hinterlegt, weil Tailwind zusammengesetzte
  * Namen wie `bg-${wert}` nicht findet. Die Farben selbst stehen als Token in
- * globals.css.
+ * globals.css und stammen aus den Wappen der Region.
+ *
+ *   flaeche — kräftig gefüllt, für Etiketten
+ *   weich   — zurückhaltend, für größere Flächen wie Kalendereinträge
+ *   kante   — linker Balken einer Listenzeile
  */
 const EBENE_KLASSEN = {
   SCHILF: {
     text: "text-schilf",
-    flaeche: "bg-schilf-weich text-schilf",
+    flaeche: "bg-schilf text-white",
+    weich: "bg-schilf-weich text-schilf",
     balken: "bg-schilf",
+    kante: "border-l-schilf",
   },
   REGIONAL: {
     text: "text-regional",
-    flaeche: "bg-regional-weich text-regional",
+    flaeche: "bg-regional text-white",
+    weich: "bg-regional-weich text-regional",
     balken: "bg-regional",
+    kante: "border-l-regional",
   },
   ALP: {
     text: "text-alp",
-    flaeche: "bg-alp-weich text-alp",
+    flaeche: "bg-alp text-white",
+    weich: "bg-alp-weich text-alp",
     balken: "bg-alp",
+    kante: "border-l-alp",
   },
 } as const;
 

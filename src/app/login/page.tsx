@@ -23,9 +23,13 @@ export default async function LoginPage({
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-16">
       <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-xl font-semibold tracking-tight">Redaktionsbereich</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">
+        <div className="mb-8 border-t-2 border-primary pt-6 text-center">
+          <span
+            aria-hidden
+            className="mx-auto mb-4 block size-4 rotate-45 bg-primary"
+          />
+          <h1 className="etikett text-base tracking-[0.16em]">Redaktionsbereich</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
             Fortbildungen des Schulamts Memmingen-Unterallgäu
           </p>
         </div>

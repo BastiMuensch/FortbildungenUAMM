@@ -132,7 +132,7 @@ export function FortbildungWizard({
       {fehler._ ? (
         <p
           role="alert"
-          className="flex items-start gap-2 rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          className="flex items-start gap-2 bg-destructive/10 px-4 py-3 text-sm text-destructive"
         >
           <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
           {fehler._}
@@ -253,7 +253,7 @@ function Fortschritt({
               disabled={i > index}
               aria-current={aktuell ? "step" : undefined}
               className={cn(
-                "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition-colors",
+                "flex items-center gap-2 px-2.5 py-1.5 text-sm transition-colors",
                 aktuell && "bg-primary/10 font-medium text-primary",
                 erledigt && "text-muted-foreground hover:bg-accent hover:text-foreground",
                 i > index && "cursor-default text-muted-foreground/50",
@@ -261,7 +261,7 @@ function Fortschritt({
             >
               <span
                 className={cn(
-                  "flex size-5 shrink-0 items-center justify-center rounded-full text-xs tabular-nums",
+                  "zahl flex size-5 shrink-0 items-center justify-center text-xs",
                   aktuell && "bg-primary text-primary-foreground",
                   erledigt && "bg-primary/15 text-primary",
                   i > index && "border border-current",
@@ -346,7 +346,7 @@ function Zusammenfassung({
   return (
     <div className="space-y-4">
       {luecken.length > 0 ? (
-        <p className="flex items-start gap-2 rounded-xl bg-ferien-weich px-4 py-3 text-sm text-ferien">
+        <p className="flex items-start gap-2 bg-ferien-weich px-4 py-3 text-sm text-ferien">
           <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
           <span>
             Es fehlt noch: {luecken.join(", ")}. Als Entwurf lässt sich die
@@ -355,13 +355,13 @@ function Zusammenfassung({
           </span>
         </p>
       ) : (
-        <p className="flex items-start gap-2 rounded-xl bg-primary/10 px-4 py-3 text-sm text-primary">
+        <p className="flex items-start gap-2 bg-primary/10 px-4 py-3 text-sm text-primary">
           <Check className="mt-0.5 size-4 shrink-0" aria-hidden />
           Alle Angaben vollständig.
         </p>
       )}
 
-      <dl className="grid gap-x-8 gap-y-4 rounded-xl border bg-card p-6 sm:grid-cols-2">
+      <dl className="grid gap-x-8 gap-y-4 border bg-card p-6 sm:grid-cols-2">
         <Zeile
           label="Termin"
           wert={beginn && ende ? formatZeitraum(beginn, ende) : "—"}

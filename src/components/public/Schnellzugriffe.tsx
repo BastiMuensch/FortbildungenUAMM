@@ -70,7 +70,7 @@ export function Schnellzugriffe({
   return (
     <div className={cn("space-y-3", laeuft && "opacity-60")}>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-muted-foreground">Schnell finden:</span>
+        <span className="etikett text-muted-foreground">Schnell finden</span>
 
         {zugriffe.map((zugriff) => {
           // Aktiv ist ein Zugriff nur, wenn all seine Werte gesetzt sind.
@@ -93,10 +93,10 @@ export function Schnellzugriffe({
                 )
               }
               className={cn(
-                "rounded-full border px-3 py-1.5 text-sm transition-colors",
+                "etikett border px-2.5 py-1.5 transition-colors",
                 aktiv
                   ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border text-muted-foreground hover:border-foreground/25 hover:bg-accent hover:text-foreground",
+                  : "border-input text-muted-foreground hover:border-primary hover:text-foreground",
               )}
             >
               {zugriff.label}
@@ -107,7 +107,7 @@ export function Schnellzugriffe({
 
       {aktiveFilter.length > 0 ? (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-muted-foreground">Gesetzt:</span>
+          <span className="etikett text-muted-foreground">Gesetzt</span>
 
           {aktiveFilter.map((chip) => (
             <button
@@ -115,9 +115,9 @@ export function Schnellzugriffe({
               type="button"
               onClick={() => entferne(chip.param)}
               title={`${chip.art}: ${chip.wert} entfernen`}
-              className="group flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-sm transition-colors hover:bg-destructive/10"
+              className="group flex items-center gap-1.5 border border-input bg-secondary px-2.5 py-1.5 text-sm transition-colors hover:border-destructive hover:bg-destructive/10"
             >
-              <span className="text-muted-foreground">{chip.art}:</span>
+              <span className="etikett text-muted-foreground">{chip.art}</span>
               <span className="font-medium">{chip.wert}</span>
               <X
                 className="size-3.5 text-muted-foreground group-hover:text-destructive"
@@ -132,7 +132,7 @@ export function Schnellzugriffe({
               onClick={() =>
                 starte(() => router.push(pathname, { scroll: false }))
               }
-              className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+              className="etikett text-muted-foreground underline underline-offset-4 hover:text-foreground"
             >
               alle entfernen
             </button>

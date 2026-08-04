@@ -73,7 +73,7 @@ export default async function FortbildungBearbeitenPage({
       </Link>
 
       {gespeichert ? (
-        <p className="mb-6 flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-3 text-sm text-primary">
+        <p className="mb-6 flex items-center gap-2 bg-primary/10 px-4 py-3 text-sm text-primary">
           <CheckCircle2 className="size-4 shrink-0" aria-hidden />
           Die Fortbildung wurde gespeichert.
         </p>
@@ -150,7 +150,7 @@ export default async function FortbildungBearbeitenPage({
       </div>
 
       {fortbildung.freigabeNotiz ? (
-        <div className="mb-6 rounded-xl bg-ferien-weich px-4 py-3 text-sm text-ferien">
+        <div className="mb-6 bg-ferien-weich px-4 py-3 text-sm text-ferien">
           <p className="flex items-start gap-2 font-medium">
             <Undo2 className="mt-0.5 size-4 shrink-0" aria-hidden />
             Von der Redaktion zurückgewiesen
@@ -160,7 +160,7 @@ export default async function FortbildungBearbeitenPage({
       ) : null}
 
       {freigabeberechtigt && fortbildung.status === "EINGEREICHT" ? (
-        <div className="mb-6 rounded-xl border bg-card p-5">
+        <div className="mb-6 border bg-card p-5">
           <p className="text-sm font-medium">Zur Freigabe eingereicht</p>
           <p className="mt-1 text-sm text-muted-foreground">
             {fortbildung.eingereichtAm

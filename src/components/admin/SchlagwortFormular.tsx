@@ -17,7 +17,7 @@ export function SchlagwortFormular() {
   );
 
   return (
-    <form action={formAction} className="rounded-lg border bg-card p-4">
+    <form action={formAction} className="border bg-card p-4">
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-56 flex-1 space-y-1.5">
           <Label htmlFor="name">Neues Schlagwort</Label>

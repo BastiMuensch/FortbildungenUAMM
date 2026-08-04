@@ -29,7 +29,7 @@ export function FibsSchalter({
   eingetragenVon?: string | null;
 }) {
   return (
-    <div className="rounded-xl border bg-card p-5">
+    <div className="border bg-card p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="flex items-center gap-2 font-medium">

@@ -29,15 +29,17 @@ export function MonatsGruppen({
     <div className="space-y-10">
       {[...gruppen.entries()].map(([monat, termine]) => (
         <section key={monat}>
-          <h2 className="mb-4 flex items-baseline gap-3 text-sm font-semibold tracking-wide text-muted-foreground uppercase">
-            {formatMonatJahr(new Date(`${monat}-15T12:00:00Z`))}
-            <span className="h-px flex-1 bg-border" aria-hidden />
-            <span className="text-xs font-normal normal-case">
+          <h2 className="mb-3 flex items-baseline gap-4 border-b-2 border-foreground pb-1.5">
+            <span className="etikett text-base tracking-widest">
+              {formatMonatJahr(new Date(`${monat}-15T12:00:00Z`))}
+            </span>
+            <span className="h-px flex-1" aria-hidden />
+            <span className="zahl text-xs text-muted-foreground">
               {termine.length} {termine.length === 1 ? "Termin" : "Termine"}
             </span>
           </h2>
 
-          <div className="grid gap-3">
+          <div className="grid">
             {termine.map((f) => (
               <FortbildungKarte key={f.id} fortbildung={f} maxTn={f.maxTn} />
             ))}

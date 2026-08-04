@@ -266,7 +266,7 @@ export function VeroeffentlichungFelder({
     : STATUS.filter((s) => STATUS_FUER_REFERENTEN.includes(s.value));
 
   return (
-    <div className="rounded-xl border bg-muted/30 p-4">
+    <div className="border bg-muted/30 p-4">
       <p className="mb-4 flex items-center gap-2 text-sm font-medium">
         <Info className="size-4 text-muted-foreground" aria-hidden />
         {darfVeroeffentlichen ? "Veröffentlichung und FIBS" : "Freigabe und FIBS"}
@@ -365,7 +365,7 @@ export function ZielgruppeFelder({
           {SCHULARTEN.map((schulart) => (
             <label
               key={schulart.value}
-              className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 transition-colors hover:bg-accent/50"
+              className="flex items-center gap-2.5 px-2.5 py-1.5 transition-colors hover:bg-accent/50"
             >
               <Checkbox
                 name="schularten"
@@ -538,7 +538,7 @@ export function TerminWarnung({ art, text }: { art: string; text: string }) {
   return (
     <p
       className={cn(
-        "flex items-start gap-2 rounded-xl px-4 py-3 text-sm",
+        "flex items-start gap-2 px-4 py-3 text-sm",
         dringend ? "bg-ferien-weich text-ferien" : "bg-muted text-muted-foreground",
       )}
     >

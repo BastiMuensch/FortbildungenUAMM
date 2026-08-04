@@ -56,12 +56,12 @@ export function SchlagwortInput({
         <input key={wert} type="hidden" name="schlagworte" value={wert} />
       ))}
 
-      <div className="flex flex-wrap gap-1.5 rounded-lg border border-input p-2">
+      <div className="flex flex-wrap gap-1.5 border border-input p-2">
         {pflicht.map((wert) => (
           <span
             key={wert}
             title="Pflicht-Schlagwort des Schulamts, kann nicht entfernt werden"
-            className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
+            className="inline-flex items-center gap-1 bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
           >
             <Lock className="size-3" aria-hidden />
             {wert}
@@ -71,7 +71,7 @@ export function SchlagwortInput({
         {werte.map((wert) => (
           <span
             key={wert}
-            className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-xs font-medium"
+            className="inline-flex items-center gap-1 bg-secondary px-2 py-1 text-xs font-medium"
           >
             {wert}
             <button
@@ -112,7 +112,7 @@ export function SchlagwortInput({
               key={vorschlag}
               type="button"
               onClick={() => hinzufuegen(vorschlag)}
-              className="inline-flex items-center gap-1 rounded-md border border-dashed px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-solid hover:bg-accent hover:text-foreground"
+              className="inline-flex items-center gap-1 border border-dashed px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-solid hover:bg-accent hover:text-foreground"
             >
               <Plus className="size-3" aria-hidden />
               {vorschlag}

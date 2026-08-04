@@ -51,7 +51,7 @@ export function TeilnehmerMeldung({
   return (
     <div
       className={cn(
-        "rounded-xl border bg-card p-5",
+        "border bg-card p-5",
         gemeldet && !bearbeiten && "border-dashed",
       )}
     >
@@ -83,7 +83,7 @@ export function TeilnehmerMeldung({
             </Link>
           </h3>
 
-          <p className="mt-0.5 text-sm text-muted-foreground tabular-nums">
+          <p className="mt-0.5 text-sm text-muted-foreground zahl">
             {formatZeitraum(fortbildung.beginn, fortbildung.ende)} ·{" "}
             {fortbildung.maxTn} Plätze geplant
           </p>
@@ -92,7 +92,7 @@ export function TeilnehmerMeldung({
         {gemeldet && !bearbeiten ? (
           <div className="flex items-center gap-3">
             <div className="text-right">
-              <span className="flex items-center justify-end gap-1.5 text-lg font-semibold tabular-nums">
+              <span className="flex items-center justify-end gap-1.5 text-lg font-semibold zahl">
                 <CheckCircle2 className="size-4 text-primary" aria-hidden />
                 {fortbildung.tnTatsaechlich}
               </span>

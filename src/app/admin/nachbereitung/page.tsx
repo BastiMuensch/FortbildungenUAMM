@@ -63,7 +63,7 @@ export default async function NachbereitungSeite() {
         </h2>
 
         {offen.length === 0 ? (
-          <div className="rounded-xl border border-dashed py-14 text-center">
+          <div className="border border-l-4 border-l-primary bg-card py-14 text-center">
             <CheckCircle2
               className="mx-auto mb-3 size-7 text-muted-foreground/60"
               aria-hidden

@@ -21,7 +21,7 @@ export function SystemtextFormular({
   const [state, formAction] = useActionState<FormularState, FormData>(action, {});
 
   return (
-    <form action={formAction} className="rounded-lg border p-5">
+    <form action={formAction} className="border p-5">
       <h2 className="mb-3 text-sm font-semibold">{ueberschrift}</h2>
 
       <Textarea

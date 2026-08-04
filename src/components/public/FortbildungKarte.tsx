@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { ArrowRight, Clock, Globe, MapPin, Users } from "lucide-react";
+import { ArrowRight, Globe, MapPin } from "lucide-react";
 
 import { formatDatumLang, formatZeit } from "@/lib/datetime";
 import {
   ebeneKlassen,
   formatLabel,
-  organisationsformLabel,
+  organisationsformKurz,
   schulartLabel,
 } from "@/constants/fortbildung";
 import type { FortbildungKachel } from "@/lib/queries";
@@ -13,12 +13,12 @@ import { cn } from "@/lib/utils";
 import { DatumsBlock } from "./DatumsBlock";
 
 /**
- * Ergebniskachel für Listen und Startseite.
+ * Eine Zeile der Terminliste.
  *
- * Aufbau: links das Datum als eigenständiger Block, rechts der Inhalt. Die
- * Farbe der linken Kante und des Datumsblocks zeigt die Fortbildungsebene
- * (SchiLf, RLFB, ALP) — dieselbe Zuordnung wie im Kalender, damit man die
- * Legende nur einmal lernen muss.
+ * Bewusst keine Karte mit Rahmen und Schatten: Ein kräftiger Balken in der
+ * Farbe der Fortbildungsebene übernimmt die Trennung, dazu eine Haarlinie
+ * nach unten. Das ergibt eine Liste, die man von oben nach unten liest,
+ * statt einer Sammlung gleich aussehender Kästchen.
  */
 export function FortbildungKarte({
   fortbildung,
@@ -32,21 +32,14 @@ export function FortbildungKarte({
   const online = fortbildung.veranstaltungsort.istOnline;
 
   return (
-    <article
-      className={cn(
-        "karte group relative overflow-hidden rounded-xl border bg-card",
-        abgesagt && "opacity-70",
-      )}
-    >
-      {/* Farbige Kante als Sortiermerkmal */}
-      <span
-        aria-hidden
-        className={cn("absolute inset-y-0 left-0 w-1", ebene.balken)}
-      />
-
+    <article className={cn("group relative", abgesagt && "opacity-60")}>
       <Link
         href={`/fortbildungen/${fortbildung.slug}`}
-        className="flex gap-4 p-5 pl-6 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className={cn(
+          "zeile flex items-stretch gap-4 border-b border-l-4 bg-card py-4 pr-4 pl-3 outline-none",
+          "hover:bg-accent/45 focus-visible:bg-accent/45 focus-visible:ring-2 focus-visible:ring-ring",
+          ebene.kante,
+        )}
       >
         <DatumsBlock
           datum={fortbildung.beginn}
@@ -54,14 +47,15 @@ export function FortbildungKarte({
         />
 
         <div className="min-w-0 flex-1">
-          <div className="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-            <span className={cn("font-medium", ebene.text)}>
-              {organisationsformLabel(fortbildung.organisationsform)}
+          {/* Kopfzeile: Ebene als Farbfläche, Format daneben */}
+          <div className="mb-1.5 flex flex-wrap items-center gap-2">
+            <span
+              className={cn("etikett px-1.5 py-0.5", ebene.flaeche)}
+            >
+              {organisationsformKurz(fortbildung.organisationsform)}
             </span>
-            <span className="text-muted-foreground" aria-hidden>
-              ·
-            </span>
-            <span className="flex items-center gap-1 text-muted-foreground">
+
+            <span className="etikett flex items-center gap-1 text-muted-foreground">
               {online ? (
                 <Globe className="size-3" aria-hidden />
               ) : (
@@ -69,8 +63,9 @@ export function FortbildungKarte({
               )}
               {formatLabel(fortbildung.format)}
             </span>
+
             {abgesagt ? (
-              <span className="rounded-full bg-destructive/10 px-2 py-0.5 font-medium text-destructive">
+              <span className="etikett bg-destructive px-1.5 py-0.5 text-white">
                 Abgesagt
               </span>
             ) : null}
@@ -78,36 +73,35 @@ export function FortbildungKarte({
 
           <h3
             className={cn(
-              "font-semibold tracking-tight text-balance transition-colors group-hover:text-primary",
+              "text-lg leading-snug font-semibold tracking-tight text-balance",
+              "transition-colors group-hover:text-primary",
               abgesagt && "line-through",
             )}
           >
             {fortbildung.titel}
           </h3>
 
-          <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <Clock className="size-3.5 shrink-0" aria-hidden />
-              <span className="sr-only">{formatDatumLang(fortbildung.beginn)}, </span>
-              {formatZeit(fortbildung.beginn)} – {formatZeit(fortbildung.ende)} Uhr
+          {/* Fakten in Monospace — untereinander lesbar */}
+          <p className="zahl mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+            <span className="sr-only">{formatDatumLang(fortbildung.beginn)}, </span>
+            <span>
+              {formatZeit(fortbildung.beginn)}–{formatZeit(fortbildung.ende)}
             </span>
-            <span className="flex min-w-0 items-center gap-1.5">
-              {online ? (
-                <Globe className="size-3.5 shrink-0" aria-hidden />
-              ) : (
-                <MapPin className="size-3.5 shrink-0" aria-hidden />
-              )}
-              <span className="truncate">{fortbildung.veranstaltungsort.name}</span>
+            <span className="text-border" aria-hidden>
+              |
             </span>
+            <span className="truncate">{fortbildung.veranstaltungsort.name}</span>
             {maxTn ? (
-              <span className="flex items-center gap-1.5">
-                <Users className="size-3.5 shrink-0" aria-hidden />
-                {maxTn} Plätze
-              </span>
+              <>
+                <span className="text-border" aria-hidden>
+                  |
+                </span>
+                <span>{maxTn} Plätze</span>
+              </>
             ) : null}
           </p>
 
-          <p className="mt-2.5 text-xs text-muted-foreground">
+          <p className="etikett mt-2 text-muted-foreground/80">
             {fortbildung.schularten.map(schulartLabel).join(" · ")}
           </p>
         </div>

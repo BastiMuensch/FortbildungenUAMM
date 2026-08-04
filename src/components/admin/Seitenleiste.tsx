@@ -9,7 +9,6 @@ import {
   Download,
   ExternalLink,
   FileText,
-  GraduationCap,
   LogOut,
   MapPin,
   Menu,
@@ -95,12 +94,12 @@ export function Seitenleiste({
   return (
     <>
       {/* Kopfzeile nur auf schmalen Bildschirmen */}
-      <div className="sticky top-0 z-40 flex items-center gap-3 border-b bg-card px-4 py-3 lg:hidden">
+      <div className="sticky top-0 z-40 flex items-center gap-3 border-b-2 border-primary bg-card px-4 py-3 lg:hidden">
         <button
           type="button"
           onClick={() => setOffen(true)}
           aria-label="Navigation öffnen"
-          className="flex size-9 items-center justify-center rounded-lg border transition-colors hover:bg-accent"
+          className="flex size-9 items-center justify-center border transition-colors hover:bg-accent"
         >
           <Menu className="size-4" aria-hidden />
         </button>
@@ -120,17 +119,17 @@ export function Seitenleiste({
       <nav
         aria-label="Bereiche"
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r bg-card transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r-2 border-primary bg-card transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0",
           offen ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex items-center justify-between border-b px-4 py-4">
+        <div className="flex items-center justify-between border-b-2 border-foreground px-4 py-4">
           <Wortmarke />
           <button
             type="button"
             onClick={() => setOffen(false)}
             aria-label="Navigation schließen"
-            className="flex size-8 items-center justify-center rounded-lg transition-colors hover:bg-accent lg:hidden"
+            className="flex size-8 items-center justify-center transition-colors hover:bg-accent lg:hidden"
           >
             <X className="size-4" aria-hidden />
           </button>
@@ -143,7 +142,7 @@ export function Seitenleiste({
 
             return (
               <div key={gruppe.titel}>
-                <p className="mb-1 px-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                <p className="etikett mb-1.5 px-3 text-muted-foreground">
                   {gruppe.titel}
                 </p>
                 <ul className="space-y-0.5">
@@ -165,7 +164,7 @@ export function Seitenleiste({
         <div className="space-y-1 border-t p-3">
           <Link
             href="/"
-            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex items-center gap-2.5 px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <ExternalLink className="size-4 shrink-0" aria-hidden />
             Frontend ansehen
@@ -173,9 +172,9 @@ export function Seitenleiste({
 
           <Link
             href="/admin/konto"
-            className="flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors hover:bg-accent"
+            className="flex items-center gap-2.5 px-3 py-2 transition-colors hover:bg-accent"
           >
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+            <span className="zahl flex size-7 shrink-0 items-center justify-center bg-primary text-xs font-semibold text-primary-foreground">
               {initialen(name)}
             </span>
             <span className="min-w-0 leading-tight">
@@ -189,7 +188,7 @@ export function Seitenleiste({
           <form action={logout}>
             <button
               type="submit"
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
               <LogOut className="size-4 shrink-0" aria-hidden />
               Abmelden
@@ -227,10 +226,10 @@ function Punkt({
       onClick={onNavigate}
       aria-current={aktiv ? "page" : undefined}
       className={cn(
-        "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
+        "zeile flex items-center gap-2.5 border-l-2 px-3 py-2 text-sm",
         aktiv
-          ? "bg-primary/10 font-medium text-primary"
-          : "text-muted-foreground hover:bg-accent hover:text-foreground",
+          ? "border-l-primary bg-primary/10 font-semibold text-primary"
+          : "border-l-transparent text-muted-foreground hover:bg-accent hover:text-foreground",
       )}
     >
       <Icon className="size-4 shrink-0" aria-hidden />
@@ -238,7 +237,7 @@ function Punkt({
       {zahl > 0 ? (
         <span
           title={`${zahl} offen`}
-          className="flex min-w-5 items-center justify-center rounded-full bg-ferien px-1.5 text-xs font-medium text-white tabular-nums"
+          className="zahl flex min-w-5 items-center justify-center bg-ferien px-1.5 text-xs font-semibold text-white"
         >
           {zahl}
         </span>
@@ -250,11 +249,9 @@ function Punkt({
 function Wortmarke() {
   return (
     <Link href="/admin" className="flex items-center gap-2.5">
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-        <GraduationCap className="size-4" aria-hidden />
-      </span>
+      <span aria-hidden className="size-3.5 shrink-0 rotate-45 bg-primary" />
       <span className="leading-tight">
-        <span className="block text-sm font-semibold tracking-tight">
+        <span className="etikett block text-[0.8rem] tracking-[0.14em]">
           Fortbildungen
         </span>
         <span className="block text-xs text-muted-foreground">

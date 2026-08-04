@@ -48,7 +48,7 @@ export function ReferentenPicker({
           {gewaehlte.map((r) => (
             <span
               key={r.id}
-              className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-2 py-1 text-xs font-medium"
+              className="inline-flex items-center gap-1.5 bg-secondary px-2 py-1 text-xs font-medium"
             >
               {r.vorname} {r.nachname}
               {r.organisation ? (
@@ -68,7 +68,7 @@ export function ReferentenPicker({
       ) : null}
 
       {referenten.length === 0 ? (
-        <p className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
+        <p className="border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
           Noch keine Referentinnen und Referenten angelegt.{" "}
           <Link
             href="/admin/referenten"
@@ -93,7 +93,7 @@ export function ReferentenPicker({
             />
           </div>
 
-          <div className="max-h-72 space-y-0.5 overflow-y-auto rounded-lg border p-1">
+          <div className="max-h-72 space-y-0.5 overflow-y-auto border p-1">
             {gefiltert.length === 0 ? (
               <p className="px-2.5 py-4 text-center text-sm text-muted-foreground">
                 Kein Treffer für „{suche}“.
@@ -102,7 +102,7 @@ export function ReferentenPicker({
               gefiltert.map((r) => (
                 <label
                   key={r.id}
-                  className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 transition-colors hover:bg-accent/50"
+                  className="flex items-center gap-2.5 px-2.5 py-1.5 transition-colors hover:bg-accent/50"
                 >
                   <Checkbox
                     checked={gesetzt.has(r.id)}

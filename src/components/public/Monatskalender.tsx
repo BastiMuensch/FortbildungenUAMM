@@ -41,12 +41,12 @@ export function Monatskalender({
   return (
     <>
       {/* Rasteransicht ab Tablet-Breite */}
-      <div className="hidden overflow-hidden rounded-lg border sm:block">
-        <div className="grid grid-cols-7 border-b bg-muted/40">
+      <div className="hidden overflow-hidden border-2 border-foreground sm:block">
+        <div className="grid grid-cols-7 border-b-2 border-foreground bg-card">
           {WOCHENTAGE.map((tag) => (
             <div
               key={tag}
-              className="px-2 py-2 text-center text-xs font-medium text-muted-foreground"
+              className="etikett px-2 py-2 text-center text-muted-foreground"
             >
               {tag}
             </div>
@@ -71,16 +71,16 @@ export function Monatskalender({
                 <div className="mb-1 flex items-baseline justify-between gap-1">
                   <span
                     className={cn(
-                      "text-xs tabular-nums",
-                      tag.imMonat ? "text-foreground" : "text-muted-foreground/60",
+                      "zahl text-xs",
+                      tag.imMonat ? "text-foreground" : "text-muted-foreground/50",
                       tag.iso === heute &&
-                        "rounded bg-primary px-1.5 py-0.5 font-semibold text-primary-foreground",
+                        "bg-primary px-1.5 py-0.5 font-semibold text-primary-foreground",
                     )}
                   >
                     {tag.tagesZahl}
                   </span>
                   {status.label && status.art !== "wochenende" ? (
-                    <span className="truncate text-[10px] text-muted-foreground">
+                    <span className="etikett truncate text-[0.6rem] text-muted-foreground">
                       {status.label}
                     </span>
                   ) : null}
@@ -104,7 +104,7 @@ export function Monatskalender({
           .map((tag) => {
             const status = ferienStatus(new Date(`${tag.iso}T12:00:00Z`));
             return (
-              <div key={tag.iso} className="rounded-lg border p-3">
+              <div key={tag.iso} className="border-l-4 border-l-primary bg-card p-3">
                 <p className="mb-2 text-sm font-medium">
                   {tag.tagesZahl}. {WOCHENTAGE[tag.wochentag]}
                   {status.label ? (
@@ -123,7 +123,7 @@ export function Monatskalender({
           })}
 
         {[...nachTag.keys()].length === 0 ? (
-          <p className="rounded-lg border border-dashed py-12 text-center text-sm text-muted-foreground">
+          <p className="border border-dashed py-12 text-center text-sm text-muted-foreground">
             In diesem Monat ist kein Termin ausgeschrieben.
           </p>
         ) : null}
@@ -140,12 +140,12 @@ function TerminChip({ fortbildung }: { fortbildung: FortbildungKachel }) {
       href={`/fortbildungen/${fortbildung.slug}`}
       title={fortbildung.titel}
       className={cn(
-        "block truncate rounded-md px-1.5 py-1 text-[11px] leading-tight font-medium transition-opacity hover:opacity-80",
-        ebene.flaeche,
+        "block truncate px-1.5 py-1 text-[11px] leading-tight font-medium transition-opacity hover:opacity-80",
+        ebene.weich,
         fortbildung.status === "ABGESAGT" && "line-through opacity-60",
       )}
     >
-      <span className="tabular-nums">{formatZeit(fortbildung.beginn)}</span>{" "}
+      <span className="zahl">{formatZeit(fortbildung.beginn)}</span>{" "}
       {fortbildung.kurztitel ?? fortbildung.titel}
     </Link>
   );

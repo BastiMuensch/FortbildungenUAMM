@@ -86,7 +86,7 @@ export function PasswortFormular({
       {fehler._ ? (
         <p
           role="alert"
-          className="flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          className="flex items-start gap-2 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
           {fehler._}

@@ -41,7 +41,7 @@ export default async function TextePage() {
         wert={wert("datenschutz")}
       />
 
-      <section className="rounded-lg border bg-muted/30 p-5">
+      <section className="border bg-muted/30 p-5">
         <h2 className="text-sm font-semibold">Löschlauf</h2>
         <p className="mt-1.5 text-sm text-muted-foreground">
           Vergangene Fortbildungen werden nach zwei Jahren archiviert,
@@ -50,7 +50,7 @@ export default async function TextePage() {
         </p>
         <p className="mt-2 text-sm">
           Zuletzt gelaufen:{" "}
-          <span className="tabular-nums">
+          <span className="zahl">
             {letzteBereinigung ? formatDatumZeit(letzteBereinigung) : "noch nie"}
           </span>
         </p>

@@ -58,7 +58,7 @@ export function AdminFilterLeiste({
 
   return (
     <div
-      className={`space-y-3 rounded-lg border bg-card p-4 ${laeuft ? "opacity-60" : ""}`}
+      className={`space-y-3 border bg-card p-4 ${laeuft ? "opacity-60" : ""}`}
     >
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-56 flex-1">
@@ -237,7 +237,7 @@ function Liste({
         id={id}
         value={wert}
         onChange={(e) => onChange(e.target.value || undefined)}
-        className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+        className="h-8 border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
       >
         <option value="">Alle</option>
         {optionen.map((o) => (

@@ -18,7 +18,7 @@ export function OrtFormular() {
   const fehler = state.fehler ?? {};
 
   return (
-    <form action={formAction} className="rounded-lg border bg-card p-4">
+    <form action={formAction} className="border bg-card p-4">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end">
         <Feld
           name="name"

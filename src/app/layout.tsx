@@ -1,21 +1,29 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Archivo, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
-// next/font lädt die Schrift zur Bauzeit herunter und liefert sie vom eigenen
-// Server aus. Es gibt damit keine Verbindung des Browsers zu Google — das ist
-// die datenschutzrechtlich entscheidende Eigenschaft, nicht bloß eine
-// Performance-Frage.
-const geistSans = Geist({
+// next/font lädt die Schriften zur Bauzeit herunter und liefert sie vom
+// eigenen Server aus. Es gibt damit keine Verbindung des Browsers zu Google —
+// das ist die datenschutzrechtlich entscheidende Eigenschaft, nicht bloß eine
+// Frage der Ladezeit.
+//
+// Archivo statt einer Standardschrift: eine kräftige Grotesk mit geraden
+// Endungen und engem Innenraum. Sie trägt große Überschriften, ohne
+// beliebig zu wirken.
+const archivo = Archivo({
   variable: "--font-sans",
   subsets: ["latin"],
   display: "swap",
+  weight: ["400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+// Für alles Zählbare. Dieselbe Zeichenbreite lässt Uhrzeiten und Platzzahlen
+// in Listen untereinander stehen.
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
   display: "swap",
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -34,7 +42,7 @@ export default function RootLayout({
   return (
     <html
       lang="de"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${archivo.variable} ${plexMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">{children}</body>
     </html>

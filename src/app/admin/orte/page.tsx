@@ -52,7 +52,7 @@ export default async function OrtePage() {
 
       <OrtFormular />
 
-      <div className="overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -86,7 +86,7 @@ export default async function OrtePage() {
                 <TableCell className="text-sm text-muted-foreground">
                   {o.strasse ?? "—"}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">
+                <TableCell className="text-right zahl">
                   {o._count.fortbildungen}
                 </TableCell>
                 <TableCell>

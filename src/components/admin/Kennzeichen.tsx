@@ -16,9 +16,9 @@ const STATUS_STIL: Record<
   { klasse: string; icon: React.ComponentType<{ className?: string }> }
 > = {
   ENTWURF: { klasse: "bg-muted text-muted-foreground", icon: FileEdit },
-  EINGEREICHT: { klasse: "bg-ferien-weich text-ferien", icon: Clock },
-  VEROEFFENTLICHT: { klasse: "bg-primary/10 text-primary", icon: CheckCircle2 },
-  ABGESAGT: { klasse: "bg-destructive/10 text-destructive", icon: XCircle },
+  EINGEREICHT: { klasse: "bg-ferien text-white", icon: Clock },
+  VEROEFFENTLICHT: { klasse: "bg-primary text-primary-foreground", icon: CheckCircle2 },
+  ABGESAGT: { klasse: "bg-destructive text-white", icon: XCircle },
   ARCHIVIERT: { klasse: "bg-muted text-muted-foreground", icon: CircleDashed },
 };
 
@@ -35,7 +35,7 @@ export function StatusKennzeichen({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap",
+        "etikett inline-flex items-center gap-1.5 px-1.5 py-0.5 whitespace-nowrap",
         stil.klasse,
         className,
       )}
@@ -67,10 +67,8 @@ export function FibsKennzeichen({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap",
-        inFibs
-          ? "bg-primary/10 text-primary"
-          : "bg-ferien-weich text-ferien",
+        "etikett inline-flex items-center gap-1.5 px-1.5 py-0.5 whitespace-nowrap",
+        inFibs ? "bg-primary text-primary-foreground" : "bg-ferien text-white",
         className,
       )}
       title={
@@ -84,7 +82,7 @@ export function FibsKennzeichen({
       <Globe2 className="size-3" aria-hidden />
       {inFibs ? "in FIBS" : "nicht in FIBS"}
       {ausfuehrlich && inFibs && lehrgangsnummer ? (
-        <span className="font-normal opacity-80">· {lehrgangsnummer}</span>
+        <span className="zahl font-normal opacity-85">· {lehrgangsnummer}</span>
       ) : null}
     </span>
   );

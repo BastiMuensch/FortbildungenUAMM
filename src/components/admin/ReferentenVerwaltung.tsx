@@ -86,11 +86,11 @@ export function ReferentenVerwaltung({
       </Button>
 
       {referenten.length === 0 ? (
-        <p className="rounded-lg border border-dashed py-16 text-center text-sm text-muted-foreground">
+        <p className="border border-dashed py-16 text-center text-sm text-muted-foreground">
           Noch niemand angelegt.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
+        <div className="overflow-x-auto border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -141,7 +141,7 @@ export function ReferentenVerwaltung({
                     <ZugangsStand zugang={r.zugang} />
                   </TableCell>
 
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="text-right zahl">
                     {r._count.fortbildungen}
                   </TableCell>
                   <TableCell>
@@ -282,7 +282,7 @@ function ZugangDialog({
 
         <div className="space-y-4 py-2">
           {state.link ? (
-            <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-4">
+            <div className="space-y-2 border border-primary/30 bg-primary/5 p-4">
               <p className="text-sm font-medium">{state.meldung}</p>
               <p className="text-sm text-muted-foreground text-pretty">
                 Diesen Link jetzt kopieren und weitergeben — er wird nur einmal

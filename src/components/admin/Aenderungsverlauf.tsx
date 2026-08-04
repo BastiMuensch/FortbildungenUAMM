@@ -31,7 +31,7 @@ export async function Aenderungsverlauf({ id }: { id: string }) {
         <li key={eintrag.id} className="flex gap-3">
           {/* Zeitstrahl: Punkt plus Linie, außer beim letzten Eintrag */}
           <div className="flex flex-col items-center pt-1.5">
-            <span className="size-2 shrink-0 rounded-full bg-primary/40" aria-hidden />
+            <span className="size-2 shrink-0 bg-primary/40" aria-hidden />
             {i < eintraege.length - 1 ? (
               <span className="w-px flex-1 bg-border" aria-hidden />
             ) : null}
@@ -39,7 +39,7 @@ export async function Aenderungsverlauf({ id }: { id: string }) {
 
           <div className="pb-4">
             <p className="text-sm">{beschreibe(eintrag)}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+            <p className="mt-0.5 text-xs text-muted-foreground zahl">
               {formatDatumZeit(eintrag.at)}
               {eintrag.user
                 ? ` · ${eintrag.user.name ?? eintrag.user.email}`

@@ -62,14 +62,14 @@ export function RichTextEditor({
 
   if (!editor) {
     return (
-      <div className="h-52 animate-pulse rounded-lg border border-input bg-muted/40" />
+      <div className="h-52 animate-pulse border border-input bg-muted/40" />
     );
   }
 
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-lg border border-input bg-transparent focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50",
+        "overflow-hidden border border-input bg-transparent focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50",
         fehlerhaft && "border-destructive ring-3 ring-destructive/20",
       )}
     >
@@ -213,7 +213,7 @@ function Knopf({
       aria-label={titel}
       aria-pressed={aktiv}
       className={cn(
-        "flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40",
+        "flex size-7 items-center justify-center text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40",
         aktiv && "bg-accent text-foreground",
       )}
     >

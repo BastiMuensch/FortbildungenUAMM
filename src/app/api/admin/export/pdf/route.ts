@@ -179,8 +179,8 @@ export async function GET(request: NextRequest) {
         ],
       ],
       styles: { fontSize: 7.5, cellPadding: 1.6, overflow: "linebreak" },
-      headStyles: { fillColor: [42, 72, 120], fontSize: 7.5 },
-      footStyles: { fillColor: [238, 240, 244], textColor: 20, fontStyle: "bold" },
+      headStyles: { fillColor: [29, 56, 105], fontSize: 7.5 },
+      footStyles: { fillColor: [246, 244, 238], textColor: 20, fontStyle: "bold" },
       columnStyles: {
         0: { cellWidth: 18 },
         1: { cellWidth: 17 },

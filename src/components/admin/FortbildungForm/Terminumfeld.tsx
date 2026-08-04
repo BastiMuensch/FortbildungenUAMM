@@ -90,7 +90,7 @@ export function Terminumfeld({
 
   if (!gewaehlterTag) {
     return (
-      <div className="rounded-xl border border-dashed p-5 text-center">
+      <div className="border border-dashed p-5 text-center">
         <CalendarRange
           className="mx-auto mb-2 size-5 text-muted-foreground/60"
           aria-hidden
@@ -112,7 +112,7 @@ export function Terminumfeld({
         <p
           key={`hart-${i}`}
           role="alert"
-          className="flex items-start gap-2 rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          className="flex items-start gap-2 bg-destructive/10 px-4 py-3 text-sm text-destructive"
         >
           <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
           <span>
@@ -129,7 +129,7 @@ export function Terminumfeld({
       {hinweise.map((k, i) => (
         <p
           key={`hinweis-${i}`}
-          className="flex items-start gap-2 rounded-xl bg-ferien-weich px-4 py-3 text-sm text-ferien"
+          className="flex items-start gap-2 bg-ferien-weich px-4 py-3 text-sm text-ferien"
         >
           <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
           {k.text}
@@ -144,7 +144,7 @@ export function Terminumfeld({
       ) : null}
 
       {konflikte.length === 0 && !laeuft ? (
-        <p className="flex items-start gap-2 rounded-xl bg-primary/10 px-4 py-3 text-sm text-primary">
+        <p className="flex items-start gap-2 bg-primary/10 px-4 py-3 text-sm text-primary">
           <CalendarRange className="mt-0.5 size-4 shrink-0" aria-hidden />
           An diesem Tag ist keine andere Veranstaltung geplant.
         </p>
@@ -190,7 +190,7 @@ function MiniKalender({
   }).filter((_, i, alle) => i < 35 || alle.slice(35).some((z) => z.imMonat));
 
   return (
-    <div className="overflow-hidden rounded-xl border">
+    <div className="overflow-hidden border">
       <p className="border-b bg-muted/40 px-3 py-2 text-sm font-medium">
         {formatMonatJahr(new Date(Date.UTC(jahr, monat, 15)))}
       </p>
@@ -231,7 +231,7 @@ function MiniKalender({
             >
               <span
                 className={cn(
-                  "text-xs tabular-nums",
+                  "text-xs zahl",
                   !zelle.imMonat && "text-muted-foreground/50",
                   gewaehlt &&
                     "rounded bg-primary px-1.5 py-0.5 font-semibold text-primary-foreground",
@@ -243,7 +243,7 @@ function MiniKalender({
               {anzahl > 0 ? (
                 <span className="flex gap-0.5" aria-hidden>
                   {Array.from({ length: Math.min(anzahl, 3) }, (_, i) => (
-                    <span key={i} className="size-1 rounded-full bg-foreground/40" />
+                    <span key={i} className="size-1 bg-foreground/40" />
                   ))}
                 </span>
               ) : (
@@ -284,9 +284,9 @@ function TagesListe({ tag, termine }: { tag: string; termine: UmfeldTermin[] }) 
           return (
             <li
               key={t.id}
-              className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border px-3 py-2 text-sm"
+              className="flex flex-wrap items-center gap-x-2 gap-y-1 border px-3 py-2 text-sm"
             >
-              <span className="tabular-nums text-muted-foreground">
+              <span className="zahl text-muted-foreground">
                 {formatZeit(new Date(t.beginn))}–{formatZeit(new Date(t.ende))}
               </span>
 

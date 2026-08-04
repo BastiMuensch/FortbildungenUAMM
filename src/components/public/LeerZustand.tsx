@@ -30,13 +30,13 @@ export function LeerZustand({
   gefiltert: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-dashed px-6 py-14 text-center">
+    <div className="border border-dashed px-6 py-14 text-center">
       <SearchX
         className="mx-auto mb-3 size-7 text-muted-foreground/60"
         aria-hidden
       />
 
-      <p className="font-medium">Dazu gibt es derzeit kein Angebot.</p>
+      <p className="text-lg font-semibold">Dazu gibt es derzeit kein Angebot.</p>
 
       {!gefiltert ? (
         <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground text-pretty">
@@ -63,13 +63,13 @@ export function LeerZustand({
               <li key={ausweg.schluessel}>
                 <Link
                   href={ausweg.href}
-                  className="karte flex items-center justify-between gap-3 rounded-lg border bg-card px-4 py-3 text-left text-sm"
+                  className="zeile flex items-center justify-between gap-3 border border-l-4 border-l-primary bg-card px-4 py-3 text-left text-sm hover:bg-accent/45"
                 >
                   <span className="text-pretty">
                     {ausweg.vorsatz ? `${ausweg.vorsatz} ` : ""}
                     <span className="font-medium">{ausweg.hervorhebung}</span>
                   </span>
-                  <span className="flex shrink-0 items-center gap-1.5 font-medium text-primary whitespace-nowrap">
+                  <span className="zahl flex shrink-0 items-center gap-1.5 font-medium text-primary whitespace-nowrap">
                     {ausweg.treffer} Treffer
                     <ArrowRight className="size-4" aria-hidden />
                   </span>

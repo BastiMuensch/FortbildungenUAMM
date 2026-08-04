@@ -56,7 +56,7 @@ export default async function FreigabenSeite() {
       </div>
 
       {eingereicht.length === 0 ? (
-        <div className="rounded-xl border border-dashed py-16 text-center">
+        <div className="border border-l-4 border-l-primary bg-card py-16 text-center">
           <CheckCircle2
             className="mx-auto mb-3 size-7 text-muted-foreground/60"
             aria-hidden
@@ -69,9 +69,9 @@ export default async function FreigabenSeite() {
       ) : (
         <div className="space-y-4">
           {eingereicht.map((f) => (
-            <article key={f.id} className="rounded-xl border bg-card p-5">
+            <article key={f.id} className="border border-l-4 border-l-ferien bg-card p-5">
               <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
-                <span className="rounded-md bg-secondary px-2 py-0.5 font-medium">
+                <span className="bg-secondary px-2 py-0.5 font-medium">
                   {organisationsformKurz(f.organisationsform)}
                 </span>
                 <span className="text-muted-foreground">
@@ -102,7 +102,7 @@ export default async function FreigabenSeite() {
                 </Link>
               </h2>
 
-              <p className="mt-1 text-sm text-muted-foreground tabular-nums">
+              <p className="mt-1 text-sm text-muted-foreground zahl">
                 {formatZeitraum(f.beginn, f.ende)} · {f.maxTn} Plätze
               </p>
 

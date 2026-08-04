@@ -2,38 +2,37 @@ import { berlinIsoDatum } from "@/lib/datetime";
 import { ebeneKlassen } from "@/constants/fortbildung";
 import { cn } from "@/lib/utils";
 
-const WOCHENTAG = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+const WOCHENTAG = ["SO", "MO", "DI", "MI", "DO", "FR", "SA"];
 const MONAT = [
-  "Jan",
-  "Feb",
-  "Mär",
-  "Apr",
-  "Mai",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Okt",
-  "Nov",
-  "Dez",
+  "JAN",
+  "FEB",
+  "MÄR",
+  "APR",
+  "MAI",
+  "JUN",
+  "JUL",
+  "AUG",
+  "SEP",
+  "OKT",
+  "NOV",
+  "DEZ",
 ];
 
 /**
- * Abreißkalender-Block für Terminkarten.
+ * Das Datum als eigenständiger Block mit übergroßer Ziffer.
  *
- * Das Datum ist die Information, nach der Lehrkräfte eine Fortbildungsliste
- * überfliegen. Als eigenständiger Block ist es auf einen Blick erfassbar,
- * während es in einer Textzeile untergeht. Die Farbe zeigt zugleich die
- * Fortbildungsebene.
+ * Danach überfliegt man eine Terminliste. In einer Textzeile geht das Datum
+ * unter; als Ziffer in Monospace steht es in jeder Zeile an derselben Stelle
+ * und lässt sich von oben nach unten lesen.
  */
 export function DatumsBlock({
   datum,
   organisationsform,
-  className,
+  gross = false,
 }: {
   datum: Date;
   organisationsform: string;
-  className?: string;
+  gross?: boolean;
 }) {
   const iso = berlinIsoDatum(datum);
   const tag = Number(iso.slice(8, 10));
@@ -43,18 +42,39 @@ export function DatumsBlock({
   return (
     <div
       className={cn(
-        "flex size-14 shrink-0 flex-col items-center justify-center rounded-xl leading-none",
-        ebeneKlassen(organisationsform).flaeche,
-        className,
+        "flex shrink-0 flex-col items-center leading-none",
+        gross ? "w-24" : "w-16",
       )}
-      // Für Screenreader steht das vollständige Datum im Fließtext der Karte.
+      // Für Screenreader steht das vollständige Datum im Fließtext.
       aria-hidden
     >
-      <span className="text-[0.65rem] font-medium opacity-70">
+      <span
+        className={cn(
+          "zahl text-muted-foreground",
+          gross ? "text-sm" : "text-[0.6875rem]",
+        )}
+      >
         {WOCHENTAG[wochentag]}
       </span>
-      <span className="text-xl font-semibold tabular-nums">{tag}</span>
-      <span className="text-[0.65rem] font-medium opacity-70">{MONAT[monat]}</span>
+
+      <span
+        className={cn(
+          "zahl font-semibold",
+          ebeneKlassen(organisationsform).text,
+          gross ? "text-6xl" : "text-4xl",
+        )}
+      >
+        {String(tag).padStart(2, "0")}
+      </span>
+
+      <span
+        className={cn(
+          "zahl text-muted-foreground",
+          gross ? "text-sm" : "text-[0.6875rem]",
+        )}
+      >
+        {MONAT[monat]}
+      </span>
     </div>
   );
 }

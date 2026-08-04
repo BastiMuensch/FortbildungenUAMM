@@ -46,7 +46,7 @@ export default async function ImportSeite() {
       </div>
 
       {!aktiv ? (
-        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+        <div className="border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
           <p className="flex items-start gap-2 font-medium text-amber-700 dark:text-amber-400">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
             Der Abruf von FIBS ist abgeschaltet.
@@ -64,7 +64,7 @@ export default async function ImportSeite() {
         </div>
       ) : null}
 
-      <section className="rounded-lg border p-5">
+      <section className="border p-5">
         <h2 className="text-sm font-semibold">Suchbegriffe</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Gesucht wird mit den Schlagworten, die unter{" "}
@@ -98,11 +98,11 @@ export default async function ImportSeite() {
         <h2 className="mb-3 text-sm font-semibold">Letzte Läufe</h2>
 
         {laeufe.length === 0 ? (
-          <p className="rounded-lg border border-dashed py-10 text-center text-sm text-muted-foreground">
+          <p className="border border-dashed py-10 text-center text-sm text-muted-foreground">
             Noch kein Import durchgeführt.
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border">
+          <div className="overflow-x-auto border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -118,7 +118,7 @@ export default async function ImportSeite() {
               <TableBody>
                 {laeufe.map((lauf) => (
                   <TableRow key={lauf.id}>
-                    <TableCell className="whitespace-nowrap tabular-nums">
+                    <TableCell className="whitespace-nowrap zahl">
                       {formatDatumZeit(lauf.startedAt)}
                     </TableCell>
                     <TableCell>
@@ -140,14 +140,14 @@ export default async function ImportSeite() {
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="text-right zahl">
                       {lauf.gefunden}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">{lauf.neu}</TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="text-right zahl">{lauf.neu}</TableCell>
+                    <TableCell className="text-right zahl">
                       {lauf.aktualisiert}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="text-right zahl">
                       {lauf.uebersprungen}
                     </TableCell>
                   </TableRow>

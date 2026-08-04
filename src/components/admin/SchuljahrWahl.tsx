@@ -47,7 +47,7 @@ export function SchuljahrWahl({
             );
           })
         }
-        className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+        className="h-8 border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
       >
         <option value="">Alle Schuljahre</option>
         {jahrgaenge.map((jahr) => (

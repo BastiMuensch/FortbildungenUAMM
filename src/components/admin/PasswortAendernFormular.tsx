@@ -17,7 +17,7 @@ export function PasswortAendernFormular() {
   const fehler = state.fehler ?? {};
 
   return (
-    <form action={formAction} className="space-y-4 rounded-xl border bg-card p-5">
+    <form action={formAction} className="space-y-4 border bg-card p-5">
       <h2 className="font-semibold tracking-tight">Passwort ändern</h2>
 
       <Feld

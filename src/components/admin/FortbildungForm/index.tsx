@@ -99,7 +99,7 @@ export function FortbildungForm({
               {fehlerhafteTabs.has(id) ? (
                 <span
                   aria-label="enthält Fehler"
-                  className="ml-1 size-1.5 rounded-full bg-destructive"
+                  className="ml-1 size-1.5 bg-destructive"
                 />
               ) : null}
             </TabsTrigger>
@@ -156,7 +156,7 @@ function Fehlerkasten({ meldung }: { meldung: string }) {
   return (
     <p
       role="alert"
-      className="flex items-start gap-2 rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive"
+      className="flex items-start gap-2 bg-destructive/10 px-4 py-3 text-sm text-destructive"
     >
       <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
       {meldung}

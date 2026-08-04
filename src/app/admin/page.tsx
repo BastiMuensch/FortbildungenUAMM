@@ -258,7 +258,7 @@ export default async function AdminDashboard({
       />
 
       {fortbildungen.length === 0 ? (
-        <div className="rounded-lg border border-dashed py-16 text-center">
+        <div className="border border-l-4 border-l-primary bg-card py-16 text-center">
           <Download className="mx-auto mb-3 size-6 text-muted-foreground" aria-hidden />
           <p className="text-sm text-muted-foreground">
             Keine Fortbildung gefunden. Filter anpassen oder{" "}
@@ -305,23 +305,29 @@ function Kachel({
 }) {
   const inhalt = (
     <>
-      <Icon
-        className={`mb-3 size-4 ${hervorheben ? "text-primary" : "text-muted-foreground"}`}
-        aria-hidden
-      />
-      <span className="block text-2xl font-semibold tabular-nums">{wert}</span>
-      <span className="mt-0.5 block text-sm text-muted-foreground text-pretty">
+      <span className="etikett flex items-center gap-1.5 text-muted-foreground">
+        <Icon
+          className={`size-3.5 ${hervorheben ? "text-primary" : ""}`}
+          aria-hidden
+        />
         {label}
+      </span>
+      {/* Zweistellig aufgefüllt: die Kacheln stehen dann in einer Flucht. */}
+      <span className="zahl mt-2 block text-3xl leading-none font-semibold">
+        {String(wert).padStart(2, "0")}
       </span>
     </>
   );
 
-  const klassen = `rounded-xl border bg-card p-4 ${
-    hervorheben ? "border-primary/30 bg-primary/5" : ""
+  const klassen = `border border-l-4 bg-card p-4 ${
+    hervorheben ? "border-l-primary bg-primary/5" : "border-l-foreground/25"
   }`;
 
   return href ? (
-    <Link href={href} className={`${klassen} karte block`}>
+    <Link
+      href={href}
+      className={`${klassen} zeile block hover:border-l-primary`}
+    >
       {inhalt}
     </Link>
   ) : (

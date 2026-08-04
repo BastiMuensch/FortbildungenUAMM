@@ -41,7 +41,7 @@ interface Zeile {
 
 export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }) {
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <div className="overflow-x-auto border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -63,9 +63,9 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
         <TableBody>
           {fortbildungen.map((f) => (
             <TableRow key={f.id}>
-              <TableCell className="whitespace-nowrap tabular-nums">
+              <TableCell className="zahl whitespace-nowrap">
                 {formatDatumZeit(f.beginn)}
-                <span className="block text-xs text-muted-foreground">
+                <span className="zahl block text-xs text-muted-foreground">
                   bis {formatZeit(f.ende)} Uhr
                 </span>
               </TableCell>
@@ -92,7 +92,7 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
               <TableCell className="whitespace-nowrap">
                 {/* Dieselbe Farbzuordnung wie im Frontend und im Kalender. */}
                 <span
-                  className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${
+                  className={`etikett inline-flex px-1.5 py-0.5 ${
                     ebeneKlassen(f.organisationsform).flaeche
                   }`}
                 >
@@ -123,7 +123,7 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
                       .join(", ")}
               </TableCell>
 
-              <TableCell className="text-right tabular-nums whitespace-nowrap">
+              <TableCell className="zahl text-right whitespace-nowrap">
                 {f.tnTatsaechlich !== null ? (
                   <span className="font-medium">{f.tnTatsaechlich}</span>
                 ) : (
@@ -147,7 +147,7 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
                 <Link
                   href={`/admin/fortbildungen/${f.id}`}
                   aria-label={`${f.titel} bearbeiten`}
-                  className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  className="flex size-7 items-center justify-center text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 >
                   <Pencil className="size-3.5" />
                 </Link>

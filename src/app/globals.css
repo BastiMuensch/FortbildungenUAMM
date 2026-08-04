@@ -129,107 +129,117 @@
   }
 }
 /* ===========================================================================
-   Gestaltung des Fortbildungs-Tools
+   Gestaltung
 
-   Die Standardpalette von shadcn ist reines Neutralgrau. Für eine Seite, die
-   Lehrkräfte freiwillig aufsuchen sollen, ist das zu kalt. Deshalb:
+   Zwei Vorgaben treffen hier aufeinander:
 
-   - Neutrale Töne mit einem Hauch Wärme (Chroma 0.004–0.012 statt 0)
-   - Ein kräftigeres Blau als Leitfarbe des Schulamts
-   - Zwei semantische Akzente für die beiden Veranstaltungsarten, damit
-     "regional" und "SchiLf" im Kalender und in Listen ohne Legende
-     unterscheidbar sind
+   1. REGIONAL — Die Farben stammen aus den Wappen der Region statt aus einer
+      Standardpalette: das Tiefblau der bayerischen Rauten, das Gold der
+      Unterallgäuer Ähren, das Ziegelrot Memmingens. Damit sieht die Seite
+      nach hier aus und nicht nach Baukasten.
+
+   2. WERKZEUG — Kanten statt Rundungen, kräftige Farbflächen statt zarter
+      Rahmen, gesperrte Versalien für Beschriftungen und durchgehend
+      Monospace für alles Zählbare. Wer hier arbeitet, soll ein Instrument
+      vor sich haben, keine Broschüre.
    =========================================================================== */
 
 :root {
-  --background: oklch(0.99 0.003 95);
-  --foreground: oklch(0.19 0.012 260);
+  /* Papier statt Reinweiß — nimmt der Fläche die Kälte. */
+  --background: oklch(0.985 0.006 85);
+  --foreground: oklch(0.19 0.02 260);
 
   --card: oklch(1 0 0);
   --card-foreground: var(--foreground);
   --popover: oklch(1 0 0);
   --popover-foreground: var(--foreground);
 
-  --primary: oklch(0.45 0.135 252);
-  --primary-foreground: oklch(0.99 0 0);
+  /* Tiefblau der bayerischen Rauten */
+  --primary: oklch(0.38 0.11 258);
+  --primary-foreground: oklch(0.99 0.005 85);
 
-  --secondary: oklch(0.96 0.008 250);
-  --secondary-foreground: oklch(0.28 0.03 255);
+  --secondary: oklch(0.945 0.012 85);
+  --secondary-foreground: oklch(0.28 0.03 260);
 
-  --muted: oklch(0.965 0.005 250);
-  --muted-foreground: oklch(0.5 0.015 258);
+  --muted: oklch(0.955 0.008 85);
+  --muted-foreground: oklch(0.47 0.018 265);
 
-  --accent: oklch(0.95 0.015 250);
-  --accent-foreground: oklch(0.25 0.04 255);
+  --accent: oklch(0.93 0.02 85);
+  --accent-foreground: oklch(0.24 0.04 260);
 
-  --destructive: oklch(0.55 0.19 25);
+  /* Ziegelrot Memmingens */
+  --destructive: oklch(0.5 0.17 30);
 
-  --border: oklch(0.9 0.008 255);
-  --input: oklch(0.88 0.01 255);
-  --ring: oklch(0.45 0.135 252);
+  --border: oklch(0.86 0.012 265);
+  --input: oklch(0.78 0.016 265);
+  --ring: oklch(0.38 0.11 258);
 
-  /* Veranstaltungsarten */
-  --regional: oklch(0.45 0.135 252);
-  --regional-weich: oklch(0.95 0.03 252);
-  --schilf: oklch(0.52 0.11 175);
-  --schilf-weich: oklch(0.95 0.04 175);
-  --alp: oklch(0.5 0.14 305);
-  --alp-weich: oklch(0.95 0.035 305);
+  /* --- Fortbildungsebenen -----------------------------------------------
+     Jede Ebene bekommt eine Wappenfarbe. Dieselbe Zuordnung überall:
+     Frontend, Kalender, Redaktionsbereich, Aushang. */
+  --schilf: oklch(0.38 0.11 258);
+  --schilf-weich: oklch(0.93 0.035 258);
+  --regional: oklch(0.5 0.17 30);
+  --regional-weich: oklch(0.94 0.04 35);
+  /* Gold-Ocker, dunkel genug, dass Text darauf lesbar bleibt */
+  --alp: oklch(0.53 0.115 75);
+  --alp-weich: oklch(0.94 0.05 82);
 
-  /* Kalender-Hinterlegungen */
-  --ferien: oklch(0.74 0.15 75);
-  --ferien-weich: oklch(0.965 0.045 85);
-  --feiertag: oklch(0.62 0.17 20);
-  --feiertag-weich: oklch(0.965 0.03 25);
+  /* --- Kalender ---------------------------------------------------------- */
+  --ferien: oklch(0.55 0.13 75);
+  --ferien-weich: oklch(0.95 0.045 82);
+  --feiertag: oklch(0.5 0.17 30);
+  --feiertag-weich: oklch(0.95 0.035 32);
 
-  --radius: 0.75rem;
+  /* Kanten: gerade so viel Rundung, dass nichts scharfkantig wirkt. */
+  --radius: 0.25rem;
 }
 
 .dark {
-  --background: oklch(0.17 0.012 258);
-  --foreground: oklch(0.96 0.005 250);
+  --background: oklch(0.17 0.015 262);
+  --foreground: oklch(0.95 0.008 85);
 
-  --card: oklch(0.215 0.014 258);
+  --card: oklch(0.215 0.018 262);
   --card-foreground: var(--foreground);
-  --popover: oklch(0.215 0.014 258);
+  --popover: oklch(0.215 0.018 262);
   --popover-foreground: var(--foreground);
 
-  --primary: oklch(0.72 0.13 250);
-  --primary-foreground: oklch(0.17 0.03 255);
+  --primary: oklch(0.72 0.12 255);
+  --primary-foreground: oklch(0.16 0.03 260);
 
-  --secondary: oklch(0.28 0.018 258);
-  --secondary-foreground: oklch(0.95 0.005 250);
+  --secondary: oklch(0.28 0.02 262);
+  --secondary-foreground: oklch(0.95 0.008 85);
 
-  --muted: oklch(0.27 0.015 258);
-  --muted-foreground: oklch(0.7 0.015 255);
+  --muted: oklch(0.27 0.018 262);
+  --muted-foreground: oklch(0.72 0.015 265);
 
-  --accent: oklch(0.3 0.025 255);
-  --accent-foreground: oklch(0.96 0.005 250);
+  --accent: oklch(0.3 0.03 262);
+  --accent-foreground: oklch(0.96 0.008 85);
 
-  --destructive: oklch(0.68 0.17 22);
+  --destructive: oklch(0.66 0.17 30);
 
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.72 0.13 250);
+  --border: oklch(1 0 0 / 14%);
+  --input: oklch(1 0 0 / 20%);
+  --ring: oklch(0.72 0.12 255);
 
-  --regional: oklch(0.72 0.13 250);
-  --regional-weich: oklch(0.3 0.05 252);
-  --schilf: oklch(0.72 0.1 175);
-  --schilf-weich: oklch(0.3 0.04 175);
-  --alp: oklch(0.74 0.12 305);
-  --alp-weich: oklch(0.31 0.05 305);
+  --schilf: oklch(0.72 0.12 255);
+  --schilf-weich: oklch(0.29 0.05 258);
+  --regional: oklch(0.68 0.16 32);
+  --regional-weich: oklch(0.29 0.06 32);
+  --alp: oklch(0.76 0.12 80);
+  --alp-weich: oklch(0.3 0.055 80);
 
-  --ferien: oklch(0.78 0.13 78);
+  --ferien: oklch(0.78 0.12 78);
   --ferien-weich: oklch(0.29 0.05 80);
-  --feiertag: oklch(0.7 0.15 22);
-  --feiertag-weich: oklch(0.29 0.05 22);
+  --feiertag: oklch(0.68 0.16 30);
+  --feiertag-weich: oklch(0.29 0.05 30);
 }
 
 @theme inline {
-  --color-regional: var(--regional);
-  --color-regional-weich: var(--regional-weich);
   --color-schilf: var(--schilf);
   --color-schilf-weich: var(--schilf-weich);
+  --color-regional: var(--regional);
+  --color-regional-weich: var(--regional-weich);
   --color-alp: var(--alp);
   --color-alp-weich: var(--alp-weich);
   --color-ferien: var(--ferien);
@@ -239,49 +249,61 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Wiederkehrende Bausteine
+   Bausteine
    --------------------------------------------------------------------------- */
 
-/* Ruhiger Verlauf hinter dem Seitenkopf — gibt der Startseite Tiefe, ohne
-   ein Bild laden zu müssen (die CSP erlaubt ohnehin keine Fremdquellen). */
-.buehne {
-  background:
-    radial-gradient(
-      ellipse 80% 60% at 15% -10%,
-      color-mix(in oklch, var(--primary) 14%, transparent),
-      transparent 70%
+/* Rautengitter als Haarlinien — die bayerische Raute, so weit abstrahiert,
+   dass sie Struktur gibt statt Folklore zu sein. Reines CSS: Die CSP lässt
+   ohnehin keine Bilder von fremden Servern zu, und ein eingebettetes Muster
+   wäre unnötiges Gewicht. */
+.rauten {
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      color-mix(in oklch, var(--primary) 14%, transparent) 0 1px,
+      transparent 1px 26px
     ),
-    radial-gradient(
-      ellipse 60% 50% at 90% 0%,
-      color-mix(in oklch, var(--schilf) 12%, transparent),
-      transparent 65%
+    repeating-linear-gradient(
+      -45deg,
+      color-mix(in oklch, var(--primary) 14%, transparent) 0 1px,
+      transparent 1px 26px
     );
 }
 
-/* Karten heben sich beim Überfahren leicht an. Bewusst dezent: Die Seite ist
-   ein Verzeichnis, kein Schaufenster. */
-.karte {
-  transition:
-    transform 150ms ease,
-    box-shadow 150ms ease,
-    border-color 150ms ease;
+/* Beschriftungen: klein, versal, gesperrt. Trennt Etikett von Inhalt, ohne
+   zusätzliche Linien oder Kästen zu brauchen. */
+.etikett {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  line-height: 1.2;
 }
 
-.karte:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px -12px oklch(0.2 0.03 255 / 25%);
+/* Alles Zählbare in Monospace: Uhrzeiten, Datumsangaben, Platzzahlen,
+   Lehrgangsnummern. Zahlen stehen damit untereinander und lassen sich
+   vergleichen, statt zu tanzen. */
+.zahl {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Eine Zeile hebt sich beim Überfahren durch Fläche hervor, nicht durch
+   Schatten — das passt zur flächigen Anmutung. */
+.zeile {
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .karte,
-  .karte:hover {
-    transform: none;
+  .zeile {
     transition: none;
   }
 }
 
-/* Darstellung der WYSIWYG-Beschreibung im Frontend. Bewusst schlank gehalten:
-   der Editor erlaubt ohnehin nur wenige Elemente (siehe src/lib/sanitize.ts). */
+/* Darstellung der WYSIWYG-Beschreibung im Frontend. */
 .beschreibung {
   line-height: 1.7;
 }
@@ -289,8 +311,8 @@
   margin-top: 0.85em;
 }
 .beschreibung h2 {
-  font-size: 1.125rem;
-  font-weight: 600;
+  font-size: 1.0625rem;
+  font-weight: 700;
   margin-top: 1.6em;
   letter-spacing: -0.01em;
 }
@@ -305,7 +327,7 @@
   padding-left: 1.4rem;
 }
 .beschreibung ul {
-  list-style: disc;
+  list-style: square;
 }
 .beschreibung ol {
   list-style: decimal;
@@ -317,9 +339,10 @@
   color: var(--primary);
   text-decoration: underline;
   text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
 }
 .beschreibung blockquote {
-  border-left: 3px solid var(--border);
+  border-left: 3px solid var(--primary);
   padding-left: 1rem;
   color: var(--muted-foreground);
 }
@@ -328,5 +351,4 @@
   font-size: 0.875em;
   background: var(--muted);
   padding: 0.1em 0.35em;
-  border-radius: var(--radius-sm);
 }

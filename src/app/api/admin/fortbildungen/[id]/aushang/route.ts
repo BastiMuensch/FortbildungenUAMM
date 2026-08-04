@@ -17,9 +17,13 @@ import {
 
 export const dynamic = "force-dynamic";
 
-/** Hausfarbe als RGB — dasselbe Blau wie im Frontend. */
-const BLAU: [number, number, number] = [37, 71, 122];
-const GRAU: [number, number, number] = [110, 116, 126];
+/**
+ * Wappenfarben als RGB — dieselben wie im Frontend, nur im Farbraum, den
+ * jsPDF versteht. Tiefblau der bayerischen Rauten, Ziegelrot Memmingens.
+ */
+const BLAU: [number, number, number] = [29, 56, 105];
+const GRAU: [number, number, number] = [112, 116, 126];
+const PAPIER: [number, number, number] = [246, 244, 238];
 
 /**
  * Aushang für das Lehrerzimmer: eine A4-Seite je Fortbildung.
@@ -73,7 +77,7 @@ export async function GET(
 
   // --- Kopfbalken ---------------------------------------------------------
   doc.setFillColor(...BLAU);
-  doc.rect(0, 0, breite, 8, "F");
+  doc.rect(0, 0, breite, 6, "F");
 
   let y = 28;
 
@@ -115,8 +119,10 @@ export async function GET(
   // --- Eckdaten in einem farbigen Feld ------------------------------------
   y += 8;
   const feldHoehe = 34;
-  doc.setFillColor(243, 246, 250);
-  doc.roundedRect(rand, y, inhalt, feldHoehe, 3, 3, "F");
+  doc.setFillColor(...PAPIER);
+  doc.rect(rand, y, inhalt, feldHoehe, "F");
+  doc.setFillColor(...BLAU);
+  doc.rect(rand, y, 1.5, feldHoehe, "F");
 
   const spalte = inhalt / 2;
   const angabe = (
@@ -244,7 +250,7 @@ export async function GET(
 
   // --- Fußbalken ----------------------------------------------------------
   doc.setFillColor(...BLAU);
-  doc.rect(0, hoehe - 6, breite, 6, "F");
+  doc.rect(0, hoehe - 4, breite, 4, "F");
 
   await auditLog({
     userId: user.id,

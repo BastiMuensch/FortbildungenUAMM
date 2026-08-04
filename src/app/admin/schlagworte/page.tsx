@@ -45,7 +45,7 @@ export default async function SchlagwortePage() {
 
       <SchlagwortFormular />
 
-      <div className="overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -76,7 +76,7 @@ export default async function SchlagwortePage() {
                     <button
                       type="submit"
                       aria-pressed={s.fuerFibsImport}
-                      className="flex items-center gap-2 rounded-md px-1.5 py-1 text-sm transition-colors hover:bg-accent"
+                      className="flex items-center gap-2 px-1.5 py-1 text-sm transition-colors hover:bg-accent"
                     >
                       {s.fuerFibsImport ? (
                         <>
@@ -95,7 +95,7 @@ export default async function SchlagwortePage() {
                   </form>
                 </TableCell>
 
-                <TableCell className="text-right tabular-nums">
+                <TableCell className="text-right zahl">
                   {s._count.fortbildungen}
                 </TableCell>
 

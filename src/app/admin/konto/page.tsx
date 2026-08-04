@@ -25,7 +25,7 @@ export default async function KontoSeite() {
         </p>
       </div>
 
-      <dl className="grid gap-4 rounded-xl border bg-card p-5 text-sm sm:grid-cols-2">
+      <dl className="grid gap-4 border bg-card p-5 text-sm sm:grid-cols-2">
         <div>
           <dt className="text-xs font-medium text-muted-foreground">Rolle</dt>
           <dd className="mt-0.5">{rolleLabel(user.role)}</dd>
@@ -37,13 +37,13 @@ export default async function KontoSeite() {
           <dt className="text-xs font-medium text-muted-foreground">
             Zuletzt angemeldet
           </dt>
-          <dd className="mt-0.5 tabular-nums">
+          <dd className="mt-0.5 zahl">
             {konto?.lastLoginAt ? formatDatumZeit(konto.lastLoginAt) : "—"}
           </dd>
           <dt className="mt-3 text-xs font-medium text-muted-foreground">
             Konto angelegt
           </dt>
-          <dd className="mt-0.5 tabular-nums">
+          <dd className="mt-0.5 zahl">
             {konto?.createdAt ? formatDatumZeit(konto.createdAt) : "—"}
           </dd>
         </div>

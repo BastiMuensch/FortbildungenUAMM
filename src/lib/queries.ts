@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { STATUS_OEFFENTLICH } from "@/constants/fortbildung";
+import { berlinIsoDatum } from "@/lib/datetime";
 
 /**
  * Filter für alles, was Lehrkräfte zu sehen bekommen.
@@ -38,6 +39,7 @@ export const oeffentlicheFortbildungSelect = {
   niveaustufe: true,
   fibsLehrgangsnummer: true,
   fibsUrl: true,
+  inFibs: true,
   status: true,
   veranstaltungsort: {
     select: { id: true, name: true, ort: true, istOnline: true },
@@ -79,6 +81,10 @@ export const fortbildungKachelSelect = {
   ende: true,
   schularten: true,
   status: true,
+  // Die Liste kommuniziert nicht nur, dass ein Angebot existiert, sondern auch,
+  // ob die verbindliche Anmeldung bereits offen ist.
+  inFibs: true,
+  fibsUrl: true,
   veranstaltungsort: { select: { name: true, ort: true, istOnline: true } },
   schlagworte: { select: { schlagwort: { select: { id: true, name: true } } } },
 } satisfies Prisma.FortbildungSelect;
@@ -102,6 +108,6 @@ export function bildeSlug(titel: string, beginn: Date, id: string): string {
     .replace(/^-+|-+$/g, "")
     .slice(0, 60);
 
-  const datum = beginn.toISOString().slice(0, 10);
+  const datum = berlinIsoDatum(beginn);
   return `${basis || "fortbildung"}-${datum}-${id.slice(0, 6)}`;
 }

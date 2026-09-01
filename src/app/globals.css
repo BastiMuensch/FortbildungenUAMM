@@ -297,6 +297,45 @@
     border-color 120ms ease;
 }
 
+/* Öffentliche Anmeldestati: Farbe ergänzt den Klartext, ersetzt ihn nie. */
+.anmeldestatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid currentColor;
+  font-size: 0.75rem;
+  line-height: 1.25;
+}
+.anmeldestatus-offen {
+  color: oklch(0.38 0.11 150);
+  background: oklch(0.95 0.04 150);
+}
+.anmeldestatus-hinweis {
+  color: oklch(0.43 0.09 75);
+  background: var(--ferien-weich);
+}
+.anmeldestatus-folgt {
+  color: var(--muted-foreground);
+  background: var(--muted);
+}
+.anmeldestatus:not(.flex) {
+  padding: 0.28rem 0.45rem;
+  white-space: nowrap;
+}
+
+.editorial-kante {
+  position: relative;
+}
+.editorial-kante::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0.25rem;
+  content: "";
+  background: linear-gradient(to bottom, var(--schilf), var(--regional), var(--alp));
+}
+
 @media (prefers-reduced-motion: reduce) {
   .zeile {
     transition: none;

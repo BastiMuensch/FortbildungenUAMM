@@ -228,7 +228,7 @@ function tageZwischen(von: Date, bis: Date): string[] {
   const grenze = new Date(`${schluss}T12:00:00Z`);
 
   for (let i = 0; aktuell <= grenze && i < 60; i += 1) {
-    tage.push(aktuell.toISOString().slice(0, 10));
+    tage.push(berlinIsoDatum(aktuell));
     aktuell = new Date(aktuell.getTime() + 24 * 60 * 60 * 1000);
   }
 

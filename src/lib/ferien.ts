@@ -3,10 +3,10 @@
 // ----------------------------------------------------------------------------
 // Die bayerischen SCHULFERIEN werden je Schuljahr behördlich festgelegt und
 // sind deshalb NICHT berechenbar. Die Liste unten ist gepflegt bis
-// einschließlich Schuljahr 2026/2027, also bis zum 13.09.2027 (Ende der
-// Sommerferien 2027).
+// einschließlich Schuljahr 2029/2030, also bis zum 09.09.2030 (Ende der
+// Sommerferien 2030).
 //
-// Sobald das Staatsministerium die Termine für 2027/2028 veröffentlicht hat,
+// Sobald das Staatsministerium Termine ab 2030/2031 veröffentlicht hat,
 // hier ergänzen:
 //   https://www.km.bayern.de/termine/ferien-und-feiertage
 //
@@ -14,7 +14,7 @@
 // `unbekannt` statt "keine Ferien" — die Oberfläche zeigt dann einen Hinweis
 // statt einer stillen Falschaussage.
 //
-// Stand dieser Pflege: 31.07.2026.
+// Amtliche Grundlage: BayMBl. 2022 Nr. 747; abgeglichen am 01.09.2026.
 //
 // Die gesetzlichen FEIERTAGE werden dagegen algorithmisch berechnet und gelten
 // unbegrenzt in die Zukunft.
@@ -44,6 +44,30 @@ const FERIEN_NACH_SCHULJAHR: Record<string, Ferienzeitraum[]> = {
     { start: "2027-03-22", ende: "2027-04-02", label: "Osterferien" },
     { start: "2027-05-18", ende: "2027-05-28", label: "Pfingstferien" },
     { start: "2027-08-02", ende: "2027-09-13", label: "Sommerferien" },
+  ],
+  "2027/2028": [
+    { start: "2027-11-02", ende: "2027-11-05", label: "Herbstferien" },
+    { start: "2027-12-24", ende: "2028-01-07", label: "Weihnachtsferien" },
+    { start: "2028-02-28", ende: "2028-03-03", label: "Frühjahrsferien" },
+    { start: "2028-04-10", ende: "2028-04-21", label: "Osterferien" },
+    { start: "2028-06-06", ende: "2028-06-16", label: "Pfingstferien" },
+    { start: "2028-07-31", ende: "2028-09-11", label: "Sommerferien" },
+  ],
+  "2028/2029": [
+    { start: "2028-10-30", ende: "2028-11-03", label: "Herbstferien" },
+    { start: "2028-12-23", ende: "2029-01-05", label: "Weihnachtsferien" },
+    { start: "2029-02-12", ende: "2029-02-16", label: "Frühjahrsferien" },
+    { start: "2029-03-26", ende: "2029-04-06", label: "Osterferien" },
+    { start: "2029-05-22", ende: "2029-06-01", label: "Pfingstferien" },
+    { start: "2029-07-30", ende: "2029-09-10", label: "Sommerferien" },
+  ],
+  "2029/2030": [
+    { start: "2029-10-29", ende: "2029-11-02", label: "Herbstferien" },
+    { start: "2029-12-24", ende: "2030-01-04", label: "Weihnachtsferien" },
+    { start: "2030-03-04", ende: "2030-03-08", label: "Frühjahrsferien" },
+    { start: "2030-04-15", ende: "2030-04-26", label: "Osterferien" },
+    { start: "2030-06-11", ende: "2030-06-21", label: "Pfingstferien" },
+    { start: "2030-07-29", ende: "2030-09-09", label: "Sommerferien" },
   ],
 };
 
@@ -86,7 +110,7 @@ function plusTage(datum: Date, tage: number): Date {
 }
 
 function iso(datum: Date): string {
-  return datum.toISOString().slice(0, 10);
+  return berlinIsoDatum(datum);
 }
 
 /**

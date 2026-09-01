@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { fortbildungScope, getSessionUser } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 import { filterZuWhere, leseFilter, type SuchParameter } from "@/lib/filter";
-import { formatDatumZeit } from "@/lib/datetime";
+import { berlinIsoDatum, formatDatumZeit } from "@/lib/datetime";
 import {
   formatLabel,
   niveaustufeLabel,
@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
   });
 
   const puffer = await workbook.xlsx.writeBuffer();
-  const dateiname = `fortbildungen-uamm-${new Date().toISOString().slice(0, 10)}.xlsx`;
+  const dateiname = `fortbildungen-uamm-${berlinIsoDatum(new Date())}.xlsx`;
 
   return new NextResponse(puffer as ArrayBuffer, {
     headers: {

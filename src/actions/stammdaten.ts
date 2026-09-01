@@ -71,6 +71,8 @@ export async function speichereReferent(
 
   if (!geparst.success) return { fehler: zuFeldFehlern(geparst.error) };
 
+  const wirdAngelegt = id === null;
+
   if (id) {
     await prisma.referent.update({ where: { id }, data: geparst.data });
   } else {
@@ -80,7 +82,7 @@ export async function speichereReferent(
 
   await auditLog({
     userId: user.id,
-    aktion: id ? "UPDATE" : "CREATE",
+    aktion: wirdAngelegt ? "CREATE" : "UPDATE",
     entitaet: "Referent",
     entitaetId: id,
   });

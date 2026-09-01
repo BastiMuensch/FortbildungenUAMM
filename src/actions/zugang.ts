@@ -11,7 +11,7 @@ import { auditLog } from "@/lib/audit";
 import {
   erzeugeZugangstoken,
   pruefeZugangstoken,
-  verbraucheZugangstoken,
+  verbraucheTokenUndSetzePasswort,
   zugangsLink,
   type Zweck,
 } from "@/lib/zugang";
@@ -203,8 +203,11 @@ export async function setzePasswort(
     return { fehler: { wiederholung: "Die beiden Eingaben stimmen nicht überein." } };
   }
 
-  const eintrag = await pruefeZugangstoken(token);
-  if (!eintrag) {
+  // Vorprüfung vermeidet die teure Passwort-Hashing-Arbeit für beliebige,
+  // ungültige Links. Verbindlich ist trotzdem erst das atomare Verbrauchen
+  // darunter; zwischen beiden Schritten kann ein paralleler Request den
+  // Token bereits genutzt haben.
+  if (!(await pruefeZugangstoken(token))) {
     return {
       fehler: {
         _: "Dieser Link ist abgelaufen oder wurde bereits verwendet. Bitte bei der Administration einen neuen anfordern.",
@@ -212,11 +215,15 @@ export async function setzePasswort(
     };
   }
 
-  await prisma.user.update({
-    where: { id: eintrag.userId },
-    data: { passwordHash: await bcrypt.hash(passwort, 12) },
-  });
-  await verbraucheZugangstoken(eintrag.id);
+  const passwordHash = await bcrypt.hash(passwort, 12);
+  const eintrag = await verbraucheTokenUndSetzePasswort(token, passwordHash);
+  if (!eintrag) {
+    return {
+      fehler: {
+        _: "Dieser Link ist abgelaufen oder wurde bereits verwendet. Bitte bei der Administration einen neuen anfordern.",
+      },
+    };
+  }
 
   await auditLog({
     userId: eintrag.userId,
@@ -227,7 +234,9 @@ export async function setzePasswort(
   });
 
   // Direkt anmelden — die Person hat sich gerade ausgewiesen.
-  await setSessionCookie(await signToken(eintrag.userId));
+  await setSessionCookie(
+    await signToken(eintrag.userId, eintrag.sessionVersion),
+  );
 
   redirect("/admin?willkommen=1");
 }
@@ -268,10 +277,18 @@ export async function aenderePasswort(
     return { fehler: { wiederholung: "Die beiden Eingaben stimmen nicht überein." } };
   }
 
-  await prisma.user.update({
+  const aktualisiert = await prisma.user.update({
     where: { id: user.id },
-    data: { passwordHash: await bcrypt.hash(neues, 12) },
+    data: {
+      passwordHash: await bcrypt.hash(neues, 12),
+      sessionVersion: { increment: 1 },
+    },
+    select: { sessionVersion: true },
   });
+
+  // Die aktuelle Sitzung erhält die neue Version; alle anderen Sitzungen
+  // desselben Kontos werden beim nächsten Zugriff abgewiesen.
+  await setSessionCookie(await signToken(user.id, aktualisiert.sessionVersion));
 
   await auditLog({
     userId: user.id,

@@ -16,6 +16,7 @@ import {
   formatLabel,
   organisationsformKurz,
 } from "@/constants/fortbildung";
+import { cn } from "@/lib/utils";
 import {
   FibsKennzeichen,
   StatusKennzeichen,
@@ -41,7 +42,59 @@ interface Zeile {
 
 export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }) {
   return (
-    <div className="overflow-x-auto border">
+    <>
+      {/* Auf dem Telefon ist eine Zeile mit zehn Spalten kein Arbeitsmittel.
+          Die wichtigsten Angaben werden deshalb als kompakte Vorgangskarten
+          gezeigt; ab Tabletbreite bleibt die informationsreiche Tabelle. */}
+      <div className="grid gap-3 md:hidden">
+        {fortbildungen.map((f) => {
+          const ebene = ebeneKlassen(f.organisationsform);
+          return (
+            <Link
+              key={f.id}
+              href={`/admin/fortbildungen/${f.id}`}
+              className={cn(
+                "border border-l-4 bg-card p-4 outline-none transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring",
+                ebene.kante,
+              )}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="zahl text-xs text-muted-foreground">
+                    {formatDatumZeit(f.beginn)}–{formatZeit(f.ende)} Uhr
+                  </p>
+                  <h3 className="mt-1 font-semibold leading-snug">{f.titel}</h3>
+                </div>
+                <Pencil className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className={cn("etikett px-1.5 py-0.5", ebene.flaeche)}>
+                  {organisationsformKurz(f.organisationsform)}
+                </span>
+                <StatusKennzeichen status={f.status} />
+                <FibsKennzeichen
+                  inFibs={f.inFibs}
+                  lehrgangsnummer={f.fibsLehrgangsnummer}
+                />
+              </div>
+
+              <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
+                {f.veranstaltungsort.istOnline ? (
+                  <Globe className="size-3.5 shrink-0" aria-hidden />
+                ) : (
+                  <MapPin className="size-3.5 shrink-0" aria-hidden />
+                )}
+                {f.veranstaltungsort.name}
+                <span aria-hidden>·</span>
+                <span className="zahl">{f.tnTatsaechlich ?? "—"} / {f.maxTn} TN</span>
+              </p>
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="hidden overflow-x-auto border md:block">
       <Table>
         <TableHeader>
           <TableRow>
@@ -156,6 +209,7 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
           ))}
         </TableBody>
       </Table>
-    </div>
+      </div>
+    </>
   );
 }

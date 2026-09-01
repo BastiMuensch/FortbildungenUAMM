@@ -172,7 +172,7 @@ function rasterTage(jahr: number, monatsIndex: number): RasterTag[] {
     const imMonat = datum.getUTCMonth() === monatsIndex;
 
     tage.push({
-      iso: datum.toISOString().slice(0, 10),
+      iso: berlinIsoDatum(datum),
       tagesZahl: datum.getUTCDate(),
       imMonat,
       wochentag: (datum.getUTCDay() + 6) % 7,
@@ -198,7 +198,7 @@ function tageEinerFortbildung(f: FortbildungKachel): string[] {
   const grenze = new Date(`${schluss}T12:00:00Z`);
 
   while (aktuell <= grenze && tage.length < 60) {
-    tage.push(aktuell.toISOString().slice(0, 10));
+    tage.push(berlinIsoDatum(aktuell));
     aktuell = new Date(aktuell.getTime() + 24 * 60 * 60 * 1000);
   }
 

@@ -129,8 +129,8 @@ export const SCHULARTEN_STANDARD: Schulart[] = SCHULARTEN.filter(
 
 export const NIVEAUSTUFEN = [
   { value: "NIVEAU_I_II", label: "Niveaustufe I/II" },
-  { value: "NIVEAU_III", label: "Niveaustufe III" },
-  { value: "NIVEAU_IV", label: "Niveaustufe IV" },
+  { value: "NIVEAU_III_IV", label: "Niveaustufe III/IV" },
+  { value: "NIVEAU_V_VI", label: "Niveaustufe V/VI" },
 ] as const;
 
 export type Niveaustufe = ValueOf<typeof NIVEAUSTUFEN>;

@@ -25,25 +25,28 @@ datasource db {
 model User {
   id String @id @default(uuid())
 
-  email String @unique
+  email          String    @unique
   /// Leer, solange der Zugang eingerichtet, aber noch kein Passwort gesetzt
   /// wurde. Eine Anmeldung ist dann nicht möglich.
-  passwordHash String?
-  name         String?
-  role         String // ADMIN | REDAKTEUR | REFERENT
-  isActive     Boolean   @default(true)
-  lastLoginAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  passwordHash   String?
+  name           String?
+  role           String // ADMIN | REDAKTEUR | REFERENT
+  isActive       Boolean   @default(true)
+  /// Wird bei einem Passwortwechsel erhöht. JWTs mit einer älteren Version
+  /// verlieren dadurch beim nächsten serverseitigen Zugriff ihre Gültigkeit.
+  sessionVersion Int       @default(0)
+  lastLoginAt    DateTime? @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
 
-  fortbildungen  Fortbildung[]  @relation("Ersteller")
-  tnMeldungen    Fortbildung[]  @relation("TnMeldung")
-  freigaben      Fortbildung[]  @relation("Freigabe")
-  fibsEintraege  Fortbildung[]  @relation("FibsEintrag")
-  auditLogs      AuditLog[]
-  zugangstoken   Zugangstoken[]
+  fortbildungen Fortbildung[]  @relation("Ersteller")
+  tnMeldungen   Fortbildung[]  @relation("TnMeldung")
+  freigaben     Fortbildung[]  @relation("Freigabe")
+  fibsEintraege Fortbildung[]  @relation("FibsEintrag")
+  auditLogs     AuditLog[]
+  zugangstoken  Zugangstoken[]
   /// Gesetzt, wenn dieses Konto zu einer Referentin oder einem Referenten gehört
-  referent       Referent?
+  referent      Referent?
 }
 
 /// Einmal-Token für das Einrichten eines Zugangs und für das Zurücksetzen
@@ -56,9 +59,9 @@ model Zugangstoken {
   tokenHash String    @unique
   userId    String
   zweck     String // EINLADUNG | PASSWORT_RESET
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
+  expiresAt DateTime  @db.Timestamptz(3)
+  usedAt    DateTime? @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -76,12 +79,12 @@ model Fortbildung {
   slug String @unique
 
   // --- Felder der Eingabemaske (FIBS-Feldlogik) ---
-  titel     String
-  kurztitel String?
+  titel            String
+  kurztitel        String?
   /// Sanitisiertes HTML aus dem WYSIWYG-Editor (Allowlist in src/lib/sanitize.ts)
-  beschreibungHtml String @db.Text
+  beschreibungHtml String  @db.Text
   /// Aus dem HTML abgeleiteter Klartext — ausschließlich für die Volltextsuche
-  beschreibungText String @db.Text
+  beschreibungText String  @db.Text
 
   organisationsform String // SCHILF | REGIONAL (= RLFB) | ALP
   /// Geplante Höchstzahl an Teilnehmenden
@@ -89,8 +92,8 @@ model Fortbildung {
   format            String // ESESSION | PRAESENZ
 
   /// Immer als UTC gespeichert, immer in Europe/Berlin angezeigt
-  beginn DateTime
-  ende   DateTime
+  beginn DateTime @db.Timestamptz(3)
+  ende   DateTime @db.Timestamptz(3)
 
   veranstaltungsortId String
   /// Mehrfachauswahl, z. B. ["GRUNDSCHULE", "MITTELSCHULE"]
@@ -98,26 +101,26 @@ model Fortbildung {
   fach                String?
 
   // --- DigCompEdu Bavaria ---
-  niveaustufe String? // NIVEAU_I_II | NIVEAU_III | NIVEAU_IV
+  niveaustufe String? // NIVEAU_I_II | NIVEAU_III_IV | NIVEAU_V_VI
 
   // --- FIBS-Anbindung ---
-  fibsLehrgangsnummer String?
-  fibsUrl             String?
+  fibsLehrgangsnummer  String?
+  fibsUrl              String?
   /// Ist die Fortbildung tatsächlich in FIBS ausgeschrieben? Bewusst ein
   /// eigenes Feld und nicht aus der Lehrgangsnummer abgeleitet: Eine Nummer
   /// kann vorgemerkt sein, bevor der Eintrag in FIBS wirklich steht.
-  inFibs                 Boolean   @default(false)
-  fibsEingetragenAm      DateTime?
-  fibsEingetragenVonId   String?
-  quelle              String  @default("MANUELL") // MANUELL | FIBS_IMPORT
+  inFibs               Boolean   @default(false)
+  fibsEingetragenAm    DateTime? @db.Timestamptz(3)
+  fibsEingetragenVonId String?
+  quelle               String    @default("MANUELL") // MANUELL | FIBS_IMPORT
   /// Fremdschlüssel der Quelle, dient dem Deduplizieren beim Import
-  externalId          String? @unique
+  externalId           String?   @unique
 
   // --- Nachbereitung ---
   /// Tatsächliche Teilnehmerzahl, nach der Veranstaltung gemeldet.
   /// null bedeutet "noch nicht gemeldet", 0 bedeutet "niemand da gewesen".
   tnTatsaechlich  Int?
-  tnGemeldetAm    DateTime?
+  tnGemeldetAm    DateTime? @db.Timestamptz(3)
   tnGemeldetVonId String?
   /// Freitext der meldenden Person, z. B. "zwei kurzfristige Absagen"
   tnBemerkung     String?
@@ -128,26 +131,26 @@ model Fortbildung {
   /// EINGEREICHT liegt zwischen Entwurf und Veröffentlichung: Referentinnen
   /// und Referenten reichen dorthin ein, die Redaktion gibt frei. Öffentlich
   /// sichtbar sind weiterhin nur VEROEFFENTLICHT und ABGESAGT.
-  status          String    @default("ENTWURF")
-  eingereichtAm   DateTime?
-  freigegebenAm   DateTime?
+  status           String    @default("ENTWURF")
+  eingereichtAm    DateTime? @db.Timestamptz(3)
+  freigegebenAm    DateTime? @db.Timestamptz(3)
   freigegebenVonId String?
   /// Begründung bei einer Zurückweisung — die einreichende Person soll
   /// erfahren, was noch fehlt.
-  freigabeNotiz   String?
+  freigabeNotiz    String?
 
   createdById String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
 
-  veranstaltungsort Veranstaltungsort       @relation(fields: [veranstaltungsortId], references: [id])
-  ersteller         User?                   @relation("Ersteller", fields: [createdById], references: [id], onDelete: SetNull)
-  tnGemeldetVon     User?                   @relation("TnMeldung", fields: [tnGemeldetVonId], references: [id], onDelete: SetNull)
-  freigegebenVon    User?                   @relation("Freigabe", fields: [freigegebenVonId], references: [id], onDelete: SetNull)
-  fibsEingetragenVon User?                  @relation("FibsEintrag", fields: [fibsEingetragenVonId], references: [id], onDelete: SetNull)
-  schlagworte       FortbildungSchlagwort[]
-  kompetenzen       FortbildungKompetenz[]
-  referenten        FortbildungReferent[]
+  veranstaltungsort  Veranstaltungsort       @relation(fields: [veranstaltungsortId], references: [id])
+  ersteller          User?                   @relation("Ersteller", fields: [createdById], references: [id], onDelete: SetNull)
+  tnGemeldetVon      User?                   @relation("TnMeldung", fields: [tnGemeldetVonId], references: [id], onDelete: SetNull)
+  freigegebenVon     User?                   @relation("Freigabe", fields: [freigegebenVonId], references: [id], onDelete: SetNull)
+  fibsEingetragenVon User?                   @relation("FibsEintrag", fields: [fibsEingetragenVonId], references: [id], onDelete: SetNull)
+  schlagworte        FortbildungSchlagwort[]
+  kompetenzen        FortbildungKompetenz[]
+  referenten         FortbildungReferent[]
 
   @@index([beginn])
   @@index([status, beginn])
@@ -180,13 +183,13 @@ model Veranstaltungsort {
 model Schlagwort {
   id String @id @default(uuid())
 
-  name String @unique
+  name           String   @unique
   /// "UAMM" und "Medienteam-UAMM": werden jeder Fortbildung automatisch
   /// angehängt und lassen sich im Formular nicht abwählen.
   istPflicht     Boolean  @default(false)
   /// Steuert, mit welchen Begriffen der FIBS-Import sucht (src/lib/fibs)
   fuerFibsImport Boolean  @default(false)
-  createdAt      DateTime @default(now())
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
 
   fortbildungen FortbildungSchlagwort[]
 }
@@ -213,13 +216,13 @@ model FortbildungSchlagwort {
 /// den Rahmen, ist das ein Seed-Update statt eines Massen-Updates auf allen
 /// Fortbildungen (wie es bei JSON-Feldern nötig wäre).
 model DigCompKompetenz {
-  code       String  @id
-  parentCode String?
-  titel      String
+  code           String  @id
+  parentCode     String?
+  titel          String
   /// Kurzbeschreibung für Tooltips im Formular
-  beschreibung String?
-  sortOrder  Int
-  aktiv      Boolean @default(true)
+  beschreibung   String?
+  sortOrder      Int
+  aktiv          Boolean @default(true)
   /// Markiert die im Rahmen noch nicht final ausformulierten Platzhalter
   istPlatzhalter Boolean @default(false)
 
@@ -252,21 +255,21 @@ model FortbildungKompetenz {
 // ---------------------------------------------------------------------------
 
 model Referent {
-  id           String  @id @default(uuid())
-  vorname      String
-  nachname     String
-  organisation String?
+  id                  String   @id @default(uuid())
+  vorname             String
+  nachname            String
+  organisation        String?
   /// Nur intern sichtbar
-  email        String?
+  email               String?
   /// Nur intern sichtbar
-  telefon      String?
+  telefon             String?
   /// Interne Notiz, nie öffentlich
-  notiz        String?
+  notiz               String?
   /// Steuert, ob der Name im öffentlichen Frontend erscheint
-  oeffentlichSichtbar Boolean @default(true)
-  aktiv        Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  oeffentlichSichtbar Boolean  @default(true)
+  aktiv               Boolean  @default(true)
+  createdAt           DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime @updatedAt @db.Timestamptz(3)
 
   /// Verknüpftes Anmeldekonto. Referentinnen und Referenten ohne Konto sind
   /// weiterhin möglich — sie erscheinen dann nur im Verzeichnis.
@@ -296,8 +299,8 @@ model FortbildungReferent {
 
 model FibsImportJob {
   id            String    @id @default(uuid())
-  startedAt     DateTime  @default(now())
-  finishedAt    DateTime?
+  startedAt     DateTime  @default(now()) @db.Timestamptz(3)
+  finishedAt    DateTime? @db.Timestamptz(3)
   status        String    @default("LAEUFT") // LAEUFT | ERFOLG | FEHLER | ABGEBROCHEN
   dryRun        Boolean   @default(true)
   suchbegriffe  String[]
@@ -318,7 +321,7 @@ model FibsImportJob {
 
 model AuditLog {
   id         String   @id @default(uuid())
-  at         DateTime @default(now())
+  at         DateTime @default(now()) @db.Timestamptz(3)
   userId     String?
   aktion     String // CREATE | UPDATE | DELETE | LOGIN | LOGIN_FAILED | IMPORT | RETENTION
   entitaet   String // "Fortbildung", "Referent", ...
@@ -337,5 +340,5 @@ model AuditLog {
 model SystemSetting {
   id        String   @id
   value     String   @db.Text
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 }

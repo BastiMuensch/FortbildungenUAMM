@@ -46,10 +46,11 @@ export default function OeffentlichesLayout({
               <Link
                 key={href}
                 href={href}
+                aria-label={label}
                 className="etikett flex items-center gap-2 border-b-2 border-transparent px-3 text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
               >
                 <Icon className="size-4" aria-hidden />
-                <span className="hidden sm:inline">{label}</span>
+                <span className="sr-only sm:not-sr-only">{label}</span>
               </Link>
             ))}
           </nav>

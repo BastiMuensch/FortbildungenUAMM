@@ -6,7 +6,11 @@ import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import type { Rolle } from "@/constants/fortbildung";
-import { SESSION_COOKIE, SESSION_DAUER_SEKUNDEN } from "@/constants/session";
+import {
+  liesSessionVersion,
+  SESSION_COOKIE,
+  SESSION_DAUER_SEKUNDEN,
+} from "@/constants/session";
 
 export { SESSION_COOKIE };
 
@@ -37,18 +41,36 @@ export const REDAKTION: Rolle[] = ["ADMIN", "REDAKTEUR"];
 /** Alle, die überhaupt Fortbildungen erfassen dürfen. */
 export const ERFASSER: Rolle[] = ["ADMIN", "REDAKTEUR", "REFERENT"];
 
-export async function signToken(userId: string): Promise<string> {
-  return new SignJWT({ sub: userId })
+export async function signToken(
+  userId: string,
+  sessionVersion: number,
+): Promise<string> {
+  return new SignJWT({ sub: userId, sv: sessionVersion })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(SESSION_DAUER)
     .sign(secret());
 }
 
-export async function verifyToken(token: string): Promise<string | null> {
+export interface VerifiziertesToken {
+  userId: string;
+  sessionVersion: number | null;
+}
+
+export async function verifyToken(
+  token: string,
+): Promise<VerifiziertesToken | null> {
   try {
     const { payload } = await jwtVerify(token, secret());
-    return typeof payload.sub === "string" ? payload.sub : null;
+    if (typeof payload.sub !== "string") return null;
+
+    return {
+      userId: payload.sub,
+      // Tokens vor Einführung der Sitzungsversion werden absichtlich nicht
+      // weiter akzeptiert: Ein erneuter Login ist sicherer als eine
+      // unkontrollierbare Alt-Sitzung.
+      sessionVersion: liesSessionVersion(payload.sv),
+    };
   } catch {
     return null;
   }
@@ -81,22 +103,29 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
 
-  const userId = await verifyToken(token);
-  if (!userId) return null;
+  const tokenDaten = await verifyToken(token);
+  if (!tokenDaten) return null;
 
   const user = await prisma.user.findUnique({
-    where: { id: userId },
+    where: { id: tokenDaten.userId },
     select: {
       id: true,
       email: true,
       name: true,
       role: true,
       isActive: true,
+      sessionVersion: true,
       referent: { select: { id: true, aktiv: true } },
     },
   });
 
-  if (!user || !user.isActive) return null;
+  if (
+    !user ||
+    !user.isActive ||
+    tokenDaten.sessionVersion !== user.sessionVersion
+  ) {
+    return null;
+  }
 
   // Ein stillgelegter Referenteneintrag beendet auch den Zugang — sonst
   // bliebe ein ausgeschiedener Referent weiter angemeldet.

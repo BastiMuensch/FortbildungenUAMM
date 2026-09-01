@@ -12,10 +12,11 @@ import {
   PFLICHT_SCHLAGWORTE,
   STATUS_FUER_REFERENTEN,
   darfFreigeben,
-  type FortbildungStatus,
+  type Rolle,
 } from "@/constants/fortbildung";
 import {
   FortbildungSchema,
+  fehlendeReferentIds,
   formDataZuEingabe,
   pruefeVeroeffentlichung,
   zuFeldFehlern,
@@ -83,9 +84,6 @@ export async function saveFortbildung(
     }
   }
 
-  const unvollstaendig = pruefeVeroeffentlichung(daten);
-  if (unvollstaendig) return { fehler: unvollstaendig };
-
   // --- Ort prüfen und mit dem Format abgleichen ------------------------------
   const ort = await prisma.veranstaltungsort.findUnique({
     where: { id: daten.veranstaltungsortId },
@@ -110,8 +108,26 @@ export async function saveFortbildung(
     };
   }
 
-  const schlagwortIds = await schlagworteAufloesen(daten.schlagworte);
+  // Erst gegen die Datenbank auflösen: Eine manipulierte, aber formal gültige
+  // UUID darf die Veröffentlichungs-Pflicht nicht nur scheinbar erfüllen.
   const referentIds = await pruefeReferenten(daten.referenten);
+  const fehlendeReferenten = fehlendeReferentIds(daten.referenten, referentIds);
+  if (fehlendeReferenten.length > 0) {
+    return {
+      fehler: {
+        referenten:
+          "Mindestens eine ausgewählte Referentin oder ein ausgewählter Referent existiert nicht mehr. Bitte die Seite neu laden.",
+      },
+    };
+  }
+
+  const unvollstaendig = pruefeVeroeffentlichung({
+    ...daten,
+    referenten: referentIds,
+  });
+  if (unvollstaendig) return { fehler: unvollstaendig };
+
+  const schlagwortIds = await schlagworteAufloesen(daten.schlagworte);
 
   const beschreibungHtml = sanitizeBeschreibung(daten.beschreibungHtml);
   const beschreibungText = htmlZuText(beschreibungHtml);
@@ -133,13 +149,6 @@ export async function saveFortbildung(
     fibsLehrgangsnummer: daten.fibsLehrgangsnummer,
     fibsUrl: daten.fibsUrl,
     status: daten.status,
-    // Zeitpunkt der Einreichung festhalten, damit die Freigabe-Warteschlange
-    // nach Wartezeit sortiert werden kann.
-    ...(daten.status === "EINGEREICHT" ? { eingereichtAm: new Date() } : {}),
-    // Wer selbst veröffentlicht, gibt damit auch frei.
-    ...(daten.status === "VEROEFFENTLICHT" && darfFreigeben(user.role)
-      ? { freigegebenAm: new Date(), freigegebenVonId: user.id, freigabeNotiz: null }
-      : {}),
   };
 
   const verknuepfungen = {
@@ -159,7 +168,7 @@ export async function saveFortbildung(
   if (id) {
     const bestehend = await prisma.fortbildung.findUnique({
       where: { id },
-      select: { id: true, titel: true, beginn: true, slug: true },
+      select: { id: true, titel: true, beginn: true, slug: true, status: true },
     });
     if (!bestehend) return { fehler: { _: "Diese Fortbildung existiert nicht mehr." } };
 
@@ -173,6 +182,7 @@ export async function saveFortbildung(
         where: { id },
         data: {
           ...basisDaten,
+          ...statusMetadaten(bestehend.status, daten.status, user),
           // Slug nur nachziehen, wenn sich Titel oder Datum geändert haben —
           // sonst würden bereits geteilte Links ins Leere laufen.
           ...(bestehend.titel !== daten.titel ||
@@ -196,6 +206,7 @@ export async function saveFortbildung(
     const angelegt = await prisma.fortbildung.create({
       data: {
         ...basisDaten,
+        ...statusMetadaten(null, daten.status, user),
         // Platzhalter, weil der Slug die ID braucht, die es erst nach dem
         // Insert gibt. Wird direkt darunter ersetzt.
         slug: `neu-${crypto.randomUUID()}`,
@@ -228,27 +239,46 @@ export async function saveFortbildung(
   redirect(`/admin/fortbildungen/${fortbildungId}?gespeichert=1`);
 }
 
+/**
+ * Zeitpunkte gehören zu einem Statusübergang, nicht zu jedem Speichern.
+ * Sonst würde eine Textkorrektur die ursprüngliche Einreichung oder Freigabe
+ * nachträglich auf den aktuellen Zeitpunkt verschieben.
+ */
+function statusMetadaten(
+  bisher: string | null,
+  naechster: string,
+  user: { id: string; role: Rolle },
+) {
+  const daten: {
+    eingereichtAm?: Date | null;
+    freigegebenAm?: Date;
+    freigegebenVonId?: string;
+    freigabeNotiz?: null;
+  } = {};
+
+  if (naechster === "EINGEREICHT" && bisher !== "EINGEREICHT") {
+    daten.eingereichtAm = new Date();
+    daten.freigabeNotiz = null;
+  } else if (naechster === "ENTWURF" && bisher === "EINGEREICHT") {
+    daten.eingereichtAm = null;
+  }
+
+  if (
+    naechster === "VEROEFFENTLICHT" &&
+    bisher !== "VEROEFFENTLICHT" &&
+    darfFreigeben(user.role)
+  ) {
+    daten.freigegebenAm = new Date();
+    daten.freigegebenVonId = user.id;
+    daten.freigabeNotiz = null;
+  }
+
+  return daten;
+}
+
 // ---------------------------------------------------------------------------
 // Weitere Aktionen der Listenansicht
 // ---------------------------------------------------------------------------
-
-export async function statusAendern(id: string, status: FortbildungStatus) {
-  const user = await requireRole(...ERFASSER);
-  if (!(await darfBearbeiten(user, id))) return;
-
-  await prisma.fortbildung.update({ where: { id }, data: { status } });
-  await auditLog({
-    userId: user.id,
-    aktion: "UPDATE",
-    entitaet: "Fortbildung",
-    entitaetId: id,
-    details: { status },
-  });
-
-  revalidatePath("/admin");
-  revalidatePath("/fortbildungen");
-  revalidatePath("/kalender");
-}
 
 /**
  * Kopie anlegen. Wiederkehrende Formate sind der Alltagsfall — ohne diese

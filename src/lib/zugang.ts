@@ -77,11 +77,56 @@ export async function pruefeZugangstoken(
   };
 }
 
-/** Markiert ein Token als verbraucht. */
-export async function verbraucheZugangstoken(id: string): Promise<void> {
-  await prisma.zugangstoken.update({
-    where: { id },
-    data: { usedAt: new Date() },
+/**
+ * Verbraucht einen Zugangstoken und setzt zugleich ein neues Passwort.
+ *
+ * Die bedingte Aktualisierung ist der entscheidende Schritt: Nur der erste
+ * Request, der einen noch offenen und nicht abgelaufenen Token vorfindet,
+ * erhält `count === 1`. Erst dann wird im selben Datenbank-Commit das
+ * Passwort gesetzt. So kann ein Einladungslink auch bei parallelen Requests
+ * nicht zweimal verwendet werden.
+ */
+export async function verbraucheTokenUndSetzePasswort(
+  token: string,
+  passwordHash: string,
+): Promise<{ userId: string; zweck: Zweck; sessionVersion: number } | null> {
+  const tokenHash = hashe(token);
+  const jetzt = new Date();
+
+  return prisma.$transaction(async (tx) => {
+    const eintrag = await tx.zugangstoken.findUnique({
+      where: { tokenHash },
+      select: { id: true, userId: true, zweck: true },
+    });
+    if (!eintrag) return null;
+
+    const verbraucht = await tx.zugangstoken.updateMany({
+      where: {
+        id: eintrag.id,
+        usedAt: null,
+        expiresAt: { gt: jetzt },
+        user: { isActive: true },
+      },
+      data: { usedAt: jetzt },
+    });
+    if (verbraucht.count !== 1) return null;
+
+    const user = await tx.user.update({
+      where: { id: eintrag.userId },
+      data: {
+        passwordHash,
+        // Alle bereits ausgegebenen JWTs werden ungültig; die neue Sitzung
+        // erhält weiter unten genau diese erhöhte Version.
+        sessionVersion: { increment: 1 },
+      },
+      select: { id: true, sessionVersion: true },
+    });
+
+    return {
+      userId: user.id,
+      zweck: eintrag.zweck as Zweck,
+      sessionVersion: user.sessionVersion,
+    };
   });
 }
 

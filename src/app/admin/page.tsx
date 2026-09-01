@@ -151,7 +151,17 @@ export default async function AdminDashboard({
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Fortbildungen</h1>
+          <p className="etikett mb-1 text-primary">
+            {user.role === "REFERENT" ? "Mein Arbeitsbereich" : "Redaktionsübersicht"}
+          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {user.role === "REFERENT" ? "Meine Fortbildungen" : "Fortbildungen"}
+          </h1>
+          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+            {user.role === "REFERENT"
+              ? "Entwürfe bearbeiten, zur Freigabe einreichen und vergangene Termine nachbereiten."
+              : "Planen, freigeben und nachhalten – mit den offenen Aufgaben direkt im Blick."}
+          </p>
           <div className="mt-2">
             <SchuljahrWahl
               params={params}

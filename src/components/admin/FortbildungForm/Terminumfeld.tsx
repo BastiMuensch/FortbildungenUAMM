@@ -183,7 +183,7 @@ function MiniKalender({
   const zellen = Array.from({ length: 42 }, (_, i) => {
     const datum = new Date(start.getTime() + i * 24 * 60 * 60 * 1000);
     return {
-      iso: datum.toISOString().slice(0, 10),
+      iso: berlinIsoDatum(datum),
       zahl: datum.getUTCDate(),
       imMonat: datum.getUTCMonth() === monat,
     };
@@ -341,7 +341,7 @@ function tageZwischen(vonIso: string, bisIso: string): string[] {
   const grenze = new Date(`${schluss}T12:00:00Z`);
 
   while (aktuell <= grenze && tage.length < 60) {
-    tage.push(aktuell.toISOString().slice(0, 10));
+    tage.push(berlinIsoDatum(aktuell));
     aktuell = new Date(aktuell.getTime() + 24 * 60 * 60 * 1000);
   }
 

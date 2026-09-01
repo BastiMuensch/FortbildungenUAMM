@@ -6,7 +6,12 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser, fortbildungScope } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 import { filterZuWhere, leseFilter, type SuchParameter } from "@/lib/filter";
-import { formatDatum, formatDatumZeit, formatZeit } from "@/lib/datetime";
+import {
+  berlinIsoDatum,
+  formatDatum,
+  formatDatumZeit,
+  formatZeit,
+} from "@/lib/datetime";
 import {
   ORGANISATIONSFORMEN,
   ORGANISATIONSFORM_REIHENFOLGE,
@@ -253,7 +258,7 @@ export async function GET(request: NextRequest) {
   });
 
   const puffer = Buffer.from(doc.output("arraybuffer"));
-  const dateiname = `fortbildungen-uamm-${new Date().toISOString().slice(0, 10)}.pdf`;
+  const dateiname = `fortbildungen-uamm-${berlinIsoDatum(new Date())}.pdf`;
 
   return new NextResponse(puffer, {
     headers: {

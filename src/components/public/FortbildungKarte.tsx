@@ -11,6 +11,7 @@ import {
 import type { FortbildungKachel } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 import { DatumsBlock } from "./DatumsBlock";
+import { Anmeldestatus } from "./Anmeldestatus";
 
 /**
  * Eine Zeile der Terminliste.
@@ -36,8 +37,8 @@ export function FortbildungKarte({
       <Link
         href={`/fortbildungen/${fortbildung.slug}`}
         className={cn(
-          "zeile flex items-stretch gap-4 border-b border-l-4 bg-card py-4 pr-4 pl-3 outline-none",
-          "hover:bg-accent/45 focus-visible:bg-accent/45 focus-visible:ring-2 focus-visible:ring-ring",
+          "zeile grid grid-cols-[4rem_minmax(0,1fr)] gap-x-4 gap-y-3 border-b border-l-4 bg-card py-4 pr-4 pl-3 outline-none sm:grid-cols-[4rem_minmax(0,1fr)_auto]",
+          "hover:-translate-y-px hover:bg-accent/55 focus-visible:bg-accent/55 focus-visible:ring-2 focus-visible:ring-ring",
           ebene.kante,
         )}
       >
@@ -46,7 +47,7 @@ export function FortbildungKarte({
           organisationsform={fortbildung.organisationsform}
         />
 
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0">
           {/* Kopfzeile: Ebene als Farbfläche, Format daneben */}
           <div className="mb-1.5 flex flex-wrap items-center gap-2">
             <span
@@ -106,10 +107,19 @@ export function FortbildungKarte({
           </p>
         </div>
 
-        <ArrowRight
-          className="mt-1 size-4 shrink-0 self-start text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-          aria-hidden
-        />
+        <div className="col-span-2 flex items-start gap-3 border-t border-border/70 pt-3 sm:col-auto sm:flex-col sm:items-end sm:justify-between sm:border-t-0 sm:pt-0">
+          {!abgesagt ? (
+            <Anmeldestatus
+              fibsUrl={fortbildung.fibsUrl}
+              inFibs={fortbildung.inFibs}
+              kompakt
+            />
+          ) : null}
+          <ArrowRight
+            className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+            aria-hidden
+          />
+        </div>
       </Link>
     </article>
   );

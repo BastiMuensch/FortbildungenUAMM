@@ -28,6 +28,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DatumsBlock } from "@/components/public/DatumsBlock";
+import { Anmeldestatus } from "@/components/public/Anmeldestatus";
 
 async function ladeFortbildung(slug: string) {
   return prisma.fortbildung.findFirst({
@@ -84,7 +85,9 @@ export default async function FortbildungDetail({
         Zur Übersicht
       </Link>
 
-      <header className={`flex gap-6 border-l-4 pl-5 ${ebene.kante}`}>
+      <header
+        className={`flex flex-col gap-4 border-l-4 pl-5 sm:flex-row sm:gap-6 ${ebene.kante}`}
+      >
         <DatumsBlock
           datum={fortbildung.beginn}
           organisationsform={fortbildung.organisationsform}
@@ -106,7 +109,7 @@ export default async function FortbildungDetail({
             ) : null}
           </div>
 
-          <h1 className="text-4xl leading-[1.05] font-bold tracking-tight text-balance">
+          <h1 className="break-words text-3xl leading-[1.05] font-bold tracking-tight text-balance sm:text-4xl">
             {fortbildung.titel}
           </h1>
           {fortbildung.kurztitel ? (
@@ -225,44 +228,53 @@ export default async function FortbildungDetail({
         </section>
       ) : null}
 
-      <div className="mt-10 flex flex-wrap items-center gap-3 border-t pt-6">
-        {fortbildung.fibsUrl && !abgesagt ? (
+      {!abgesagt ? (
+        <section className="mt-10 border-t pt-6" aria-labelledby="anmeldung">
+          <h2 id="anmeldung" className="etikett mb-3 text-muted-foreground">
+            Anmeldung
+          </h2>
+          <Anmeldestatus fibsUrl={fortbildung.fibsUrl} inFibs={fortbildung.inFibs} />
+
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            {fortbildung.fibsUrl ? (
+              <Button nativeButton={false}
+                render={<a href={fortbildung.fibsUrl} target="_blank" rel="noopener noreferrer">
+                    Zur Anmeldung in FIBS
+                    <ExternalLink className="size-4" aria-hidden />
+                  </a>
+                }
+              />
+            ) : null}
+
+            <Button nativeButton={false}
+              variant="outline"
+              render={<a href={`/api/ics?slug=${fortbildung.slug}`}>
+                  <CalendarPlus className="size-4" aria-hidden />
+                  Termin speichern (.ics)
+                </a>
+              }
+            />
+
+            {fortbildung.fibsLehrgangsnummer ? (
+              <span className="text-sm text-muted-foreground">
+                FIBS-Nummer{" "}
+                <span className="zahl">{fortbildung.fibsLehrgangsnummer}</span>
+              </span>
+            ) : null}
+          </div>
+        </section>
+      ) : (
+        <div className="mt-10 border-t pt-6">
           <Button nativeButton={false}
-            render={<a href={fortbildung.fibsUrl} target="_blank" rel="noopener noreferrer">
-                Zur Anmeldung in FIBS
-                <ExternalLink className="size-4" aria-hidden />
+            variant="outline"
+            render={<a href={`/api/ics?slug=${fortbildung.slug}`}>
+                <CalendarPlus className="size-4" aria-hidden />
+                Termin speichern (.ics)
               </a>
             }
           />
-        ) : null}
-
-        <Button nativeButton={false}
-          variant="outline"
-          render={<a href={`/api/ics?slug=${fortbildung.slug}`}>
-              <CalendarPlus className="size-4" aria-hidden />
-              Termin speichern (.ics)
-            </a>
-          }
-        />
-
-        {fortbildung.fibsLehrgangsnummer ? (
-          <span className="text-sm text-muted-foreground">
-            FIBS-Nummer{" "}
-            <span className="zahl">{fortbildung.fibsLehrgangsnummer}</span>
-          </span>
-        ) : null}
-      </div>
-
-      {!fortbildung.fibsUrl && !abgesagt ? (
-        <p className="mt-4 text-sm text-muted-foreground">
-          Für diesen Termin ist noch kein FIBS-Link hinterlegt. Die Anmeldung
-          erfolgt über die Lehrgangssuche in FIBS
-          {fortbildung.fibsLehrgangsnummer
-            ? ` unter der Nummer ${fortbildung.fibsLehrgangsnummer}`
-            : ""}
-          .
-        </p>
-      ) : null}
+        </div>
+      )}
     </article>
   );
 }

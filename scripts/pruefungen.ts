@@ -20,9 +20,13 @@ import { bildeSlug } from "@/lib/queries";
 import { filterZuWhere, suchbegriffe } from "@/lib/filter";
 import { mapFibsLehrgang } from "@/lib/fibs/mapper";
 import { parseSuchergebnis } from "@/lib/fibs/parser";
+import { fehlendeReferentIds, pruefeVeroeffentlichung } from "@/lib/validation/fortbildung";
 import { readFileSync } from "node:fs";
 import jsQR from "jsqr";
 import { qrMatrix } from "@/lib/qr";
+import { liesSessionVersion } from "@/constants/session";
+import { DIGCOMP_BAUM } from "../prisma/seed-data/digcomp";
+import { NIVEAUSTUFEN } from "@/constants/fortbildung";
 
 let fehler = 0;
 
@@ -62,6 +66,11 @@ pruefe("Anzeige auf Deutsch", formatDatumZeit(new Date("2026-10-15T12:00:00Z")),
 pruefe("Schuljahr wechselt im August", aktuellesSchuljahr(new Date("2026-08-01T10:00:00Z")), "2026/2027");
 pruefe("Schuljahr im Juli", aktuellesSchuljahr(new Date("2026-07-31T10:00:00Z")), "2025/2026");
 
+console.log("\nSitzungstoken");
+pruefe("gültige Sitzungsversion", liesSessionVersion(7), 7);
+pruefe("fehlende Sitzungsversion wird verworfen", liesSessionVersion(undefined), null);
+pruefe("ungültige Sitzungsversion wird verworfen", liesSessionVersion(-1), null);
+
 console.log("\nFerien und Feiertage (Bayern)");
 pruefe("Sommerferien 2026", ferienStatus(new Date("2026-08-10T12:00:00Z")).label, "Sommerferien");
 pruefe("normaler Schultag", ferienStatus(new Date("2026-10-15T12:00:00Z")).art, "unterrichtstag");
@@ -85,9 +94,44 @@ pruefe(
   "ferien",
 );
 pruefe(
+  "Osterferien 2028 sind gepflegt",
+  ferienStatus(new Date("2028-04-12T12:00:00Z")).label,
+  "Osterferien",
+);
+pruefe(
+  "Sommerferien 2030 sind gepflegt",
+  ferienStatus(new Date("2030-09-09T12:00:00Z")).label,
+  "Sommerferien",
+);
+pruefe(
   "außerhalb des gepflegten Zeitraums",
-  terminWarnung(new Date("2028-05-10T12:00:00Z"), new Date("2028-05-10T14:00:00Z"))?.art,
+  terminWarnung(new Date("2031-05-12T12:00:00Z"), new Date("2031-05-12T14:00:00Z"))?.art,
   "unbekannt",
+);
+
+console.log("\nDigCompEdu Bavaria");
+const teilkompetenzen = DIGCOMP_BAUM.flatMap((bereich) => bereich.children);
+pruefe("sechs Kompetenzbereiche", DIGCOMP_BAUM.length, 6);
+pruefe("22 amtliche Teilkompetenzen", teilkompetenzen.length, 22);
+pruefe(
+  "keine vorläufige Teilkompetenz",
+  teilkompetenzen.some((kompetenz) => kompetenz.istPlatzhalter),
+  false,
+);
+pruefe(
+  "amtliche Bezeichnung 4.2",
+  teilkompetenzen.find((kompetenz) => kompetenz.code === "4.2")?.titel,
+  "Analyse der Lernevidenz",
+);
+pruefe(
+  "amtliche Bezeichnung Bereich 6",
+  DIGCOMP_BAUM.find((bereich) => bereich.code === "6")?.titel,
+  "Förderung der Medienkompetenz der Lernenden",
+);
+pruefe(
+  "FIBS-Niveaustufen vollständig",
+  NIVEAUSTUFEN.map((stufe) => stufe.label),
+  ["Niveaustufe I/II", "Niveaustufe III/IV", "Niveaustufe V/VI"],
 );
 
 console.log("\nSlug");
@@ -95,6 +139,11 @@ pruefe(
   "Umlaute werden umgeschrieben",
   bildeSlug("Künstliche Intelligenz für Anfänger", new Date("2026-10-15T12:00:00Z"), "abcdef123"),
   "kuenstliche-intelligenz-fuer-anfaenger-2026-10-15-abcdef",
+);
+pruefe(
+  "Slug verwendet den Berliner Kalendertag",
+  bildeSlug("Abendtermin", new Date("2026-10-14T22:30:00Z"), "abcdef123"),
+  "abendtermin-2026-10-15-abcdef",
 );
 
 console.log("\nSuche");
@@ -129,6 +178,36 @@ pruefe(
     true,
   );
 }
+
+console.log("\nVeröffentlichung und Referenten");
+pruefe(
+  "unbekannte Referenten-ID wird erkannt",
+  fehlendeReferentIds(["referent-a", "referent-b", "referent-a"], ["referent-b"]),
+  ["referent-a"],
+);
+pruefe(
+  "vollständig aufgelöste Referenten bestehen die Veröffentlichungspflicht",
+  pruefeVeroeffentlichung({
+    status: "VEROEFFENTLICHT",
+    niveaustufe: "NIVEAU_III_IV",
+    kompetenzen: ["1.1"],
+    referenten: ["referent-a"],
+  }),
+  null,
+);
+pruefe(
+  "ohne aufgelösten Referenten ist Veröffentlichung nicht möglich",
+  pruefeVeroeffentlichung({
+    status: "VEROEFFENTLICHT",
+    niveaustufe: "NIVEAU_III_IV",
+    kompetenzen: ["1.1"],
+    referenten: [],
+  }),
+  {
+    referenten:
+      "Vor dem Veröffentlichen bitte mindestens eine Referentin oder einen Referenten zuordnen.",
+  },
+);
 
 console.log("\nQR-Code (gegen einen echten Decoder gelesen)");
 {

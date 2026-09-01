@@ -217,14 +217,10 @@ unter `/admin` (Anmeldung mit den Seed-Zugangsdaten — **Passwort danach
    unvollständig zwischenspeichern; sonst ginge angefangene Arbeit verloren.
    Zu ändern in `VEROEFFENTLICHUNGS_PFLICHTEN`
    (`src/lib/validation/fortbildung.ts`).
-2. **DigCompEdu** — Kompetenzbereich 1 ist vollständig hinterlegt. Die
-   Unterkompetenzen der Bereiche 2–6 tragen die Titel des DigCompEdu-Rahmens,
-   sind aber als „vorläufig" markiert; Formulierungen mit der offiziellen
-   bayerischen Fassung abgleichen (`prisma/seed-data/digcomp.ts`).
-3. **Impressum und Datenschutzerklärung** — Platzhalter. Unter `/admin/texte`
+2. **Impressum und Datenschutzerklärung** — Platzhalter. Unter `/admin/texte`
    durch die geprüften Fassungen ersetzen.
-4. **Schulferien** — siehe unten.
-5. **FIBS-Import** — siehe unten.
+3. **Schulferien** — siehe unten.
+4. **FIBS-Import** — siehe unten.
 
 Die **Veranstaltungsorte** entsprechen dem Schulverzeichnis des Schulamts
 (52 Grund- und Mittelschulen, Stand 31.07.2026, Quelle in
@@ -240,8 +236,10 @@ pflegbar.
   dazu die festen bayerischen Feiertage und der unterrichtsfreie Buß- und
   Bettag). Das gilt unbegrenzt in die Zukunft.
 - **Schulferien** werden je Schuljahr behördlich festgelegt und sind daher
-  **nicht** berechenbar. Gepflegt sind die Schuljahre **2025/2026** und
-  **2026/2027**, also bis zum **13.09.2027**.
+  **nicht** berechenbar. Gepflegt sind die Schuljahre **2025/2026** bis
+  **2029/2030**, einschließlich der Sommerferien 2030 bis zum **09.09.2030**.
+  Grundlage ist die amtliche Ferienordnung (BayMBl. 2022 Nr. 747), abgeglichen
+  am 01.09.2026.
 
 Fällt ein Termin in Ferien, auf einen Feiertag oder aufs Wochenende, zeigt das
 Erfassungsformular direkt beim Eingeben eine Warnung — bewusst als Hinweis,
@@ -257,10 +255,37 @@ ausdrücklich, statt stillschweigend „keine Ferien" anzunehmen.
 `FERIEN_NACH_SCHULJAHR` in `src/lib/ferien.ts` ergänzen. Mehr ist nicht nötig —
 Kalender, Warnung und Hinweistexte ziehen automatisch nach.
 
+## DigCompEdu Bavaria
+
+Der Seed unter `prisma/seed-data/digcomp.ts` enthält alle sechs amtlichen
+Kompetenzbereiche und alle **22 Teilkompetenzen** samt Kurzbeschreibungen. Die
+Bezeichnungen wurden am 01.09.2026 mit der offiziellen Fassung des Bayerischen
+Staatsministeriums abgeglichen; es gibt keine vorläufigen Einträge mehr. Die
+Niveaustufen entsprechen der FIBS-Gruppierung **I/II**, **III/IV** und
+**V/VI**; ältere Einzelwerte III oder IV werden durch die Datenmigration in
+III/IV zusammengeführt.
+
+## Datum und Zeitzone
+
+Alle Zeitpunkte liegen in PostgreSQL als `TIMESTAMPTZ(3)` vor und werden als
+UTC-Zeitpunkte verarbeitet. Anzeige, Formulare, Dateinamen und Kalendertage
+werden ausschließlich über `src/lib/datetime.ts` in `Europe/Berlin`
+umgerechnet. Die Migration auf `TIMESTAMPTZ` interpretiert bestehende
+`TIMESTAMP`-Werte ausdrücklich als UTC, damit sich vorhandene Termine nicht
+verschieben.
+
 ## FIBS-Import
 
 Vorbereitet unter `src/lib/fibs/`, standardmäßig **abgeschaltet**
 (`FIBS_IMPORT_ENABLED=false`).
+
+Eine offizielle FIBS-Schnittstelle steht dem Schulamt nach eigener Anfrage
+nicht zur Verfügung. Angeboten wird lediglich eine Einbettung per iframe. Die
+Anwendung nutzt diese bewusst nicht: Ein iframe würde eine Verbindung zu einem
+Drittdienst in das öffentliche Frontend bringen, die CSP und die zugesagte
+Datensparsamkeit aufweichen und sich kaum in Suche, Filter und Freigabeworkflow
+integrieren lassen. Deshalb bleibt FIBS das verbindliche Anmeldesystem und wird
+von jeder Ausschreibung gezielt verlinkt.
 
 So funktioniert es:
 

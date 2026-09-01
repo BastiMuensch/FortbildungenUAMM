@@ -70,7 +70,15 @@ export async function login(
     };
   }
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: {
+      id: true,
+      passwordHash: true,
+      isActive: true,
+      sessionVersion: true,
+    },
+  });
 
   // Auch bei unbekannter Adresse wird gehasht: Sonst wäre an der Antwortzeit
   // ablesbar, welche Adressen im System existieren. Dasselbe gilt für Konten,
@@ -95,7 +103,7 @@ export async function login(
   proKonto.zuruecksetzen(email);
   proIp.zuruecksetzen(ip);
 
-  await setSessionCookie(await signToken(user.id));
+  await setSessionCookie(await signToken(user.id, user.sessionVersion));
   await prisma.user.update({
     where: { id: user.id },
     data: { lastLoginAt: new Date() },

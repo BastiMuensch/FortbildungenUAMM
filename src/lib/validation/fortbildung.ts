@@ -198,6 +198,22 @@ export function pruefeVeroeffentlichung(
 }
 
 /**
+ * Meldet Referenten-IDs, die nach dem Abgleich mit der Datenbank fehlen.
+ *
+ * Die Auswahl aus dem Formular ist nicht vertrauenswürdig: Eine formal
+ * gültige UUID kann trotzdem auf keinen Referenteneintrag zeigen. Der Abgleich
+ * muss vor der Veröffentlichungsprüfung stattfinden, damit eine nicht
+ * existierende ID nicht als erfüllte Referentenpflicht zählt.
+ */
+export function fehlendeReferentIds(
+  angefragt: string[],
+  vorhanden: string[],
+): string[] {
+  const bekannteIds = new Set(vorhanden);
+  return [...new Set(angefragt)].filter((id) => !bekannteIds.has(id));
+}
+
+/**
  * Ergebnis einer Formular-Aktion.
  * `fehler` ist nach Feldnamen sortiert, damit das Formular die Meldung direkt
  * am betroffenen Feld — und den Fehler-Punkt am betroffenen Tab — anzeigen kann.

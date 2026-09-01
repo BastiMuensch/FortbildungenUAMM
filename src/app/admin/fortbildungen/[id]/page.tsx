@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { ERFASSER, fortbildungScope, requireRole } from "@/lib/auth";
 import { ladeFormularDaten } from "@/lib/formularDaten";
 import { duplizieren } from "@/actions/fortbildung";
 import { FortbildungForm } from "@/components/admin/FortbildungForm";
@@ -19,6 +19,7 @@ import { LoeschenKnopf } from "@/components/admin/LoeschenKnopf";
 import { Button } from "@/components/ui/button";
 import {
   STATUS_OEFFENTLICH,
+  STATUS_FUER_REFERENTEN,
   darfFreigeben,
   type FortbildungStatus,
 } from "@/constants/fortbildung";
@@ -37,13 +38,16 @@ export default async function FortbildungBearbeitenPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ gespeichert?: string }>;
 }) {
-  const user = await requireRole("ADMIN", "REDAKTEUR");
+  const user = await requireRole(...ERFASSER);
   const { id } = await params;
   const { gespeichert } = await searchParams;
 
   const [fortbildung, daten] = await Promise.all([
-    prisma.fortbildung.findUnique({
-      where: { id },
+    prisma.fortbildung.findFirst({
+      // Referentinnen und Referenten dürfen nur eigene bzw. ihnen
+      // zugeordnete Fortbildungen öffnen. Die Seitenprüfung ist zusätzlich
+      // zu den Berechtigungsprüfungen in den Server Actions nötig.
+      where: { AND: [{ id }, fortbildungScope(user)] },
       include: {
         schlagworte: { include: { schlagwort: { select: { name: true, istPflicht: true } } } },
         kompetenzen: { select: { kompetenzCode: true } },
@@ -61,6 +65,9 @@ export default async function FortbildungBearbeitenPage({
     fortbildung.status as FortbildungStatus,
   );
   const freigabeberechtigt = darfFreigeben(user.role);
+  const darfInhaltBearbeiten =
+    freigabeberechtigt ||
+    STATUS_FUER_REFERENTEN.includes(fortbildung.status as never);
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -192,10 +199,11 @@ export default async function FortbildungBearbeitenPage({
         </div>
       ) : null}
 
-      <FortbildungForm
-        {...daten}
-        darfVeroeffentlichen={freigabeberechtigt}
-        fortbildung={{
+      {darfInhaltBearbeiten ? (
+        <FortbildungForm
+          {...daten}
+          darfVeroeffentlichen={freigabeberechtigt}
+          fortbildung={{
           id: fortbildung.id,
           titel: fortbildung.titel,
           kurztitel: fortbildung.kurztitel,
@@ -219,8 +227,24 @@ export default async function FortbildungBearbeitenPage({
             .filter((s) => !s.schlagwort.istPflicht)
             .map((s) => s.schlagwort.name),
           referentIds: fortbildung.referenten.map((r) => r.referentId),
-        }}
-      />
+          }}
+        />
+      ) : (
+        <div className="border-l-4 border-primary bg-primary/5 px-5 py-4">
+          <p className="font-medium">Von der Redaktion freigegeben</p>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+            Veröffentlichte oder archivierte Ausschreibungen können nur noch
+            von der Redaktion geändert werden. Die tatsächliche
+            Teilnehmerzahl können Sie weiterhin unter Nachbereitung melden.
+          </p>
+          <Button
+            className="mt-4"
+            nativeButton={false}
+            variant="outline"
+            render={<Link href="/admin/nachbereitung">Zur Nachbereitung</Link>}
+          />
+        </div>
+      )}
 
       <section className="mt-12 border-t pt-6">
         <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold">

@@ -19,7 +19,12 @@ services:
     # Kein Port nach außen: Die Datenbank ist nur im Docker-Netz erreichbar.
 
   app:
-    build: .
+    # In Produktion wird dieses Image von der GitHub Action aus GHCR gezogen.
+    # `build` bleibt erhalten, damit lokal weiterhin `docker compose up --build`
+    # möglich ist.
+    image: ${APP_IMAGE:-ghcr.io/bastimuensch/fortbildungenuamm:latest}
+    build:
+      context: .
     restart: unless-stopped
     depends_on:
       db:

@@ -342,18 +342,69 @@ curl -H "Authorization: Bearer $CRON_SECRET" https://<host>/api/cron/cleanup
 
 ## Betrieb
 
-```bash
-docker compose up -d --build
+### Fertiges Container-Image aus GitHub
+
+Bei jedem Push auf `main` baut `.github/workflows/container.yml` ein
+Multi-Arch-Image für AMD64 und ARM64 und veröffentlicht es unter:
+
+```text
+ghcr.io/bastimuensch/fortbildungenuamm:latest
 ```
 
-Danach einmalig die Stammdaten einspielen:
+Zusätzlich gibt es für jeden Stand ein unveränderliches Tag in der Form
+`sha-<commit>`. Git-Tags wie `v1.2.3` erzeugen außerdem die Image-Tags `1.2.3`
+und `1.2`.
+
+Ist das GHCR-Paket privat, muss sich der Server einmal mit einem GitHub-Token
+mit der Berechtigung `read:packages` anmelden:
 
 ```bash
-docker compose exec app npx prisma db seed
+echo "$GHCR_TOKEN" | docker login ghcr.io -u BastiMuensch --password-stdin
+```
+
+Für den Produktionsbetrieb genügt danach:
+
+```bash
+docker compose pull app
+docker compose up -d --no-build
+```
+
+Die App wendet beim Start automatisch alle Prisma-Migrationen an. Das
+PostgreSQL-Volume `pgdaten` bleibt beim Austausch des App-Containers erhalten.
+
+Danach einmalig die Stammdaten und den ersten Admin aus der `.env` einspielen:
+
+```bash
+set -a
+. ./.env
+set +a
+
+docker compose exec \
+  -e "SEED_ADMIN_EMAIL=$SEED_ADMIN_EMAIL" \
+  -e "SEED_ADMIN_PASSWORD=$SEED_ADMIN_PASSWORD" \
+  -e "SEED_ADMIN_NAME=$SEED_ADMIN_NAME" \
+  app npx prisma db seed
+
+unset SEED_ADMIN_EMAIL SEED_ADMIN_PASSWORD SEED_ADMIN_NAME
 ```
 
 Die Anwendung bindet sich an `127.0.0.1:3000`; davor gehört ein Reverse Proxy
 mit TLS (nginx, Caddy). HSTS ist gesetzt, die Anwendung geht also von HTTPS aus.
+
+Für ein späteres Update muss auf dem Server kein Node.js-Build mehr laufen:
+
+```bash
+docker compose pull app
+docker compose up -d --no-build
+docker compose logs --tail=100 app
+```
+
+Soll das Image ausnahmsweise direkt auf dem Server gebaut werden, bleibt dies
+weiterhin möglich:
+
+```bash
+docker compose up -d --build
+```
 
 ## Lizenz
 

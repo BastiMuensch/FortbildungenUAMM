@@ -388,8 +388,15 @@ docker compose exec \
 unset SEED_ADMIN_EMAIL SEED_ADMIN_PASSWORD SEED_ADMIN_NAME
 ```
 
-Die Anwendung bindet sich an `127.0.0.1:3000`; davor gehört ein Reverse Proxy
-mit TLS (nginx, Caddy). HSTS ist gesetzt, die Anwendung geht also von HTTPS aus.
+Der App-Container hört intern weiterhin auf Port `3000`; Docker veröffentlicht
+ihn auf dem Server über Host-Port `3001`. Für Newt/Pangolin ist deshalb das
+interne Ziel `http://192.168.1.56:3001`. Nach außen gehört weiterhin ein Reverse
+Proxy mit TLS davor. HSTS ist gesetzt, die Anwendung geht also von HTTPS aus.
+In `NEXT_PUBLIC_BASE_URL` muss die öffentlich sichtbare HTTPS-Adresse stehen,
+nicht das interne Newt/Pangolin-Ziel.
+
+Die Portzuordnung ist direkt in `docker-compose.yml` hinterlegt. Eine lokale
+`docker-compose.override.yml` ist für den Betrieb auf Port `3001` nicht nötig.
 
 Für ein späteres Update muss auf dem Server kein Node.js-Build mehr laufen:
 

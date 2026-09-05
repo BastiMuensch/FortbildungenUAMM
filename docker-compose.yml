@@ -32,7 +32,7 @@ services:
     environment:
       DATABASE_URL: postgresql://fortbildungen:${POSTGRES_PASSWORD}@db:5432/fortbildungen_uamm?schema=public
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt in der .env}
-      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}
+      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://localhost:3001}
       FIBS_IMPORT_ENABLED: ${FIBS_IMPORT_ENABLED:-false}
       FIBS_BASE_URL: ${FIBS_BASE_URL:-https://fibs.alp.dillingen.de}
       FIBS_USER_AGENT_CONTACT: ${FIBS_USER_AGENT_CONTACT:-}
@@ -40,8 +40,8 @@ services:
       CRON_SECRET: ${CRON_SECRET:-}
       NODE_ENV: production
     ports:
-      # Nur an localhost binden — davor gehört ein Reverse Proxy mit TLS.
-      - "127.0.0.1:3000:3000"
+      # Host-Port 3001 ist für Newt/Pangolin erreichbar; intern bleibt Port 3000.
+      - "3001:3000"
 
 volumes:
   pgdaten:

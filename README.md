@@ -365,8 +365,9 @@ echo "$GHCR_TOKEN" | docker login ghcr.io -u BastiMuensch --password-stdin
 Für den Produktionsbetrieb genügt danach:
 
 ```bash
-docker compose pull app
+docker compose pull app db
 docker compose up -d --no-build
+docker compose ps
 ```
 
 Die App wendet beim Start automatisch alle Prisma-Migrationen an. Das
@@ -397,12 +398,26 @@ nicht das interne Newt/Pangolin-Ziel.
 
 Die Portzuordnung ist direkt in `docker-compose.yml` hinterlegt. Eine lokale
 `docker-compose.override.yml` ist für den Betrieb auf Port `3001` nicht nötig.
+Mit den folgenden Befehlen lässt sich auf dem Server vor dem Start prüfen,
+welche Konfiguration und Images Docker Compose tatsächlich verwendet:
+
+```bash
+docker compose config
+docker compose config --images
+```
+
+Die Image-Liste muss `ghcr.io/bastimuensch/fortbildungenuamm:latest` und
+`postgres:16-alpine` enthalten. Fehlt das App-Image, zuerst mit
+`git pull --ff-only` sicherstellen, dass die aktuelle `docker-compose.yml` aus
+diesem Repository verwendet wird.
 
 Für ein späteres Update muss auf dem Server kein Node.js-Build mehr laufen:
 
 ```bash
-docker compose pull app
+git pull --ff-only
+docker compose pull app db
 docker compose up -d --no-build
+docker compose ps
 docker compose logs --tail=100 app
 ```
 

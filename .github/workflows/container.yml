@@ -25,6 +25,17 @@ jobs:
       - name: Repository auschecken
         uses: actions/checkout@v6
 
+      - name: Docker-Compose-Konfiguration prüfen
+        env:
+          POSTGRES_PASSWORD: compose-pruefung
+          JWT_SECRET: compose-pruefung-mit-mindestens-32-zeichen
+        run: |
+          set -euo pipefail
+          docker compose config > /tmp/docker-compose.aufgeloest.yml
+          docker compose config --images | sort | tee /tmp/docker-compose.images
+          grep -Fxq "ghcr.io/bastimuensch/fortbildungenuamm:latest" /tmp/docker-compose.images
+          grep -Fxq "postgres:16-alpine" /tmp/docker-compose.images
+
       - name: QEMU für mehrere Architekturen einrichten
         uses: docker/setup-qemu-action@v4
 

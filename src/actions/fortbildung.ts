@@ -8,6 +8,7 @@ import { AuthError, ERFASSER, darfBearbeiten, requireRole } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 import { sanitizeBeschreibung, htmlZuText } from "@/lib/sanitize";
 import { bildeSlug } from "@/lib/queries";
+import { normalisiereSchlagwortListe, schlagwortSchluessel } from "@/lib/schlagwort";
 import {
   PFLICHT_SCHLAGWORTE,
   STATUS_FUER_REFERENTEN,
@@ -414,22 +415,24 @@ async function bekannteKompetenzCodes(codes: string[]): Promise<Set<string>> {
  * FIBS-Suche nicht mehr auffindbar.
  */
 async function schlagworteAufloesen(namen: string[]): Promise<string[]> {
-  const eindeutig = new Map<string, string>();
-
-  for (const name of [...PFLICHT_SCHLAGWORTE, ...namen]) {
-    const bereinigt = name.trim();
-    if (bereinigt) eindeutig.set(bereinigt.toLowerCase(), bereinigt);
-  }
+  const eindeutig = normalisiereSchlagwortListe([
+    ...PFLICHT_SCHLAGWORTE,
+    ...namen,
+  ]);
 
   const ids: string[] = [];
 
-  for (const name of eindeutig.values()) {
+  for (const name of eindeutig) {
+    const normalisiert = schlagwortSchluessel(name);
     const schlagwort = await prisma.schlagwort.upsert({
-      where: { name },
+      where: { normalisiert },
       update: {},
       create: {
         name,
-        istPflicht: (PFLICHT_SCHLAGWORTE as readonly string[]).includes(name),
+        normalisiert,
+        istPflicht: (PFLICHT_SCHLAGWORTE as readonly string[]).some(
+          (pflicht) => schlagwortSchluessel(pflicht) === normalisiert,
+        ),
       },
       select: { id: true },
     });

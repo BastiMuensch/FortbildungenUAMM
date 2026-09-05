@@ -139,15 +139,17 @@ export function AdminFilterLeiste({
           />
         ) : null}
 
-        <Liste
-          label="FIBS"
-          wert={wert("fibs")}
-          optionen={[
-            { value: "offen", label: "noch nicht eingetragen" },
-            { value: "erledigt", label: "eingetragen" },
-          ]}
-          onChange={(v) => setzen({ fibs: v })}
-        />
+        {!ohne.includes("fibs") ? (
+          <Liste
+            label="FIBS"
+            wert={wert("fibs")}
+            optionen={[
+              { value: "offen", label: "noch nicht eingetragen" },
+              { value: "erledigt", label: "eingetragen" },
+            ]}
+            onChange={(v) => setzen({ fibs: v })}
+          />
+        ) : null}
 
         <Liste
           label="Schlagwort"

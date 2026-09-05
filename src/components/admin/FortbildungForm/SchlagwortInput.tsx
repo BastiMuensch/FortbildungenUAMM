@@ -1,10 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { Lock, Plus, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { PFLICHT_SCHLAGWORTE } from "@/constants/fortbildung";
+import { normalisiereSchlagwort, schlagwortSchluessel } from "@/lib/schlagwort";
+
+const MAX_SCHLAGWORTE = 30;
 
 /**
  * Schlagwort-Eingabe mit Vorschlägen.
@@ -23,29 +26,46 @@ export function SchlagwortInput({
   vorschlaege: string[];
 }) {
   const [eingabe, setEingabe] = useState("");
+  const vorschlagsId = useId();
 
   const pflicht = PFLICHT_SCHLAGWORTE as readonly string[];
 
   const offeneVorschlaege = useMemo(() => {
     const belegt = new Set(
-      [...werte, ...pflicht].map((w) => w.toLowerCase()),
+      [...werte, ...pflicht].map(schlagwortSchluessel),
     );
-    const suche = eingabe.trim().toLowerCase();
+    const suche = schlagwortSchluessel(eingabe);
 
     return vorschlaege
-      .filter((v) => !belegt.has(v.toLowerCase()))
-      .filter((v) => (suche ? v.toLowerCase().includes(suche) : true))
+      .filter((v) => !belegt.has(schlagwortSchluessel(v)))
+      .filter((v) => (suche ? schlagwortSchluessel(v).includes(suche) : true))
+      .sort((a, b) => {
+        const aBeginnt = schlagwortSchluessel(a).startsWith(suche);
+        const bBeginnt = schlagwortSchluessel(b).startsWith(suche);
+        if (aBeginnt !== bBeginnt) return aBeginnt ? -1 : 1;
+        return a.localeCompare(b, "de-DE");
+      })
       .slice(0, 8);
   }, [vorschlaege, werte, eingabe, pflicht]);
 
   function hinzufuegen(name: string) {
-    const bereinigt = name.trim();
+    if (werte.length >= MAX_SCHLAGWORTE) return;
+
+    const bereinigt = normalisiereSchlagwort(name);
     if (!bereinigt) return;
 
+    // Existiert der Begriff bereits global, wird dessen Schreibweise
+    // übernommen. Das verhindert „digital“ neben „Digital“ schon im Browser.
+    const kanonisch =
+      vorschlaege.find(
+        (vorschlag) =>
+          schlagwortSchluessel(vorschlag) === schlagwortSchluessel(bereinigt),
+      ) ?? bereinigt;
+
     const belegt = [...werte, ...pflicht].some(
-      (w) => w.toLowerCase() === bereinigt.toLowerCase(),
+      (w) => schlagwortSchluessel(w) === schlagwortSchluessel(kanonisch),
     );
-    if (!belegt) onChange([...werte, bereinigt]);
+    if (!belegt) onChange([...werte, kanonisch]);
     setEingabe("");
   }
 
@@ -59,7 +79,7 @@ export function SchlagwortInput({
       <div className="flex flex-wrap gap-1.5 border border-input p-2">
         {pflicht.map((wert) => (
           <span
-            key={wert}
+            key={schlagwortSchluessel(wert)}
             title="Pflicht-Schlagwort des Schulamts, kann nicht entfernt werden"
             className="inline-flex items-center gap-1 bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
           >
@@ -98,11 +118,28 @@ export function SchlagwortInput({
               onChange(werte.slice(0, -1));
             }
           }}
-          placeholder="Schlagwort eingeben und Enter drücken"
+          list={vorschlagsId}
+          placeholder="Schlagwort eingeben, Vorschlag wählen oder Enter drücken"
           aria-label="Weiteres Schlagwort"
+          aria-describedby={`${vorschlagsId}-hinweis`}
+          disabled={werte.length >= MAX_SCHLAGWORTE}
           className="h-7 min-w-52 flex-1 border-0 bg-transparent px-1 shadow-none focus-visible:ring-0"
         />
       </div>
+
+      <datalist id={vorschlagsId}>
+        {offeneVorschlaege.map((vorschlag) => (
+          <option key={vorschlag} value={vorschlag} />
+        ))}
+      </datalist>
+
+      <p id={`${vorschlagsId}-hinweis`} className="text-xs text-muted-foreground">
+        Bestehende Schlagworte werden vorgeschlagen. Neue Begriffe werden beim
+        Speichern für alle Referentinnen und Referenten verfügbar.
+        {werte.length >= MAX_SCHLAGWORTE
+          ? ` Maximal ${MAX_SCHLAGWORTE} Schlagworte.`
+          : ` Noch ${MAX_SCHLAGWORTE - werte.length} möglich.`}
+      </p>
 
       {offeneVorschlaege.length > 0 ? (
         <div className="flex flex-wrap items-center gap-1.5">

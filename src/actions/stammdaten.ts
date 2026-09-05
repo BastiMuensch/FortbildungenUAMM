@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { AuthError, requireRole } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 import { zuFeldFehlern, type FormularState } from "@/lib/validation/fortbildung";
+import { normalisiereSchlagwort, schlagwortSchluessel } from "@/lib/schlagwort";
 
 /**
  * Stammdaten: Referenten, Schlagworte, Veranstaltungsorte.
@@ -139,15 +140,19 @@ export async function speichereSchlagwort(
     throw error;
   }
 
-  const name = (formData.get("name") ?? "").toString().trim();
+  const name = normalisiereSchlagwort((formData.get("name") ?? "").toString());
   if (name.length < 2) {
     return { fehler: { name: "Ein Schlagwort braucht mindestens 2 Zeichen." } };
   }
+  if (name.length > 60) {
+    return { fehler: { name: "Ein Schlagwort darf höchstens 60 Zeichen haben." } };
+  }
 
-  const vorhanden = await prisma.schlagwort.findUnique({ where: { name } });
+  const normalisiert = schlagwortSchluessel(name);
+  const vorhanden = await prisma.schlagwort.findUnique({ where: { normalisiert } });
   if (vorhanden) return { fehler: { name: "Dieses Schlagwort gibt es bereits." } };
 
-  await prisma.schlagwort.create({ data: { name } });
+  await prisma.schlagwort.create({ data: { name, normalisiert } });
   revalidatePath("/admin/schlagworte");
   return { erfolg: true, meldung: `„${name}" wurde angelegt.` };
 }

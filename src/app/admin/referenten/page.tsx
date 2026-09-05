@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 import { ReferentenVerwaltung } from "@/components/admin/ReferentenVerwaltung";
+import { ReferentenRegistrierungslink } from "@/components/admin/ReferentenRegistrierungslink";
 
 export const metadata = { title: "Referenten" };
 
@@ -54,14 +55,15 @@ export default async function ReferentenPage() {
           braucht es das Einverständnis der jeweiligen Person.
         </p>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-          Die Administration erzeugt pro Person einen einmaligen
-          Registrierungslink. Darüber setzt die Person ihr Passwort selbst.
-          Anschließend kann sie eigene Fortbildungen anlegen, Teilnehmerzahlen
-          melden und im Planungskalender Datum, Uhrzeit, Ort, Titel und
-          Beschreibung aller Termine überblicken.
+          Für bereits eingetragene Personen kann die Administration einen
+          einmaligen Zugangslink erzeugen. Neue Personen registrieren sich über
+          den allgemeinen, zeitlich begrenzten Link unten selbst. Anschließend
+          können sie eigene Fortbildungen anlegen, Teilnehmerzahlen melden und
+          alle Termine im Planungskalender überblicken.
         </p>
       </div>
 
+      <ReferentenRegistrierungslink />
       <ReferentenVerwaltung
         referenten={zeilen}
         darfLoeschen={user.role === "ADMIN"}

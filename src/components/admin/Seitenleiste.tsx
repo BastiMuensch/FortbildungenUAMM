@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   CalendarDays,
   CalendarRange,
+  BookOpen,
   ClipboardCheck,
   Download,
   ExternalLink,
@@ -50,6 +51,12 @@ const GRUPPEN: Array<{ titel: string; eintraege: Eintrag[] }> = [
         href: "/admin/kalender",
         label: "Planungskalender",
         icon: CalendarRange,
+        rollen: ALLE,
+      },
+      {
+        href: "/admin/katalog",
+        label: "Fortbildungskatalog",
+        icon: BookOpen,
         rollen: ALLE,
       },
       {

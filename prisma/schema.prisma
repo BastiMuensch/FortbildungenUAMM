@@ -39,14 +39,15 @@ model User {
   createdAt      DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
 
-  fortbildungen Fortbildung[]  @relation("Ersteller")
-  tnMeldungen   Fortbildung[]  @relation("TnMeldung")
-  freigaben     Fortbildung[]  @relation("Freigabe")
-  fibsEintraege Fortbildung[]  @relation("FibsEintrag")
-  auditLogs     AuditLog[]
-  zugangstoken  Zugangstoken[]
+  fortbildungen                 Fortbildung[]                  @relation("Ersteller")
+  tnMeldungen                   Fortbildung[]                  @relation("TnMeldung")
+  freigaben                     Fortbildung[]                  @relation("Freigabe")
+  fibsEintraege                 Fortbildung[]                  @relation("FibsEintrag")
+  auditLogs                     AuditLog[]
+  zugangstoken                  Zugangstoken[]
+  referentenRegistrierungslinks ReferentenRegistrierungslink[] @relation("RegistrierungslinkErsteller")
   /// Gesetzt, wenn dieses Konto zu einer Referentin oder einem Referenten gehört
-  referent      Referent?
+  referent                      Referent?
 }
 
 /// Einmal-Token für das Einrichten eines Zugangs und für das Zurücksetzen
@@ -67,6 +68,27 @@ model Zugangstoken {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+/// Wiederverwendbarer, zeitlich begrenzter Link für die Selbstregistrierung
+/// von Referentinnen und Referenten. Der Link selbst wird nie gespeichert;
+/// `tokenHash` ist ein SHA-256-Hash des zufällig erzeugten Tokens.
+model ReferentenRegistrierungslink {
+  id              String    @id @default(uuid())
+  tokenHash       String    @unique
+  expiresAt       DateTime  @db.Timestamptz(3)
+  aktiv           Boolean   @default(true)
+  nutzungen       Int       @default(0)
+  maxNutzungen    Int       @default(25)
+  letzteNutzungAm DateTime? @db.Timestamptz(3)
+  erstelltVonId   String?
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+
+  erstelltVon User? @relation("RegistrierungslinkErsteller", fields: [erstelltVonId], references: [id], onDelete: SetNull)
+
+  @@index([expiresAt])
+  @@index([aktiv, expiresAt])
+  @@index([erstelltVonId])
 }
 
 // ---------------------------------------------------------------------------
@@ -184,6 +206,10 @@ model Schlagwort {
   id String @id @default(uuid())
 
   name           String   @unique
+  /// Such- und Eindeutigkeitsschlüssel: klein geschrieben, ohne führende,
+  /// nachlaufende oder mehrfache Leerzeichen. Die sichtbare Schreibweise bleibt
+  /// in `name` erhalten, damit vorgeschlagene Schlagworte konsistent wirken.
+  normalisiert   String   @unique
   /// "UAMM" und "Medienteam-UAMM": werden jeder Fortbildung automatisch
   /// angehängt und lassen sich im Formular nicht abwählen.
   istPflicht     Boolean  @default(false)

@@ -9,6 +9,7 @@ import {
   SCHULART_VALUES,
   STATUS_VALUES,
 } from "@/constants/fortbildung";
+import { normalisiereSchlagwort, normalisiereSchlagwortListe } from "@/lib/schlagwort";
 
 /**
  * Ein Schema für Formular und Server Action.
@@ -97,9 +98,20 @@ export const FortbildungSchema = z
 
     /** Freie Schlagwort-Namen; Pflicht-Tags kommen in der Action dazu. */
     schlagworte: z
-      .array(z.string().trim().min(1).max(60))
+      .array(
+        z
+          .string()
+          .transform(normalisiereSchlagwort)
+          .pipe(
+            z
+              .string()
+              .min(2, "Ein Schlagwort braucht mindestens 2 Zeichen.")
+              .max(60, "Ein Schlagwort darf höchstens 60 Zeichen haben."),
+          ),
+      )
       .max(30, "Mehr als 30 Schlagworte sind nicht sinnvoll.")
-      .default([]),
+      .default([])
+      .transform(normalisiereSchlagwortListe),
 
     referenten: z.array(z.string().uuid()).default([]),
 

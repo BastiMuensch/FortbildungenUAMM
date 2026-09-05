@@ -27,6 +27,11 @@ import { qrMatrix } from "@/lib/qr";
 import { liesSessionVersion, sitzungsCookieSicher } from "@/constants/session";
 import { DIGCOMP_BAUM } from "../prisma/seed-data/digcomp";
 import { NIVEAUSTUFEN } from "@/constants/fortbildung";
+import {
+  normalisiereSchlagwort,
+  normalisiereSchlagwortListe,
+  schlagwortSchluessel,
+} from "@/lib/schlagwort";
 
 let fehler = 0;
 
@@ -73,6 +78,23 @@ pruefe("ungültige Sitzungsversion wird verworfen", liesSessionVersion(-1), null
 pruefe("Secure-Cookie ist in Produktion Standard", sitzungsCookieSicher(undefined, true), true);
 pruefe("HTTP im LAN muss ausdrücklich erlaubt werden", sitzungsCookieSicher("false", true), false);
 pruefe("HTTPS lässt sich ausdrücklich erzwingen", sitzungsCookieSicher("true", false), true);
+
+console.log("\nSchlagworte");
+pruefe(
+  "Leerzeichen werden vereinheitlicht",
+  normalisiereSchlagwort("  Digitale\u00a0\u00a0Medien  "),
+  "Digitale Medien",
+);
+pruefe(
+  "Schlüssel ignoriert deutsche Groß-/Kleinschreibung",
+  schlagwortSchluessel("KÜNSTLICHE INTELLIGENZ ẞ"),
+  "künstliche intelligenz ß",
+);
+pruefe(
+  "Doppelte Schlagworte werden zusammengeführt",
+  normalisiereSchlagwortListe(["Digital", "  digital ", "iPad"]),
+  ["Digital", "iPad"],
+);
 
 console.log("\nFerien und Feiertage (Bayern)");
 pruefe("Sommerferien 2026", ferienStatus(new Date("2026-08-10T12:00:00Z")).label, "Sommerferien");

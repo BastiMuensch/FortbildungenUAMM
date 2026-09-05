@@ -145,14 +145,28 @@ persönliche Kontaktdaten werden dort nicht geladen. Der Sonderfall ist in
 `src/actions/terminumfeld.ts` dokumentiert; ein Online-Ort (ViKo) kollidiert
 nie, der lässt sich beliebig oft parallel belegen.
 
-Referentinnen und Referenten bekommen ihren Zugang über einen Einladungslink,
-den die Administration im Referentenverzeichnis erzeugt und weitergibt — es
-ist bewusst **kein Mailserver** eingerichtet, statt einen vorzutäuschen.
-Der Link ist einmalig verwendbar und läuft nach 14 Tagen ab. Die eingeladene
-Person setzt darüber ihr Passwort selbst. Danach steht ihr unter
-`/admin/kalender` ein gemeinsamer Planungskalender zur Verfügung: Alle
-relevanten Termine sind dort mit Datum, Uhrzeit, Ort, Titel und Beschreibung
-sichtbar. Persönliche Kontaktdaten anderer Referenten werden nicht angezeigt.
+Für den Zugang gibt es zwei Wege: Bereits im Verzeichnis angelegte Personen
+bekommen einen persönlichen, einmalig verwendbaren Einladungslink mit 14 Tagen
+Laufzeit. Für neue Personen kann die Redaktion einen allgemeinen Link erzeugen,
+der 30 Tage gültig und wiederverwendbar ist. Darüber werden ausschließlich
+Konten mit der Rolle `REFERENT` angelegt; selbst registrierte Namen sind nicht
+automatisch öffentlich sichtbar. Klartext-Tokens liegen nie in der Datenbank,
+und ein neu erzeugter allgemeiner Link ersetzt den bisherigen. Es ist bewusst
+**kein Mailserver** eingerichtet, statt einen vorzutäuschen.
+
+Danach steht unter `/admin/kalender` ein gemeinsamer Planungskalender zur
+Verfügung: Alle relevanten Termine sind dort mit Datum, Uhrzeit, Ort, Titel und
+Beschreibung sichtbar. Persönliche Kontaktdaten anderer Referenten werden
+nicht angezeigt.
+
+Vergangene, veröffentlichte oder archivierte Termine bleiben im internen
+Fortbildungskatalog durchsuchbar. Die aktuelle Filterung lässt sich als
+gestaltetes PDF oder als filter- und sortierbare Excel-Arbeitsmappe exportieren.
+Referenten sehen und exportieren dabei nur ihre eigenen Termine.
+
+Freie Schlagworte werden direkt im Fortbildungsformular mit Enter oder Komma
+angelegt. Schon vorhandene Begriffe erscheinen beim Tippen als Vorschläge und
+werden in einheitlicher Schreibweise wiederverwendet.
 
 ## Technik
 
@@ -399,7 +413,8 @@ ihn auf dem Server über Host-Port `3001`. Für Newt/Pangolin ist deshalb das
 interne Ziel `http://192.168.1.56:3001`. Nach außen gehört weiterhin ein Reverse
 Proxy mit TLS davor. HSTS ist gesetzt, die Anwendung geht also von HTTPS aus.
 In `APP_BASE_URL` muss die öffentlich sichtbare HTTPS-Adresse stehen,
-nicht das interne Newt/Pangolin-Ziel.
+nicht das interne Newt/Pangolin-Ziel. Docker Compose verlangt diesen Wert
+ausdrücklich, damit Registrierungslinks nie unbemerkt auf `localhost` zeigen.
 
 Sitzungscookies sind im Produktionscontainer standardmäßig nur über HTTPS
 gültig (`SESSION_COOKIE_SECURE=true`). Beim vorübergehenden direkten Aufruf über

@@ -10,6 +10,7 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { DIGCOMP_BAUM, type KompetenzSeed } from "./seed-data/digcomp";
 import { ORTE_SEED } from "./seed-data/orte";
+import { schlagwortSchluessel } from "../src/lib/schlagwort";
 
 const prisma = new PrismaClient();
 
@@ -101,17 +102,22 @@ async function seedOrte() {
 async function seedSchlagworte() {
   for (const name of PFLICHT_SCHLAGWORTE) {
     await prisma.schlagwort.upsert({
-      where: { name },
+      where: { normalisiert: schlagwortSchluessel(name) },
       update: { istPflicht: true },
-      create: { name, istPflicht: true, fuerFibsImport: true },
+      create: {
+        name,
+        normalisiert: schlagwortSchluessel(name),
+        istPflicht: true,
+        fuerFibsImport: true,
+      },
     });
   }
 
   for (const name of START_SCHLAGWORTE) {
     await prisma.schlagwort.upsert({
-      where: { name },
+      where: { normalisiert: schlagwortSchluessel(name) },
       update: {},
-      create: { name },
+      create: { name, normalisiert: schlagwortSchluessel(name) },
     });
   }
 

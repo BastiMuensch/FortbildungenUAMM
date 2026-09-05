@@ -29,6 +29,7 @@ jobs:
         env:
           POSTGRES_PASSWORD: compose-pruefung
           JWT_SECRET: compose-pruefung-mit-mindestens-32-zeichen
+          APP_BASE_URL: http://localhost:3001
         run: |
           set -euo pipefail
           docker compose config > /tmp/docker-compose.aufgeloest.yml

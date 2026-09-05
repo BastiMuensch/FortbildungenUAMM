@@ -150,8 +150,8 @@ export function ReferentenVerwaltung({
                         <Button
                           variant="ghost"
                           size="icon-xs"
-                          aria-label={`Zugang für ${r.vorname} ${r.nachname} verwalten`}
-                          title="Zugang verwalten"
+                          aria-label={`Registrierungslink für ${r.vorname} ${r.nachname} verwalten`}
+                          title="Registrierungslink verwalten"
                           onClick={() => setZugangFuer(r)}
                         >
                           <KeyRound className="size-3.5" />
@@ -275,7 +275,7 @@ function ZugangDialog({
           </DialogTitle>
           <DialogDescription>
             {referent?.email
-              ? `Anmeldung mit ${referent.email}.`
+              ? `Die Person registriert sich über einen einmaligen Link und meldet sich danach mit ${referent.email} an.`
               : "Für einen Zugang wird zuerst eine E-Mail-Adresse gebraucht — sie ist die Anmeldekennung."}
           </DialogDescription>
         </DialogHeader>
@@ -343,7 +343,7 @@ function ZugangDialog({
             <form action={einrichtenAction}>
               <Button type="submit" disabled={!referent?.email}>
                 <KeyRound className="size-3.5" aria-hidden />
-                Zugang einrichten
+                Registrierungslink erzeugen
               </Button>
             </form>
           )}

@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  const basis = process.env.NEXT_PUBLIC_BASE_URL ?? request.nextUrl.origin;
+  const basis = process.env.APP_BASE_URL ?? request.nextUrl.origin;
 
   const zeilen: string[] = [
     "BEGIN:VCALENDAR",

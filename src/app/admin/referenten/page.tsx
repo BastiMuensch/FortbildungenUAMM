@@ -54,9 +54,11 @@ export default async function ReferentenPage() {
           braucht es das Einverständnis der jeweiligen Person.
         </p>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-          Mit einem Zugang können Referentinnen und Referenten eigene
-          Fortbildungen anlegen und nach der Veranstaltung die Teilnehmerzahl
-          melden. Sie sehen dabei ausschließlich ihre eigenen Termine.
+          Die Administration erzeugt pro Person einen einmaligen
+          Registrierungslink. Darüber setzt die Person ihr Passwort selbst.
+          Anschließend kann sie eigene Fortbildungen anlegen, Teilnehmerzahlen
+          melden und im Planungskalender Datum, Uhrzeit, Ort, Titel und
+          Beschreibung aller Termine überblicken.
         </p>
       </div>
 

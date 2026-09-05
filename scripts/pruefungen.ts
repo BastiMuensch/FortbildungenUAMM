@@ -24,7 +24,7 @@ import { fehlendeReferentIds, pruefeVeroeffentlichung } from "@/lib/validation/f
 import { readFileSync } from "node:fs";
 import jsQR from "jsqr";
 import { qrMatrix } from "@/lib/qr";
-import { liesSessionVersion } from "@/constants/session";
+import { liesSessionVersion, sitzungsCookieSicher } from "@/constants/session";
 import { DIGCOMP_BAUM } from "../prisma/seed-data/digcomp";
 import { NIVEAUSTUFEN } from "@/constants/fortbildung";
 
@@ -70,6 +70,9 @@ console.log("\nSitzungstoken");
 pruefe("gültige Sitzungsversion", liesSessionVersion(7), 7);
 pruefe("fehlende Sitzungsversion wird verworfen", liesSessionVersion(undefined), null);
 pruefe("ungültige Sitzungsversion wird verworfen", liesSessionVersion(-1), null);
+pruefe("Secure-Cookie ist in Produktion Standard", sitzungsCookieSicher(undefined, true), true);
+pruefe("HTTP im LAN muss ausdrücklich erlaubt werden", sitzungsCookieSicher("false", true), false);
+pruefe("HTTPS lässt sich ausdrücklich erzwingen", sitzungsCookieSicher("true", false), true);
 
 console.log("\nFerien und Feiertage (Bayern)");
 pruefe("Sommerferien 2026", ferienStatus(new Date("2026-08-10T12:00:00Z")).label, "Sommerferien");

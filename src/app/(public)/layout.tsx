@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { CalendarDays, ListFilter } from "lucide-react";
+import { CalendarDays, ListFilter, LogIn } from "lucide-react";
 
 const NAVIGATION = [
   { href: "/fortbildungen", label: "Alle Fortbildungen", icon: ListFilter },
   { href: "/kalender", label: "Kalender", icon: CalendarDays },
+  { href: "/login", label: "Redaktion", icon: LogIn, hervorheben: true },
 ];
 
 export default function OeffentlichesLayout({
@@ -21,7 +22,7 @@ export default function OeffentlichesLayout({
       </a>
 
       <header className="sticky top-0 z-40 border-b-2 border-primary bg-background/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl items-stretch gap-x-6 px-4">
+        <div className="mx-auto flex max-w-5xl items-stretch gap-x-2 px-4 sm:gap-x-6">
           <Link
             href="/"
             className="flex items-center gap-3 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -31,7 +32,7 @@ export default function OeffentlichesLayout({
               aria-hidden
               className="size-4 rotate-45 bg-primary"
             />
-            <span className="leading-tight">
+            <span className="hidden leading-tight min-[420px]:block">
               <span className="etikett block text-[0.8rem] tracking-[0.14em]">
                 Fortbildungen
               </span>
@@ -42,15 +43,21 @@ export default function OeffentlichesLayout({
           </Link>
 
           <nav className="ml-auto flex items-stretch">
-            {NAVIGATION.map(({ href, label, icon: Icon }) => (
+            {NAVIGATION.map(({ href, label, icon: Icon, hervorheben }) => (
               <Link
                 key={href}
                 href={href}
                 aria-label={label}
-                className="etikett flex items-center gap-2 border-b-2 border-transparent px-3 text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+                className={
+                  hervorheben
+                    ? "etikett my-2 ml-2 flex items-center gap-2 bg-primary px-3 text-primary-foreground transition-opacity hover:opacity-85"
+                    : "etikett flex items-center gap-2 border-b-2 border-transparent px-3 text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+                }
               >
                 <Icon className="size-4" aria-hidden />
-                <span className="sr-only sm:not-sr-only">{label}</span>
+                <span className={hervorheben ? "" : "sr-only sm:not-sr-only"}>
+                  {label}
+                </span>
               </Link>
             ))}
           </nav>
@@ -78,9 +85,6 @@ export default function OeffentlichesLayout({
             <a href="/api/ics" className="hover:text-foreground">
               Kalender-Abo
             </a>
-            <Link href="/login" className="hover:text-foreground">
-              Redaktion
-            </Link>
           </nav>
         </div>
       </footer>

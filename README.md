@@ -139,16 +139,20 @@ Beides sind Warnungen, keine Sperren: Ein bewusst parallel angesetztes Angebot
 für eine andere Schulart kann sinnvoll sein.
 
 Der Abgleich liest bewusst **über alle Veranstaltungen hinweg**, auch über die
-anderer Personen — sonst könnten Referenten nicht planen. Veröffentlichte
-Termine stehen ohnehin öffentlich im Frontend; fremde **Entwürfe** erscheinen
-nur als belegter Zeitraum ohne Titel und ohne Verlinkung. Der Sonderfall ist
-in `src/actions/terminumfeld.ts` dokumentiert; ein Online-Ort (ViKo) kollidiert
+anderer Personen — sonst könnten Referenten nicht planen. Im internen
+Planungskalender sind Datum, Uhrzeit, Ort, Titel und Beschreibung sichtbar;
+persönliche Kontaktdaten werden dort nicht geladen. Der Sonderfall ist in
+`src/actions/terminumfeld.ts` dokumentiert; ein Online-Ort (ViKo) kollidiert
 nie, der lässt sich beliebig oft parallel belegen.
 
 Referentinnen und Referenten bekommen ihren Zugang über einen Einladungslink,
 den die Administration im Referentenverzeichnis erzeugt und weitergibt — es
 ist bewusst **kein Mailserver** eingerichtet, statt einen vorzutäuschen.
-Der Link ist einmalig verwendbar und läuft nach 14 Tagen ab.
+Der Link ist einmalig verwendbar und läuft nach 14 Tagen ab. Die eingeladene
+Person setzt darüber ihr Passwort selbst. Danach steht ihr unter
+`/admin/kalender` ein gemeinsamer Planungskalender zur Verfügung: Alle
+relevanten Termine sind dort mit Datum, Uhrzeit, Ort, Titel und Beschreibung
+sichtbar. Persönliche Kontaktdaten anderer Referenten werden nicht angezeigt.
 
 ## Technik
 
@@ -182,6 +186,7 @@ In der `.env` mindestens setzen:
 
 - `DATABASE_URL`
 - `JWT_SECRET` — erzeugen mit `openssl rand -base64 48`
+- `APP_BASE_URL` — die Adresse, unter der Nutzer die Anwendung aufrufen
 - `SEED_ADMIN_EMAIL` und `SEED_ADMIN_PASSWORD`
 
 Datenbank anlegen und befüllen:
@@ -393,8 +398,25 @@ Der App-Container hört intern weiterhin auf Port `3000`; Docker veröffentlicht
 ihn auf dem Server über Host-Port `3001`. Für Newt/Pangolin ist deshalb das
 interne Ziel `http://192.168.1.56:3001`. Nach außen gehört weiterhin ein Reverse
 Proxy mit TLS davor. HSTS ist gesetzt, die Anwendung geht also von HTTPS aus.
-In `NEXT_PUBLIC_BASE_URL` muss die öffentlich sichtbare HTTPS-Adresse stehen,
+In `APP_BASE_URL` muss die öffentlich sichtbare HTTPS-Adresse stehen,
 nicht das interne Newt/Pangolin-Ziel.
+
+Sitzungscookies sind im Produktionscontainer standardmäßig nur über HTTPS
+gültig (`SESSION_COOKIE_SECURE=true`). Beim vorübergehenden direkten Aufruf über
+`http://<NAS-IP>:3001` muss in der `.env` ausdrücklich
+`SESSION_COOKIE_SECURE=false` stehen. Für korrekt erzeugte Registrierungslinks
+in dieser Übergangsphase außerdem
+`APP_BASE_URL="http://192.168.1.56:3001"` setzen; danach den
+App-Container neu erstellen:
+
+```bash
+docker compose up -d --no-build --force-recreate app
+```
+
+Sobald der Browser über die öffentliche Pangolin-HTTPS-Adresse zugreift, den
+Cookie-Wert wieder auf `true` und `APP_BASE_URL` auf die öffentliche
+HTTPS-Adresse setzen. `http://192.168.1.56:3001` ist dann nur noch das interne
+Newt/Pangolin-Ziel, nicht die Browser-Adresse.
 
 Die Portzuordnung ist direkt in `docker-compose.yml` hinterlegt. Eine lokale
 `docker-compose.override.yml` ist für den Betrieb auf Port `3001` nicht nötig.

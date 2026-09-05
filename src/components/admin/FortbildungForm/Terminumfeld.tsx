@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, CalendarRange, Info, Lock } from "lucide-react";
+import { AlertTriangle, CalendarRange, Info } from "lucide-react";
 
 import {
   ladeTerminumfeld,
@@ -22,8 +22,8 @@ const WOCHENTAGE = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
  *
  * Bewusst über alle Veranstaltungen hinweg — auch über die fremder Personen.
  * Sonst legen zwei Referenten unabhängig voneinander zwei Fortbildungen auf
- * denselben Nachmittag. Fremde Entwürfe erscheinen dabei nur als belegter
- * Zeitraum ohne Titel.
+ * denselben Nachmittag. Titel, Ort und Beschreibung helfen zusätzlich,
+ * inhaltliche Ballungen zu erkennen.
  */
 export function Terminumfeld({
   beginn,
@@ -299,12 +299,7 @@ function TagesListe({ tag, termine }: { tag: string; termine: UmfeldTermin[] }) 
                 {t.organisationsform === "REGIONAL" ? "RLFB" : t.organisationsform === "SCHILF" ? "SchiLf" : "ALP"}
               </span>
 
-              {t.titel === null ? (
-                <span className="flex items-center gap-1.5 text-muted-foreground italic">
-                  <Lock className="size-3" aria-hidden />
-                  Entwurf einer anderen Person
-                </span>
-              ) : t.istEigener ? (
+              {t.istEigener ? (
                 <Link
                   href={`/admin/fortbildungen/${t.id}`}
                   className="font-medium underline-offset-4 hover:underline"
@@ -319,8 +314,14 @@ function TagesListe({ tag, termine }: { tag: string; termine: UmfeldTermin[] }) 
                 <span className="text-muted-foreground">· {t.ortName}</span>
               ) : null}
 
-              {t.status === "ENTWURF" && t.titel !== null ? (
+              {t.status === "ENTWURF" ? (
                 <span className="text-xs text-muted-foreground">(Entwurf)</span>
+              ) : null}
+
+              {t.beschreibung ? (
+                <p className="basis-full text-xs text-muted-foreground">
+                  {t.beschreibung}
+                </p>
               ) : null}
             </li>
           );

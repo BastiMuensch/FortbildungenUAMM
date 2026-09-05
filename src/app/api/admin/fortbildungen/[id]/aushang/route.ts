@@ -58,7 +58,7 @@ export async function GET(
   }
 
   const basis = (
-    process.env.NEXT_PUBLIC_BASE_URL ?? request.nextUrl.origin
+    process.env.APP_BASE_URL ?? request.nextUrl.origin
   ).replace(/\/+$/, "");
   const adresse = `${basis}/fortbildungen/${fortbildung.slug}`;
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   CalendarDays,
   CalendarPlus,
+  CalendarRange,
   ClipboardCheck,
   Download,
   FileSpreadsheet,
@@ -148,21 +149,13 @@ export default async function AdminDashboard({
     kennzahlen;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b-2 border-foreground pb-4">
         <div>
-          <p className="etikett mb-1 text-primary">
-            {user.role === "REFERENT" ? "Mein Arbeitsbereich" : "Redaktionsübersicht"}
-          </p>
           <h1 className="text-2xl font-semibold tracking-tight">
             {user.role === "REFERENT" ? "Meine Fortbildungen" : "Fortbildungen"}
           </h1>
-          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-            {user.role === "REFERENT"
-              ? "Entwürfe bearbeiten, zur Freigabe einreichen und vergangene Termine nachbereiten."
-              : "Planen, freigeben und nachhalten – mit den offenen Aufgaben direkt im Blick."}
-          </p>
-          <div className="mt-2">
+          <div className="mt-1.5">
             <SchuljahrWahl
               params={params}
               jahrgaenge={jahrgaenge}
@@ -172,6 +165,21 @@ export default async function AdminDashboard({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <Button nativeButton={false}
+            render={<Link href="/admin/fortbildungen/neu">
+                <CalendarPlus className="size-4" aria-hidden />
+                Neue Fortbildung
+              </Link>
+            }
+          />
+          <Button nativeButton={false}
+            variant="outline"
+            render={<Link href="/admin/kalender">
+                <CalendarRange className="size-4" aria-hidden />
+                Planungskalender
+              </Link>
+            }
+          />
           <Button nativeButton={false}
             variant="outline"
             render={<a href={exportLink("/api/admin/export", params, aktiverReiter)}>
@@ -189,17 +197,10 @@ export default async function AdminDashboard({
               </a>
             }
           />
-          <Button nativeButton={false}
-            render={<Link href="/admin/fortbildungen/neu">
-                <CalendarPlus className="size-4" aria-hidden />
-                Neue Fortbildung
-              </Link>
-            }
-          />
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-px overflow-hidden border bg-border sm:grid-cols-2 lg:grid-cols-4">
         <Kachel
           wert={imSchuljahr}
           label={`Termine im Schuljahr ${kennzahlJahr}`}
@@ -314,29 +315,28 @@ function Kachel({
   href?: string;
 }) {
   const inhalt = (
-    <>
-      <span className="etikett flex items-center gap-1.5 text-muted-foreground">
+    <div className="flex items-center gap-3">
+      <span className="zahl min-w-9 text-2xl leading-none font-semibold">
+        {String(wert).padStart(2, "0")}
+      </span>
+      <span className="flex min-w-0 items-start gap-1.5 text-xs leading-snug text-muted-foreground">
         <Icon
-          className={`size-3.5 ${hervorheben ? "text-primary" : ""}`}
+          className={`mt-0.5 size-3.5 shrink-0 ${hervorheben ? "text-primary" : ""}`}
           aria-hidden
         />
         {label}
       </span>
-      {/* Zweistellig aufgefüllt: die Kacheln stehen dann in einer Flucht. */}
-      <span className="zahl mt-2 block text-3xl leading-none font-semibold">
-        {String(wert).padStart(2, "0")}
-      </span>
-    </>
+    </div>
   );
 
-  const klassen = `border border-l-4 bg-card p-4 ${
-    hervorheben ? "border-l-primary bg-primary/5" : "border-l-foreground/25"
+  const klassen = `p-3 ${
+    hervorheben ? "bg-primary/5" : "bg-card"
   }`;
 
   return href ? (
     <Link
       href={href}
-      className={`${klassen} zeile block hover:border-l-primary`}
+      className={`${klassen} zeile block hover:bg-accent`}
     >
       {inhalt}
     </Link>

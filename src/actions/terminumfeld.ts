@@ -12,15 +12,16 @@ import { berlinIsoDatum, formatDatum, formatZeit } from "@/lib/datetime";
  * noch läuft — sonst legen zwei Referenten zwei Fortbildungen auf denselben
  * Termin, und das ist genau der Fehler, der vermieden werden soll.
  *
- * Datenschutz bleibt trotzdem gewahrt: Veröffentlichte Termine stehen ohnehin
- * öffentlich im Frontend. Fremde Entwürfe werden nur als belegter Zeitraum
- * gemeldet, ohne Titel und ohne Verlinkung.
+ * Der interne Planungskalender zeigt angemeldeten Personen bewusst auch Titel,
+ * Beschreibung und Ort fremder Entwürfe. So ist nicht nur eine technische
+ * Überschneidung, sondern auch eine inhaltliche Ballung erkennbar. Persönliche
+ * Kontaktdaten der Referenten werden hier nicht abgefragt.
  */
 
 export interface UmfeldTermin {
   id: string;
-  /** null bei fremden Entwürfen — dort wird nur „belegt" angezeigt. */
-  titel: string | null;
+  titel: string;
+  beschreibung: string;
   beginn: string;
   ende: string;
   organisationsform: string;
@@ -85,6 +86,7 @@ export async function ladeTerminumfeld(eingabe: {
     select: {
       id: true,
       titel: true,
+      beschreibungText: true,
       beginn: true,
       ende: true,
       organisationsform: true,
@@ -103,17 +105,15 @@ export async function ladeTerminumfeld(eingabe: {
 
   const termine: UmfeldTermin[] = treffer.map((f) => {
     const mein = eigener(f);
-    // Fremde Entwürfe sind noch nicht öffentlich — nur der belegte Zeitraum
-    // wird gemeldet, nicht wovon er handelt.
-    const verbergen = !mein && f.status === "ENTWURF";
 
     return {
       id: f.id,
-      titel: verbergen ? null : f.titel,
+      titel: f.titel,
+      beschreibung: f.beschreibungText,
       beginn: f.beginn.toISOString(),
       ende: f.ende.toISOString(),
       organisationsform: f.organisationsform,
-      ortName: verbergen ? null : f.veranstaltungsort.name,
+      ortName: f.veranstaltungsort.name,
       istEigener: mein,
       status: f.status,
     };
@@ -142,10 +142,7 @@ export async function ladeTerminumfeld(eingabe: {
   for (const { f, zeitueberschneidung } of betroffen) {
     const wann = `${formatDatum(f.beginn)}, ${formatZeit(f.beginn)}-${formatZeit(f.ende)}`;
     const wie = organisationsformKurz(f.organisationsform);
-    const name =
-      !eigener(f) && f.status === "ENTWURF"
-        ? "ein Entwurf einer anderen Person"
-        : `„${f.titel}“`;
+    const name = `„${f.titel}“`;
 
     // Ein Online-Ort lässt sich beliebig oft parallel belegen — nur echte
     // Räume kollidieren.

@@ -143,6 +143,6 @@ export function tokenGleich(a: string, b: string): boolean {
 
 /** Vollständiger Link, den die Administration weitergibt. */
 export function zugangsLink(token: string): string {
-  const basis = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+  const basis = process.env.APP_BASE_URL ?? "http://localhost:3000";
   return `${basis.replace(/\/+$/, "")}/zugang?token=${encodeURIComponent(token)}`;
 }

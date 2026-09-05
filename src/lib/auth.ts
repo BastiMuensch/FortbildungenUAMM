@@ -10,6 +10,7 @@ import {
   liesSessionVersion,
   SESSION_COOKIE,
   SESSION_DAUER_SEKUNDEN,
+  sitzungsCookieSicher,
 } from "@/constants/session";
 
 export { SESSION_COOKIE };
@@ -82,7 +83,10 @@ export async function setSessionCookie(token: string): Promise<void> {
   store.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "strict",
-    secure: process.env.NODE_ENV === "production",
+    secure: sitzungsCookieSicher(
+      process.env.SESSION_COOKIE_SECURE,
+      process.env.NODE_ENV === "production",
+    ),
     path: "/",
     maxAge: SESSION_DAUER_SEKUNDEN,
   });

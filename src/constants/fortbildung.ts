@@ -147,7 +147,7 @@ export const STATUS = [
     value: "EINGEREICHT",
     label: "Zur Freigabe eingereicht",
     beschreibung:
-      "Wartet auf die Freigabe durch die Redaktion. Noch nicht im Frontend.",
+      "Wartet auf die Freigabe durch die Administration. Noch nicht im Frontend.",
   },
   {
     value: "VEROEFFENTLICHT",
@@ -177,7 +177,7 @@ export const STATUS_OEFFENTLICH: FortbildungStatus[] = [
 /**
  * Status, die Referentinnen und Referenten selbst setzen dürfen.
  *
- * Veröffentlichen ist ausdrücklich der Redaktion vorbehalten — eine
+ * Veröffentlichen ist ausdrücklich der Administration vorbehalten — eine
  * Ausschreibung auf der Seite des Schulamts soll niemand ohne Gegenlesen
  * online stellen können.
  */
@@ -186,9 +186,12 @@ export const STATUS_FUER_REFERENTEN: FortbildungStatus[] = [
   "EINGEREICHT",
 ];
 
-/** Darf diese Rolle selbst veröffentlichen und freigeben? */
+/**
+ * Veröffentlichen und Freigaben sind ein administrativer Schritt: Nur die
+ * Administration kann eine Ausschreibung ins öffentliche Angebot überführen.
+ */
 export function darfFreigeben(rolle: Rolle): boolean {
-  return rolle === "ADMIN" || rolle === "REDAKTEUR";
+  return rolle === "ADMIN";
 }
 
 // ---------------------------------------------------------------------------
@@ -217,7 +220,7 @@ export const ROLLEN = [
     value: "REFERENT",
     label: "Referent",
     beschreibung:
-      "Darf eigene Fortbildungen anlegen und pflegen sowie Teilnehmerzahlen melden.",
+      "Darf eigene Fortbildungen anlegen und pflegen sowie Teilnehmerzahlen für eigene SchiLf nachtragen.",
   },
 ] as const;
 
@@ -231,6 +234,9 @@ export type Rolle = ValueOf<typeof ROLLEN>;
  * erneut angehängt — die Anzeige allein wäre manipulierbar.
  */
 export const PFLICHT_SCHLAGWORTE = ["UAMM", "Medienteam-UAMM"] as const;
+
+/** Zeitraum, in dem vergangene Fortbildungen aktiv nachbereitet werden. */
+export const NACHBEREITUNG_RUECKBLICK_TAGE = 400;
 
 // ---------------------------------------------------------------------------
 // Hilfsfunktionen für Labels

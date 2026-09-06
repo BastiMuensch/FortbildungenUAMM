@@ -193,7 +193,11 @@ export function EckdatenFelder({
       <Feld label="Beginn" pflicht fehler={fehler.beginn} hinweis="Format TT.MM.JJJJ HH:MM">
         <Input
           name="beginn"
-          type="datetime-local"
+          type="text"
+          inputMode="numeric"
+          placeholder="TT.MM.JJJJ HH:MM"
+          pattern="[0-3][0-9]\.[0-1][0-9]\.[0-9]{4}[ ,]+[0-2][0-9]:[0-5][0-9]"
+          lang="de-DE"
           required
           value={zustand.beginn}
           onChange={(e) => zustand.beginnSetzen(e.target.value)}
@@ -205,7 +209,11 @@ export function EckdatenFelder({
       <Feld label="Ende" pflicht fehler={fehler.ende} hinweis="Format TT.MM.JJJJ HH:MM">
         <Input
           name="ende"
-          type="datetime-local"
+          type="text"
+          inputMode="numeric"
+          placeholder="TT.MM.JJJJ HH:MM"
+          pattern="[0-3][0-9]\.[0-1][0-9]\.[0-9]{4}[ ,]+[0-2][0-9]:[0-5][0-9]"
+          lang="de-DE"
           required
           value={zustand.ende}
           onChange={(e) => zustand.setEnde(e.target.value)}
@@ -260,7 +268,7 @@ export function VeroeffentlichungFelder({
   darfVeroeffentlichen = true,
 }: GemeinsameProps) {
   // Referentinnen und Referenten reichen ein; veröffentlicht wird von der
-  // Redaktion. Die Server Action prüft das noch einmal.
+  // Administration. Die Server Action prüft das noch einmal.
   const auswahl = darfVeroeffentlichen
     ? STATUS
     : STATUS.filter((s) => STATUS_FUER_REFERENTEN.includes(s.value));
@@ -274,7 +282,7 @@ export function VeroeffentlichungFelder({
 
       {!darfVeroeffentlichen ? (
         <p className="mb-4 text-sm text-muted-foreground text-pretty">
-          Fertige Ausschreibungen werden zur Freigabe eingereicht. Die Redaktion
+          Fertige Ausschreibungen werden zur Freigabe eingereicht. Die Administration
           prüft sie, veröffentlicht sie und trägt sie in FIBS ein.
         </p>
       ) : null}

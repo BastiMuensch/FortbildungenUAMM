@@ -22,7 +22,7 @@ export default async function ReferentenPage() {
       aktiv: true,
       userId: true,
       user: {
-        select: { id: true, isActive: true, passwordHash: true, lastLoginAt: true },
+        select: { id: true, isActive: true, passwordHash: true, lastLoginAt: true, role: true },
       },
       _count: { select: { fortbildungen: true } },
     },
@@ -38,6 +38,7 @@ export default async function ReferentenPage() {
           aktiv: user.isActive,
           passwortGesetzt: user.passwordHash !== null,
           lastLoginAt: user.lastLoginAt,
+          rolle: user.role,
         }
       : null,
   }));
@@ -58,8 +59,8 @@ export default async function ReferentenPage() {
           Für bereits eingetragene Personen kann die Administration einen
           einmaligen Zugangslink erzeugen. Neue Personen registrieren sich über
           den allgemeinen, zeitlich begrenzten Link unten selbst. Anschließend
-          können sie eigene Fortbildungen anlegen, Teilnehmerzahlen melden und
-          alle Termine im Planungskalender überblicken.
+          können sie eigene Fortbildungen anlegen, Teilnehmerzahlen für eigene
+          SchiLf nachtragen und alle Termine im Planungskalender überblicken.
         </p>
       </div>
 
@@ -68,6 +69,7 @@ export default async function ReferentenPage() {
         referenten={zeilen}
         darfLoeschen={user.role === "ADMIN"}
         darfZugangVerwalten={user.role === "ADMIN"}
+        darfZuAdministrationHochstufen={user.role === "ADMIN"}
       />
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
-import { Lock, Plus, X } from "lucide-react";
+import { Lock, Plus, Tag, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { PFLICHT_SCHLAGWORTE } from "@/constants/fortbildung";
@@ -91,14 +91,16 @@ export function SchlagwortInput({
         {werte.map((wert) => (
           <span
             key={wert}
-            className="inline-flex items-center gap-1 bg-secondary px-2 py-1 text-xs font-medium"
+            title={`Schlagwort: ${wert}`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary shadow-sm"
           >
+            <Tag className="size-3 shrink-0" aria-hidden />
             {wert}
             <button
               type="button"
               onClick={() => onChange(werte.filter((w) => w !== wert))}
               aria-label={`Schlagwort ${wert} entfernen`}
-              className="text-muted-foreground transition-colors hover:text-destructive"
+              className="rounded-full text-primary/65 transition-colors hover:bg-primary/10 hover:text-destructive"
             >
               <X className="size-3" />
             </button>
@@ -149,7 +151,7 @@ export function SchlagwortInput({
               key={vorschlag}
               type="button"
               onClick={() => hinzufuegen(vorschlag)}
-              className="inline-flex items-center gap-1 border border-dashed px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-solid hover:bg-accent hover:text-foreground"
+              className="inline-flex items-center gap-1 rounded-full border border-dashed px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-solid hover:bg-accent hover:text-foreground"
             >
               <Plus className="size-3" aria-hidden />
               {vorschlag}

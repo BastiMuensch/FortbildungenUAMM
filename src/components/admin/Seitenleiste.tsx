@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 const ALLE: Rolle[] = ["ADMIN", "REDAKTEUR", "REFERENT"];
 const REDAKTION: Rolle[] = ["ADMIN", "REDAKTEUR"];
 const NUR_ADMIN: Rolle[] = ["ADMIN"];
+const ADMIN_UND_REFERENT: Rolle[] = ["ADMIN", "REFERENT"];
 
 interface Eintrag {
   href: string;
@@ -63,14 +64,14 @@ const GRUPPEN: Array<{ titel: string; eintraege: Eintrag[] }> = [
         href: "/admin/freigaben",
         label: "Freigaben",
         icon: ShieldCheck,
-        rollen: REDAKTION,
+        rollen: NUR_ADMIN,
         zaehler: "offeneFreigaben",
       },
       {
         href: "/admin/nachbereitung",
         label: "Nachbereitung",
         icon: ClipboardCheck,
-        rollen: ALLE,
+        rollen: ADMIN_UND_REFERENT,
         zaehler: "offeneMeldungen",
       },
     ],

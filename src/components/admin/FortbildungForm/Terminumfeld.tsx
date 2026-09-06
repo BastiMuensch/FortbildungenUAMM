@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, CalendarRange, Info } from "lucide-react";
 
@@ -9,13 +9,18 @@ import {
   type Konflikt,
   type UmfeldTermin,
 } from "@/actions/terminumfeld";
-import { berlinIsoDatum, formatMonatJahr, formatZeit } from "@/lib/datetime";
-import { fromDatetimeLocalValue } from "@/lib/datetime";
+import {
+  berlinIsoDatum,
+  formatMonatJahr,
+  formatZeit,
+  isoKalenderwoche,
+  montagIndex,
+  parseDatumZeitEingabe,
+  WOCHENTAGE_KURZ,
+} from "@/lib/datetime";
 import { ferienStatus } from "@/lib/ferien";
 import { ebeneKlassen } from "@/constants/fortbildung";
 import { cn } from "@/lib/utils";
-
-const WOCHENTAGE = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
 /**
  * Zeigt beim Planen, was sonst noch läuft, und warnt vor Überschneidungen.
@@ -46,7 +51,7 @@ export function Terminumfeld({
   const referentenSchluessel = referentIds.join(",");
 
   useEffect(() => {
-    const von = fromDatetimeLocalValue(beginn);
+    const von = parseDatumZeitEingabe(beginn);
     // Ohne Datum wird gar nicht erst geladen; die Komponente zeigt dann den
     // Platzhalter und der alte Zustand bleibt unsichtbar.
     if (!von) return;
@@ -56,7 +61,7 @@ export function Terminumfeld({
     // Kurz warten: Beim Tippen im Datumsfeld entstehen sonst bei jedem
     // Zeichen Anfragen.
     const zeitgeber = setTimeout(async () => {
-      const bis = fromDatetimeLocalValue(ende);
+      const bis = parseDatumZeitEingabe(ende);
       setLaeuft(true);
 
       try {
@@ -84,7 +89,7 @@ export function Terminumfeld({
   }, [beginn, ende, ortId, referentenSchluessel, eigeneId]);
 
   const gewaehlterTag = useMemo(() => {
-    const von = fromDatetimeLocalValue(beginn);
+    const von = parseDatumZeitEingabe(beginn);
     return von ? berlinIsoDatum(von) : null;
   }, [beginn]);
 
@@ -177,7 +182,7 @@ function MiniKalender({
   }
 
   const erster = new Date(Date.UTC(jahr, monat, 1));
-  const versatz = (erster.getUTCDay() + 6) % 7;
+  const versatz = montagIndex(erster);
   const start = new Date(erster.getTime() - versatz * 24 * 60 * 60 * 1000);
 
   const zellen = Array.from({ length: 42 }, (_, i) => {
@@ -186,6 +191,7 @@ function MiniKalender({
       iso: berlinIsoDatum(datum),
       zahl: datum.getUTCDate(),
       imMonat: datum.getUTCMonth() === monat,
+      kalenderwoche: isoKalenderwoche(datum),
     };
   }).filter((_, i, alle) => i < 35 || alle.slice(35).some((z) => z.imMonat));
 
@@ -195,8 +201,9 @@ function MiniKalender({
         {formatMonatJahr(new Date(Date.UTC(jahr, monat, 15)))}
       </p>
 
-      <div className="grid grid-cols-7 border-b bg-muted/20">
-        {WOCHENTAGE.map((w) => (
+      <div className="grid grid-cols-[2rem_repeat(7,minmax(0,1fr))] border-b bg-muted/20">
+        <div className="py-1 text-center text-[0.65rem] font-medium text-muted-foreground">KW</div>
+        {WOCHENTAGE_KURZ.map((w) => (
           <div
             key={w}
             className="py-1 text-center text-[0.65rem] font-medium text-muted-foreground"
@@ -206,50 +213,56 @@ function MiniKalender({
         ))}
       </div>
 
-      <div className="grid grid-cols-7">
-        {zellen.map((zelle) => {
+      <div className="grid grid-cols-[2rem_repeat(7,minmax(0,1fr))]">
+        {zellen.map((zelle, index) => {
           const anzahl = belegt.get(zelle.iso) ?? 0;
           const status = ferienStatus(new Date(`${zelle.iso}T12:00:00Z`));
           const gewaehlt = zelle.iso === tag;
 
           return (
-            <div
-              key={zelle.iso}
-              className={cn(
-                "flex min-h-11 flex-col items-center justify-center gap-0.5 border-r border-b last:border-r-0",
-                !zelle.imMonat && "bg-muted/30",
-                status.art === "ferien" && "bg-ferien-weich",
-                status.art === "feiertag" && "bg-feiertag-weich",
-              )}
-              title={
-                status.label
-                  ? `${status.label}${anzahl > 0 ? ` · ${anzahl} Termin(e)` : ""}`
-                  : anzahl > 0
-                    ? `${anzahl} Termin(e)`
-                    : undefined
-              }
-            >
-              <span
+            <Fragment key={zelle.iso}>
+              {index % 7 === 0 ? (
+                <div className="zahl border-r border-b bg-muted/30 px-0.5 pt-1 text-center text-[0.625rem] text-muted-foreground">
+                  {zelle.kalenderwoche}
+                </div>
+              ) : null}
+              <div
                 className={cn(
-                  "text-xs zahl",
-                  !zelle.imMonat && "text-muted-foreground/50",
-                  gewaehlt &&
-                    "rounded bg-primary px-1.5 py-0.5 font-semibold text-primary-foreground",
+                  "flex min-h-11 flex-col items-center justify-center gap-0.5 border-r border-b last:border-r-0",
+                  !zelle.imMonat && "bg-muted/30",
+                  status.art === "ferien" && "bg-ferien-weich",
+                  status.art === "feiertag" && "bg-feiertag-weich",
                 )}
+                title={
+                  status.label
+                    ? `${status.label}${anzahl > 0 ? ` · ${anzahl} Termin(e)` : ""}`
+                    : anzahl > 0
+                      ? `${anzahl} Termin(e)`
+                      : undefined
+                }
               >
-                {zelle.zahl}
-              </span>
-
-              {anzahl > 0 ? (
-                <span className="flex gap-0.5" aria-hidden>
-                  {Array.from({ length: Math.min(anzahl, 3) }, (_, i) => (
-                    <span key={i} className="size-1 bg-foreground/40" />
-                  ))}
+                <span
+                  className={cn(
+                    "text-xs zahl",
+                    !zelle.imMonat && "text-muted-foreground/50",
+                    gewaehlt &&
+                      "rounded bg-primary px-1.5 py-0.5 font-semibold text-primary-foreground",
+                  )}
+                >
+                  {zelle.zahl}
                 </span>
-              ) : (
-                <span className="h-1" aria-hidden />
-              )}
-            </div>
+
+                {anzahl > 0 ? (
+                  <span className="flex gap-0.5" aria-hidden>
+                    {Array.from({ length: Math.min(anzahl, 3) }, (_, i) => (
+                      <span key={i} className="size-1 bg-foreground/40" />
+                    ))}
+                  </span>
+                ) : (
+                  <span className="h-1" aria-hidden />
+                )}
+              </div>
+            </Fragment>
           );
         })}
       </div>

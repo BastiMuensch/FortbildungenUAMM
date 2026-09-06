@@ -38,12 +38,13 @@ und Berichte.
   bleibt. Bearbeitet wird danach in einer Reiteransicht
 - **Terminabgleich** beim Planen: Monatskalender mit allen bereits geplanten
   Veranstaltungen und Warnung bei Überschneidungen (siehe unten)
-- **Nachbereitung**: nach der Veranstaltung wird die tatsächliche
-  Teilnehmerzahl gemeldet
+- **Nachbereitung**: tatsächliche Teilnehmerzahl sowie getrennte,
+  protokollierte FIBS-Versandbestätigungen für Referent:innen und Teilnehmende
 - **Aushang** als A4-PDF zum Ausdrucken, mit QR-Code zur Detailseite
 - **Änderungsverlauf** je Fortbildung
 - **Schuljahres-Umschalter** über Liste, Kennzahlen und Exporte
-- Listenansicht getrennt nach SchiLf, RLFB, ALP und Entwürfen
+- Listenansicht als getrennte Arbeitstabellen für Entwürfe, Eingereicht,
+  veröffentlicht ohne FIBS, in FIBS sowie archiviert/abgesagt
 - Duplizieren wiederkehrender Formate
 - **Excel-Export** und **PDF-Bericht** (nach Ebenen gegliedert, mit Summen)
 - Verwaltung von Referenten, Schlagworten und Veranstaltungsorten
@@ -53,9 +54,9 @@ und Berichte.
 
 | Rolle | Darf |
 |---|---|
-| `ADMIN` | alles, inkl. Benutzerzugänge, Löschen, Rechtstexte, FIBS-Übernahme |
+| `ADMIN` | alles, inkl. Benutzerzugänge, Rollenhochsetzung, Löschen, Rechtstexte, FIBS-Übernahme und Versandbestätigungen |
 | `REDAKTEUR` | Fortbildungen und Stammdaten pflegen, FIBS-Trockenlauf |
-| `REFERENT` | **nur eigene** Fortbildungen anlegen und **zur Freigabe einreichen**, eigene Teilnehmerzahlen melden |
+| `REFERENT` | **nur eigene** Fortbildungen anlegen und **zur Freigabe einreichen**, Teilnehmerzahlen nur für eigene oder zugeordnete SchiLf nachtragen |
 
 ### Freigabe und FIBS-Status
 
@@ -67,10 +68,11 @@ Entwurf  →  Zur Freigabe eingereicht  →  Veröffentlicht  →  Archiviert
    └── zurückgewiesen ──┘                  Abgesagt
 ```
 
-Referentinnen und Referenten kommen nur bis **Eingereicht** — veröffentlicht
-wird ausschließlich von der Redaktion. Eine bereits freigegebene Ausschreibung
-können sie auch nicht mehr ändern; die Teilnehmerzahl melden sie weiterhin
-selbst.
+Referent:innen und Redaktion kommen im Freigabeprozess nur bis **Eingereicht** —
+veröffentlicht wird ausschließlich durch die Administration. Eine bereits
+freigegebene Ausschreibung können sie nicht ohne neue administrative Prüfung
+ändern. Referent:innen tragen die Teilnehmerzahl weiterhin bei eigenen oder
+zugeordneten SchiLf selbst nach.
 
 Unter `/admin/freigaben` liegt die Warteschlange, älteste zuerst. Freigeben
 prüft dieselben Vollständigkeitsregeln wie das direkte Veröffentlichen — fehlt
@@ -166,7 +168,16 @@ Referenten sehen und exportieren dabei nur ihre eigenen Termine.
 
 Freie Schlagworte werden direkt im Fortbildungsformular mit Enter oder Komma
 angelegt. Schon vorhandene Begriffe erscheinen beim Tippen als Vorschläge und
-werden in einheitlicher Schreibweise wiederverwendet.
+werden in einheitlicher Schreibweise wiederverwendet. Ein `#` ist nicht Teil
+des Schlagworts: Abgerundete Chips mit Schlagwort-Symbol grenzen die Begriffe
+klar voneinander ab, ohne Zeichen in Suche und Export mitzuschleppen.
+
+Nach einem Termin erscheint er bis zu 400 Tage in der Nachbereitung. Die
+Administration trägt Teilnehmerzahlen für alle Organisationsformen ein und
+bestätigt getrennt den FIBS-Versand an Referent:innen und Teilnehmende.
+Referent:innen sehen dort ausschließlich eigene oder zugeordnete SchiLf und
+können nur deren Teilnehmerzahl nachtragen. Redaktion hat auf diese
+Nachbereitungsaktionen keinen Zugriff.
 
 ## Technik
 

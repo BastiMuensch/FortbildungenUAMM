@@ -11,6 +11,9 @@ import { sanitizeBeschreibung, htmlZuText, istLeer } from "@/lib/sanitize";
 import {
   formatDatumZeit,
   fromDatetimeLocalValue,
+  formatDatumZeitEingabe,
+  isoKalenderwoche,
+  parseDatumZeitEingabe,
   parseDeDateTime,
   toDatetimeLocalValue,
   aktuellesSchuljahr,
@@ -67,6 +70,14 @@ pruefe("Sommerzeit (MESZ, +2)", parseDeDateTime("15.10.2026 14:00")?.toISOString
 pruefe("Winterzeit (MEZ, +1)", parseDeDateTime("15.01.2027 09:30")?.toISOString(), "2027-01-15T08:30:00.000Z");
 pruefe("ungültiges Datum abgelehnt", parseDeDateTime("31.02.2026"), null);
 pruefe("Hin- und Rückweg stabil", toDatetimeLocalValue(fromDatetimeLocalValue("2026-10-15T14:00")!), "2026-10-15T14:00");
+pruefe(
+  "deutsche Datumseingabe wird gelesen",
+  parseDatumZeitEingabe("15.10.2026 14:00")?.toISOString(),
+  "2026-10-15T12:00:00.000Z",
+);
+pruefe("Datumseingabe bleibt deutsch", formatDatumZeitEingabe(new Date("2026-10-15T12:00:00Z")), "15.10.2026 14:00");
+pruefe("Datumseingabe braucht Uhrzeit", parseDatumZeitEingabe("15.10.2026"), null);
+pruefe("ISO-Kalenderwoche beginnt montags", isoKalenderwoche(new Date("2026-01-01T12:00:00Z")), 1);
 pruefe("Anzeige auf Deutsch", formatDatumZeit(new Date("2026-10-15T12:00:00Z")), "15.10.2026, 14:00");
 pruefe("Schuljahr wechselt im August", aktuellesSchuljahr(new Date("2026-08-01T10:00:00Z")), "2026/2027");
 pruefe("Schuljahr im Juli", aktuellesSchuljahr(new Date("2026-07-31T10:00:00Z")), "2025/2026");

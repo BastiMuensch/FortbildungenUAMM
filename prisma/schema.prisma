@@ -39,15 +39,17 @@ model User {
   createdAt      DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
 
-  fortbildungen                 Fortbildung[]                  @relation("Ersteller")
-  tnMeldungen                   Fortbildung[]                  @relation("TnMeldung")
-  freigaben                     Fortbildung[]                  @relation("Freigabe")
-  fibsEintraege                 Fortbildung[]                  @relation("FibsEintrag")
-  auditLogs                     AuditLog[]
-  zugangstoken                  Zugangstoken[]
-  referentenRegistrierungslinks ReferentenRegistrierungslink[] @relation("RegistrierungslinkErsteller")
+  fortbildungen                       Fortbildung[]                  @relation("Ersteller")
+  tnMeldungen                         Fortbildung[]                  @relation("TnMeldung")
+  teilnahmebestaetigungenReferenten   Fortbildung[]                  @relation("TeilnahmebestaetigungReferenten")
+  teilnahmebestaetigungenTeilnehmende Fortbildung[]                  @relation("TeilnahmebestaetigungTeilnehmende")
+  freigaben                           Fortbildung[]                  @relation("Freigabe")
+  fibsEintraege                       Fortbildung[]                  @relation("FibsEintrag")
+  auditLogs                           AuditLog[]
+  zugangstoken                        Zugangstoken[]
+  referentenRegistrierungslinks       ReferentenRegistrierungslink[] @relation("RegistrierungslinkErsteller")
   /// Gesetzt, wenn dieses Konto zu einer Referentin oder einem Referenten gehört
-  referent                      Referent?
+  referent                            Referent?
 }
 
 /// Einmal-Token für das Einrichten eines Zugangs und für das Zurücksetzen
@@ -141,17 +143,26 @@ model Fortbildung {
   // --- Nachbereitung ---
   /// Tatsächliche Teilnehmerzahl, nach der Veranstaltung gemeldet.
   /// null bedeutet "noch nicht gemeldet", 0 bedeutet "niemand da gewesen".
-  tnTatsaechlich  Int?
-  tnGemeldetAm    DateTime? @db.Timestamptz(3)
-  tnGemeldetVonId String?
+  tnTatsaechlich                                   Int?
+  tnGemeldetAm                                     DateTime? @db.Timestamptz(3)
+  tnGemeldetVonId                                  String?
   /// Freitext der meldenden Person, z. B. "zwei kurzfristige Absagen"
-  tnBemerkung     String?
+  tnBemerkung                                      String?
+  /// Bestätigung der Administration: Teilnahmebestätigungen wurden in FIBS
+  /// für die Referierenden versandt. Es werden keine einzelnen Empfänger oder
+  /// FIBS-Nachrichten gespeichert.
+  teilnahmebestaetigungenReferentenVersandtAm      DateTime? @db.Timestamptz(3)
+  teilnahmebestaetigungenReferentenVersandtVonId   String?
+  /// Bestätigung der Administration: Teilnahmebestätigungen wurden in FIBS
+  /// für die Teilnehmenden versandt. Es werden keine Teilnehmerdaten geführt.
+  teilnahmebestaetigungenTeilnehmendeVersandtAm    DateTime? @db.Timestamptz(3)
+  teilnahmebestaetigungenTeilnehmendeVersandtVonId String?
 
   // --- Freigabe ---
   /// ENTWURF | EINGEREICHT | VEROEFFENTLICHT | ABGESAGT | ARCHIVIERT
   ///
   /// EINGEREICHT liegt zwischen Entwurf und Veröffentlichung: Referentinnen
-  /// und Referenten reichen dorthin ein, die Redaktion gibt frei. Öffentlich
+  /// und Referenten reichen dorthin ein, die Administration gibt frei. Öffentlich
   /// sichtbar sind weiterhin nur VEROEFFENTLICHT und ABGESAGT.
   status           String    @default("ENTWURF")
   eingereichtAm    DateTime? @db.Timestamptz(3)
@@ -165,19 +176,23 @@ model Fortbildung {
   createdAt   DateTime @default(now()) @db.Timestamptz(3)
   updatedAt   DateTime @updatedAt @db.Timestamptz(3)
 
-  veranstaltungsort  Veranstaltungsort       @relation(fields: [veranstaltungsortId], references: [id])
-  ersteller          User?                   @relation("Ersteller", fields: [createdById], references: [id], onDelete: SetNull)
-  tnGemeldetVon      User?                   @relation("TnMeldung", fields: [tnGemeldetVonId], references: [id], onDelete: SetNull)
-  freigegebenVon     User?                   @relation("Freigabe", fields: [freigegebenVonId], references: [id], onDelete: SetNull)
-  fibsEingetragenVon User?                   @relation("FibsEintrag", fields: [fibsEingetragenVonId], references: [id], onDelete: SetNull)
-  schlagworte        FortbildungSchlagwort[]
-  kompetenzen        FortbildungKompetenz[]
-  referenten         FortbildungReferent[]
+  veranstaltungsort                              Veranstaltungsort       @relation(fields: [veranstaltungsortId], references: [id])
+  ersteller                                      User?                   @relation("Ersteller", fields: [createdById], references: [id], onDelete: SetNull)
+  tnGemeldetVon                                  User?                   @relation("TnMeldung", fields: [tnGemeldetVonId], references: [id], onDelete: SetNull)
+  teilnahmebestaetigungenReferentenVersandtVon   User?                   @relation("TeilnahmebestaetigungReferenten", fields: [teilnahmebestaetigungenReferentenVersandtVonId], references: [id], onDelete: SetNull)
+  teilnahmebestaetigungenTeilnehmendeVersandtVon User?                   @relation("TeilnahmebestaetigungTeilnehmende", fields: [teilnahmebestaetigungenTeilnehmendeVersandtVonId], references: [id], onDelete: SetNull)
+  freigegebenVon                                 User?                   @relation("Freigabe", fields: [freigegebenVonId], references: [id], onDelete: SetNull)
+  fibsEingetragenVon                             User?                   @relation("FibsEintrag", fields: [fibsEingetragenVonId], references: [id], onDelete: SetNull)
+  schlagworte                                    FortbildungSchlagwort[]
+  kompetenzen                                    FortbildungKompetenz[]
+  referenten                                     FortbildungReferent[]
 
   @@index([beginn])
   @@index([status, beginn])
   @@index([organisationsform])
   @@index([veranstaltungsortId])
+  @@index([teilnahmebestaetigungenReferentenVersandtAm])
+  @@index([teilnahmebestaetigungenTeilnehmendeVersandtAm])
   @@index([schularten], type: Gin)
 }
 

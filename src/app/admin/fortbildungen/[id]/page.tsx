@@ -160,7 +160,7 @@ export default async function FortbildungBearbeitenPage({
         <div className="mb-6 bg-ferien-weich px-4 py-3 text-sm text-ferien">
           <p className="flex items-start gap-2 font-medium">
             <Undo2 className="mt-0.5 size-4 shrink-0" aria-hidden />
-            Von der Redaktion zurückgewiesen
+            Von der Administration zurückgewiesen
           </p>
           <p className="mt-1 pl-6 text-pretty">{fortbildung.freigabeNotiz}</p>
         </div>
@@ -231,11 +231,12 @@ export default async function FortbildungBearbeitenPage({
         />
       ) : (
         <div className="border-l-4 border-primary bg-primary/5 px-5 py-4">
-          <p className="font-medium">Von der Redaktion freigegeben</p>
+          <p className="font-medium">Von der Administration freigegeben</p>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             Veröffentlichte oder archivierte Ausschreibungen können nur noch
-            von der Redaktion geändert werden. Die tatsächliche
-            Teilnehmerzahl können Sie weiterhin unter Nachbereitung melden.
+            von der Administration geändert werden. Die tatsächliche
+            Teilnehmerzahl können Sie bei eigenen SchiLf weiterhin unter
+            Nachbereitung melden.
           </p>
           <Button
             className="mt-4"

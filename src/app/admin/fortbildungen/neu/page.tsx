@@ -30,7 +30,7 @@ export default async function NeueFortbildungPage() {
         lässt sich jederzeit speichern, auch wenn noch etwas fehlt.
         {freigabeberechtigt
           ? ""
-          : " Zum Schluss wird die Fortbildung zur Freigabe eingereicht; veröffentlicht wird sie von der Redaktion."}
+          : " Zum Schluss wird die Fortbildung zur Freigabe eingereicht; veröffentlicht wird sie von der Administration."}
       </p>
 
       <FortbildungWizard {...daten} darfVeroeffentlichen={freigabeberechtigt} />

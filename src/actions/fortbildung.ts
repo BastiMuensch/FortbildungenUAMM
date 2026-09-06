@@ -63,7 +63,7 @@ export async function saveFortbildung(
       return {
         fehler: {
           status:
-            "Das Veröffentlichen übernimmt die Redaktion. Bitte zur Freigabe einreichen.",
+            "Das Veröffentlichen übernimmt die Administration. Bitte zur Freigabe einreichen.",
         },
       };
     }
@@ -78,7 +78,7 @@ export async function saveFortbildung(
       if (bisher && !STATUS_FUER_REFERENTEN.includes(bisher.status as never)) {
         return {
           fehler: {
-            _: "Diese Fortbildung ist bereits freigegeben und lässt sich nur noch von der Redaktion ändern. Die Teilnehmerzahl können Sie weiterhin unter Nachbereitung melden.",
+            _: "Diese Fortbildung ist bereits freigegeben und lässt sich nur noch von der Administration ändern. Die Teilnehmerzahl können Sie bei eigenen SchiLf weiterhin unter Nachbereitung melden.",
           },
         };
       }

@@ -13,8 +13,7 @@ import {
 
 import { saveFortbildung } from "@/actions/fortbildung";
 import type { FormularState } from "@/lib/validation/fortbildung";
-import { formatZeitraum } from "@/lib/datetime";
-import { fromDatetimeLocalValue } from "@/lib/datetime";
+import { formatZeitraum, parseDatumZeitEingabe } from "@/lib/datetime";
 import {
   formatLabel,
   niveaustufeLabel,
@@ -321,8 +320,8 @@ function Zusammenfassung({
   referenten: ReferentOption[];
   kompetenzBereiche: KompetenzBereichOption[];
 }) {
-  const beginn = fromDatetimeLocalValue(zustand.beginn);
-  const ende = fromDatetimeLocalValue(zustand.ende);
+  const beginn = parseDatumZeitEingabe(zustand.beginn);
+  const ende = parseDatumZeitEingabe(zustand.ende);
   const ort = orte.find((o) => o.id === zustand.ortId);
 
   const gewaehlteReferenten = referenten.filter((r) =>

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
-import { AuthError, ERFASSER, darfBearbeiten, requireRole } from "@/lib/auth";
+import { AuthError, darfBearbeiten, requireRole, type SessionUser } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 import type { FormularState } from "@/lib/validation/fortbildung";
 
@@ -22,11 +22,17 @@ const MeldungSchema = z.object({
     .transform((w) => w || null),
 });
 
+const BestaetigungsVersandSchema = z.object({
+  empfaenger: z.enum(["REFERENTEN", "TEILNEHMENDE"]),
+  versandt: z.boolean(),
+});
+
 /**
  * Meldet die tatsächliche Teilnehmerzahl einer bereits gelaufenen Veranstaltung.
  *
- * Referentinnen und Referenten dürfen das nur für ihre eigenen Termine — die
- * Prüfung läuft über dieselbe Regel wie beim Bearbeiten (fortbildungScope).
+ * Ausschließlich die Administration sowie Referentinnen und Referenten für
+ * eigene beziehungsweise zugeordnete SchiLf dürfen Teilnehmerzahlen melden.
+ * Redaktion hat dafür bewusst keine Berechtigung.
  */
 export async function meldeTeilnehmerzahl(
   id: string,
@@ -35,14 +41,10 @@ export async function meldeTeilnehmerzahl(
 ): Promise<FormularState> {
   let user;
   try {
-    user = await requireRole(...ERFASSER);
+    user = await requireRole("ADMIN", "REFERENT");
   } catch (error) {
     if (error instanceof AuthError) return { fehler: { _: error.message } };
     throw error;
-  }
-
-  if (!(await darfBearbeiten(user, id))) {
-    return { fehler: { _: "Diese Veranstaltung gehört nicht zu Ihren Terminen." } };
   }
 
   const geparst = MeldungSchema.safeParse({
@@ -57,9 +59,21 @@ export async function meldeTeilnehmerzahl(
 
   const fortbildung = await prisma.fortbildung.findUnique({
     where: { id },
-    select: { beginn: true, ende: true, maxTn: true, titel: true },
+    select: { beginn: true, ende: true, maxTn: true, titel: true, organisationsform: true, status: true },
   });
   if (!fortbildung) return { fehler: { _: "Diese Veranstaltung gibt es nicht mehr." } };
+
+  if (!(await darfTeilnehmerzahlMelden(user, id, fortbildung.organisationsform))) {
+    return {
+      fehler: {
+        _: "Teilnehmerzahlen dürfen nur von der Administration oder von Referent:innen für eigene SchiLf gemeldet werden.",
+      },
+    };
+  }
+
+  if (fortbildung.status === "ABGESAGT") {
+    return { fehler: { _: "Für abgesagte Veranstaltungen gibt es keine Teilnehmerzahl." } };
+  }
 
   // Eine Zahl für einen Termin, der noch gar nicht stattgefunden hat, ist
   // fast immer ein Versehen.
@@ -90,6 +104,7 @@ export async function meldeTeilnehmerzahl(
   });
 
   revalidatePath("/admin/nachbereitung");
+  revalidatePath(`/admin/fortbildungen/${id}`);
   revalidatePath("/admin");
 
   const ueberbucht = geparst.data.tnTatsaechlich > fortbildung.maxTn;
@@ -104,8 +119,19 @@ export async function meldeTeilnehmerzahl(
 
 /** Nimmt eine Meldung zurück, etwa nach einem Zahlendreher. */
 export async function meldungZuruecknehmen(id: string): Promise<void> {
-  const user = await requireRole(...ERFASSER);
-  if (!(await darfBearbeiten(user, id))) return;
+  const user = await requireRole("ADMIN", "REFERENT");
+  const fortbildung = await prisma.fortbildung.findUnique({
+    where: { id },
+    select: { organisationsform: true, ende: true, status: true },
+  });
+  if (
+    !fortbildung ||
+    fortbildung.ende > new Date() ||
+    fortbildung.status === "ABGESAGT" ||
+    !(await darfTeilnehmerzahlMelden(user, id, fortbildung.organisationsform))
+  ) {
+    return;
+  }
 
   await prisma.fortbildung.update({
     where: { id },
@@ -126,4 +152,85 @@ export async function meldungZuruecknehmen(id: string): Promise<void> {
   });
 
   revalidatePath("/admin/nachbereitung");
+  revalidatePath(`/admin/fortbildungen/${id}`);
+  revalidatePath("/admin");
+}
+
+/**
+ * Bestätigt getrennt den Versand der FIBS-Teilnahmebestätigungen. Es werden
+ * keine Empfängerlisten oder FIBS-Nachrichten gespeichert, nur der Vermerk
+ * inklusive Zeitpunkt und administrativem Konto.
+ */
+export async function setzeTeilnahmebestaetigungsVersand(
+  id: string,
+  empfaenger: "REFERENTEN" | "TEILNEHMENDE",
+  versandt: boolean,
+): Promise<void> {
+  const admin = await requireRole("ADMIN");
+  const geparst = BestaetigungsVersandSchema.safeParse({ empfaenger, versandt });
+  if (!geparst.success) return;
+
+  const versand = geparst.data;
+
+  const fortbildung = await prisma.fortbildung.findUnique({
+    where: { id },
+    select: { ende: true, status: true, tnTatsaechlich: true },
+  });
+  if (
+    !fortbildung ||
+    fortbildung.tnTatsaechlich === null ||
+    fortbildung.ende > new Date() ||
+    fortbildung.status === "ABGESAGT"
+  ) {
+    return;
+  }
+
+  const jetzt = new Date();
+  const daten =
+    versand.empfaenger === "REFERENTEN"
+      ? versand.versandt
+        ? {
+            teilnahmebestaetigungenReferentenVersandtAm: jetzt,
+            teilnahmebestaetigungenReferentenVersandtVonId: admin.id,
+          }
+        : {
+            teilnahmebestaetigungenReferentenVersandtAm: null,
+            teilnahmebestaetigungenReferentenVersandtVonId: null,
+          }
+      : versand.versandt
+        ? {
+            teilnahmebestaetigungenTeilnehmendeVersandtAm: jetzt,
+            teilnahmebestaetigungenTeilnehmendeVersandtVonId: admin.id,
+          }
+        : {
+            teilnahmebestaetigungenTeilnehmendeVersandtAm: null,
+            teilnahmebestaetigungenTeilnehmendeVersandtVonId: null,
+          };
+
+  await prisma.fortbildung.update({ where: { id }, data: daten });
+
+  await auditLog({
+    userId: admin.id,
+    aktion: "UPDATE",
+    entitaet: "Fortbildung",
+    entitaetId: id,
+    details: { teilnahmebestaetigung: versand.empfaenger, versandt: versand.versandt },
+  });
+
+  revalidatePath("/admin/nachbereitung");
+  revalidatePath(`/admin/fortbildungen/${id}`);
+  revalidatePath("/admin");
+}
+
+async function darfTeilnehmerzahlMelden(
+  user: SessionUser,
+  fortbildungId: string,
+  organisationsform: string,
+): Promise<boolean> {
+  if (user.role === "ADMIN") return true;
+  return (
+    user.role === "REFERENT" &&
+    organisationsform === "SCHILF" &&
+    (await darfBearbeiten(user, fortbildungId))
+  );
 }

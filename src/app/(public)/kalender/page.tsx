@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import { fortbildungKachelSelect, oeffentlicheFortbildungWhere } from "@/lib/queries";
-import { formatMonatJahr } from "@/lib/datetime";
+import { berlinIsoDatum, formatMonatJahr } from "@/lib/datetime";
 import { FERIEN_GEPFLEGT_BIS } from "@/lib/ferien";
 import { Monatskalender } from "@/components/public/Monatskalender";
 import { Button } from "@/components/ui/button";
@@ -131,8 +131,8 @@ function leseMonat(wert: string | undefined): { jahr: number; monatsIndex: numbe
     }
   }
 
-  const heute = new Date();
-  return { jahr: heute.getFullYear(), monatsIndex: heute.getMonth() };
+  const [jahr, monat] = berlinIsoDatum(new Date()).split("-").map(Number);
+  return { jahr: jahr!, monatsIndex: monat! - 1 };
 }
 
 function monatsSchluessel(jahr: number, monatsIndex: number): string {

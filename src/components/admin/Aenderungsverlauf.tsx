@@ -83,6 +83,16 @@ function beschreibe(eintrag: Protokolleintrag): string {
   if (typeof details.tnTatsaechlich === "number") {
     return `Teilnehmerzahl gemeldet: ${details.tnTatsaechlich}`;
   }
+  if (details.teilnahmebestaetigung === "REFERENTEN") {
+    return details.versandt
+      ? "Teilnahmebestätigungen an Referent:innen in FIBS bestätigt"
+      : "Versandbestätigung an Referent:innen zurückgenommen";
+  }
+  if (details.teilnahmebestaetigung === "TEILNEHMENDE") {
+    return details.versandt
+      ? "Teilnahmebestätigungen an Teilnehmende in FIBS bestätigt"
+      : "Versandbestätigung an Teilnehmende zurückgenommen";
+  }
   if (typeof details.status === "string") {
     return `Bearbeitet, Status: ${statusLabel(details.status)}`;
   }

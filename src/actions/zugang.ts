@@ -34,6 +34,100 @@ export interface EinladungState extends FormularState {
 }
 
 /**
+ * Hebt ein bestehendes Referentenkonto zur Administration hoch.
+ *
+ * Die Aktion ist bewusst kein frei editierbares Rollenfeld: Nur ein bereits
+ * aktives, mit einem Referenteneintrag verknüpftes REFERENT-Konto mit
+ * eingerichtetem Passwort kommt in Frage. Zusätzlich muss die Administration
+ * die E-Mail-Adresse der Person eintippen. Der Versionssprung beendet vorhandene Sitzungen des Zielkontos,
+ * damit es die neuen Rechte erst nach einer frischen Anmeldung verwenden kann.
+ */
+export async function stufeReferentZuAdministrationHoch(
+  userId: string,
+  _bisher: FormularState,
+  formData: FormData,
+): Promise<FormularState> {
+  let admin;
+  try {
+    admin = await requireRole("ADMIN");
+  } catch (error) {
+    if (error instanceof AuthError) return { fehler: { _: error.message } };
+    throw error;
+  }
+
+  const bestaetigung = (formData.get("bestaetigung") ?? "")
+    .toString()
+    .trim()
+    .toLowerCase();
+  const ziel = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      isActive: true,
+      passwordHash: true,
+      referent: { select: { id: true, aktiv: true } },
+    },
+  });
+
+  if (
+    !ziel ||
+    ziel.role !== "REFERENT" ||
+    !ziel.referent ||
+    !ziel.isActive ||
+    !ziel.referent.aktiv ||
+    !ziel.passwordHash
+  ) {
+    return {
+      fehler: {
+        _: "Nur aktive Referentenkonten mit eingerichtetem Passwort können hochgestuft werden.",
+      },
+    };
+  }
+
+  if (bestaetigung !== ziel.email.trim().toLowerCase()) {
+    return {
+      fehler: {
+        bestaetigung: "Zur Bestätigung bitte die E-Mail-Adresse der Person exakt eingeben.",
+      },
+    };
+  }
+
+  const hochgestuft = await prisma.user.updateMany({
+    where: {
+      id: ziel.id,
+      role: "REFERENT",
+      isActive: true,
+      passwordHash: { not: null },
+    },
+    data: { role: "ADMIN", sessionVersion: { increment: 1 } },
+  });
+  if (hochgestuft.count === 0) {
+    return {
+      fehler: {
+        _: "Der Zugang wurde zwischenzeitlich geändert. Bitte die Seite neu laden.",
+      },
+    };
+  }
+
+  await auditLog({
+    userId: admin.id,
+    aktion: "UPDATE",
+    entitaet: "User",
+    entitaetId: ziel.id,
+    details: { rollenwechsel: "REFERENT_ZU_ADMIN", referentId: ziel.referent.id },
+  });
+
+  revalidatePath("/admin/referenten");
+  revalidatePath("/admin");
+  return {
+    erfolg: true,
+    meldung: `${ziel.email} ist jetzt als Administration eingestuft und muss sich erneut anmelden.`,
+  };
+}
+
+/**
  * Richtet für eine Referentin oder einen Referenten ein Anmeldekonto ein und
  * gibt einen Einladungslink zurück.
  *

@@ -22,12 +22,14 @@ const datumZeitFormat = new Intl.DateTimeFormat("de-DE", {
   year: "numeric",
   hour: "2-digit",
   minute: "2-digit",
+  hourCycle: "h23",
 });
 
 const zeitFormat = new Intl.DateTimeFormat("de-DE", {
   timeZone: ZEITZONE,
   hour: "2-digit",
   minute: "2-digit",
+  hourCycle: "h23",
 });
 
 const langFormat = new Intl.DateTimeFormat("de-DE", {
@@ -43,6 +45,9 @@ const monatJahrFormat = new Intl.DateTimeFormat("de-DE", {
   month: "long",
   year: "numeric",
 });
+
+/** Montag bis Sonntag — als gemeinsame Grundlage aller Monatsraster. */
+export const WOCHENTAGE_KURZ = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] as const;
 
 /** "31.07.2026" */
 export function formatDatum(date: Date): string {
@@ -67,6 +72,11 @@ export function formatDatumLang(date: Date): string {
 /** "Juli 2026" */
 export function formatMonatJahr(date: Date): string {
   return monatJahrFormat.format(date);
+}
+
+/** "31.07.2026 14:30" für sichtbare Datums-/Zeit-Eingabefelder. */
+export function formatDatumZeitEingabe(date: Date | null | undefined): string {
+  return date ? `${formatDatum(date)} ${formatZeit(date)}` : "";
 }
 
 /**
@@ -119,6 +129,22 @@ export function fromDatetimeLocalValue(value: string): Date | null {
     Number(treffer[4]),
     Number(treffer[5]),
   );
+}
+
+/**
+ * Liest die sichtbare deutsche Schreibweise `TT.MM.JJJJ HH:MM`.
+ *
+ * Im Gegensatz zu `parseDeDateTime()` ist eine Uhrzeit hier Pflicht: Ein
+ * Fortbildungstermin ohne Uhrzeit darf nicht stillschweigend um Mitternacht
+ * gespeichert werden. Ein Komma zwischen Datum und Zeit akzeptieren wir als
+ * freundliche Variante der vom Browser kopierten Darstellung.
+ */
+export function parseDatumZeitEingabe(value: string): Date | null {
+  const bereinigt = value.trim();
+  if (!/^\d{1,2}\.\d{1,2}\.\d{4}(?:[\s,]+)\d{1,2}[:.]\d{2}$/.test(bereinigt)) {
+    return null;
+  }
+  return parseDeDateTime(bereinigt);
 }
 
 /**
@@ -197,6 +223,24 @@ export function berlinIsoDatum(date: Date): string {
     month: "2-digit",
     day: "2-digit",
   }).format(date);
+}
+
+/** Wochentag nach europäischer Konvention: Montag = 0, Sonntag = 6. */
+export function montagIndex(date: Date): number {
+  return (new Date(`${berlinIsoDatum(date)}T12:00:00Z`).getUTCDay() + 6) % 7;
+}
+
+/** ISO-8601-Kalenderwoche nach Berliner Kalendertag. */
+export function isoKalenderwoche(date: Date): number {
+  const donnerstag = new Date(`${berlinIsoDatum(date)}T12:00:00Z`);
+  donnerstag.setUTCDate(donnerstag.getUTCDate() - montagIndex(date) + 3);
+
+  const ersterDonnerstag = new Date(Date.UTC(donnerstag.getUTCFullYear(), 0, 4));
+  ersterDonnerstag.setUTCDate(
+    ersterDonnerstag.getUTCDate() - ((ersterDonnerstag.getUTCDay() + 6) % 7) + 3,
+  );
+
+  return 1 + Math.round((donnerstag.getTime() - ersterDonnerstag.getTime()) / 604_800_000);
 }
 
 /** Beginn des Tages (00:00 Berliner Zeit) als UTC-Date. */

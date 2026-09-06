@@ -3,11 +3,12 @@
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
-import { CheckCircle2, Globe, MapPin, Pencil, Undo2 } from "lucide-react";
+import { CheckCircle2, Globe, MailCheck, MapPin, Pencil, Undo2 } from "lucide-react";
 
 import {
   meldeTeilnehmerzahl,
   meldungZuruecknehmen,
+  setzeTeilnahmebestaetigungsVersand,
 } from "@/actions/nachbereitung";
 import type { FormularState } from "@/lib/validation/fortbildung";
 import { formatDatumZeit, formatZeitraum } from "@/lib/datetime";
@@ -32,12 +33,19 @@ export interface MeldungsZeile {
   tnGemeldetAm: Date | null;
   veranstaltungsort: { name: string; istOnline: boolean };
   tnGemeldetVon: { name: string | null; email: string } | null;
+  teilnahmebestaetigungenReferentenVersandtAm: Date | null;
+  teilnahmebestaetigungenReferentenVersandtVon: { name: string | null; email: string } | null;
+  teilnahmebestaetigungenTeilnehmendeVersandtAm: Date | null;
+  teilnahmebestaetigungenTeilnehmendeVersandtVon: { name: string | null; email: string } | null;
 }
 
 export function TeilnehmerMeldung({
   fortbildung,
+  darfBestaetigungen,
 }: {
   fortbildung: MeldungsZeile;
+  /** Versandvermerke in FIBS sind ausschließlich Aufgabe der Administration. */
+  darfBestaetigungen: boolean;
 }) {
   const action = meldeTeilnehmerzahl.bind(null, fortbildung.id);
   const [state, formAction] = useActionState<FormularState, FormData>(action, {});
@@ -202,6 +210,72 @@ export function TeilnehmerMeldung({
           </Button>
         </form>
       ) : null}
+
+      {darfBestaetigungen && gemeldet ? (
+        <section className="mt-4 border-t pt-4">
+          <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+            <MailCheck className="size-4 text-muted-foreground" aria-hidden />
+            Teilnahmebestätigungen in FIBS
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <VersandBestaetigung
+              fortbildungId={fortbildung.id}
+              empfaenger="REFERENTEN"
+              label="An Referent:innen"
+              versandtAm={fortbildung.teilnahmebestaetigungenReferentenVersandtAm}
+              versandtVon={fortbildung.teilnahmebestaetigungenReferentenVersandtVon}
+            />
+            <VersandBestaetigung
+              fortbildungId={fortbildung.id}
+              empfaenger="TEILNEHMENDE"
+              label="An Teilnehmende"
+              versandtAm={fortbildung.teilnahmebestaetigungenTeilnehmendeVersandtAm}
+              versandtVon={fortbildung.teilnahmebestaetigungenTeilnehmendeVersandtVon}
+            />
+          </div>
+        </section>
+      ) : null}
+    </div>
+  );
+}
+
+function VersandBestaetigung({
+  fortbildungId,
+  empfaenger,
+  label,
+  versandtAm,
+  versandtVon,
+}: {
+  fortbildungId: string;
+  empfaenger: "REFERENTEN" | "TEILNEHMENDE";
+  label: string;
+  versandtAm: Date | null;
+  versandtVon: { name: string | null; email: string } | null;
+}) {
+  const versandt = versandtAm !== null;
+  const action = setzeTeilnahmebestaetigungsVersand.bind(
+    null,
+    fortbildungId,
+    empfaenger,
+    !versandt,
+  );
+
+  return (
+    <div className={cn("border p-3", versandt && "border-dashed bg-primary/5")}>
+      <p className="text-sm font-medium">{label}</p>
+      {versandt ? (
+        <p className="mt-1 text-xs text-muted-foreground">
+          Bestätigt am {formatDatumZeit(versandtAm)}
+          {versandtVon ? ` von ${versandtVon.name ?? versandtVon.email}` : ""}.
+        </p>
+      ) : (
+        <p className="mt-1 text-xs text-muted-foreground">
+          Versand in FIBS noch nicht bestätigt.
+        </p>
+      )}
+      <form action={action} className="mt-3">
+        <VersandKnopf versandt={versandt} />
+      </form>
     </div>
   );
 }
@@ -212,6 +286,20 @@ function MeldenKnopf({ gemeldet }: { gemeldet: boolean }) {
   return (
     <Button type="submit" disabled={pending}>
       {pending ? "Wird gespeichert …" : gemeldet ? "Ändern" : "Melden"}
+    </Button>
+  );
+}
+
+function VersandKnopf({ versandt }: { versandt: boolean }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <Button type="submit" variant={versandt ? "ghost" : "outline"} size="sm" disabled={pending}>
+      {pending
+        ? "Wird gespeichert …"
+        : versandt
+          ? "Bestätigung zurücknehmen"
+          : "Als versandt bestätigen"}
     </Button>
   );
 }

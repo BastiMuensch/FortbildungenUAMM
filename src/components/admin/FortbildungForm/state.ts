@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import { fromDatetimeLocalValue, toDatetimeLocalValue } from "@/lib/datetime";
+import { formatDatumZeitEingabe, parseDatumZeitEingabe } from "@/lib/datetime";
 import { terminWarnung } from "@/lib/ferien";
 import { SCHULARTEN_STANDARD } from "@/constants/fortbildung";
 import type { FortbildungWerte, OrtOption } from "./types";
@@ -43,13 +43,13 @@ export function useFortbildungState(
 
   // Beginn und Ende im State, damit die Ferien-Warnung schon beim Tippen
   // erscheint und nicht erst nach dem Speichern.
-  const [beginn, setBeginn] = useState(toDatetimeLocalValue(fortbildung?.beginn));
-  const [ende, setEnde] = useState(toDatetimeLocalValue(fortbildung?.ende));
+  const [beginn, setBeginn] = useState(formatDatumZeitEingabe(fortbildung?.beginn));
+  const [ende, setEnde] = useState(formatDatumZeitEingabe(fortbildung?.ende));
 
   const terminHinweis = useMemo(() => {
-    const von = fromDatetimeLocalValue(beginn);
+    const von = parseDatumZeitEingabe(beginn);
     if (!von) return null;
-    const bis = fromDatetimeLocalValue(ende) ?? von;
+    const bis = parseDatumZeitEingabe(ende) ?? von;
     return terminWarnung(von, bis < von ? von : bis);
   }, [beginn, ende]);
 
@@ -86,9 +86,9 @@ export function useFortbildungState(
     // Ende sinnvoll vorbelegen: zwei Stunden später ist der typische
     // Zuschnitt einer regionalen Fortbildung.
     if (!ende && wert) {
-      const start = fromDatetimeLocalValue(wert);
+      const start = parseDatumZeitEingabe(wert);
       if (start) {
-        setEnde(toDatetimeLocalValue(new Date(start.getTime() + 2 * 60 * 60 * 1000)));
+        setEnde(formatDatumZeitEingabe(new Date(start.getTime() + 2 * 60 * 60 * 1000)));
       }
     }
   }
@@ -143,6 +143,8 @@ export function schrittFehler(
       ? feld.value.trim()
       : "";
   };
+  const beginn = parseDatumZeitEingabe(zustand.beginn);
+  const ende = parseDatumZeitEingabe(zustand.ende);
 
   for (const feld of pflichtfelder) {
     switch (feld) {
@@ -159,12 +161,14 @@ export function schrittFehler(
         break;
       }
       case "beginn":
-        if (!zustand.beginn) fehler.beginn = "Bitte Datum und Uhrzeit angeben.";
+        if (!beginn) {
+          fehler.beginn = "Bitte Datum und Uhrzeit im Format TT.MM.JJJJ HH:MM angeben.";
+        }
         break;
       case "ende":
-        if (!zustand.ende) {
-          fehler.ende = "Bitte Datum und Uhrzeit angeben.";
-        } else if (zustand.beginn && zustand.ende <= zustand.beginn) {
+        if (!ende) {
+          fehler.ende = "Bitte Datum und Uhrzeit im Format TT.MM.JJJJ HH:MM angeben.";
+        } else if (beginn && ende <= beginn) {
           fehler.ende = "Das Ende muss nach dem Beginn liegen.";
         }
         break;

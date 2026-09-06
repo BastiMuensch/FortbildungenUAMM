@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { fromDatetimeLocalValue } from "@/lib/datetime";
+import { parseDatumZeitEingabe } from "@/lib/datetime";
 import { istLeer } from "@/lib/sanitize";
 import {
   FORMAT_VALUES,
@@ -24,7 +24,7 @@ const datumFeld = (feldname: string) =>
     .string()
     .min(1, `${feldname} ist ein Pflichtfeld.`)
     .transform((wert, ctx) => {
-      const datum = fromDatetimeLocalValue(wert);
+      const datum = parseDatumZeitEingabe(wert);
       if (!datum) {
         ctx.addIssue({
           code: "custom",

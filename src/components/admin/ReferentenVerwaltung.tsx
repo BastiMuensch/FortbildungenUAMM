@@ -17,6 +17,7 @@ import { entferneReferent, speichereReferent } from "@/actions/stammdaten";
 import {
   neuerZugangslink,
   richteZugangEin,
+  stufeReferentZuAdministrationHoch,
   zugangEntziehen,
   type EinladungState,
 } from "@/actions/zugang";
@@ -61,6 +62,7 @@ export interface ReferentZeile {
     aktiv: boolean;
     passwortGesetzt: boolean;
     lastLoginAt: Date | null;
+    rolle: string;
   } | null;
   _count: { fortbildungen: number };
 }
@@ -69,13 +71,16 @@ export function ReferentenVerwaltung({
   referenten,
   darfLoeschen,
   darfZugangVerwalten,
+  darfZuAdministrationHochstufen,
 }: {
   referenten: ReferentZeile[];
   darfLoeschen: boolean;
   darfZugangVerwalten: boolean;
+  darfZuAdministrationHochstufen: boolean;
 }) {
   const [bearbeitet, setBearbeitet] = useState<ReferentZeile | null>(null);
   const [zugangFuer, setZugangFuer] = useState<ReferentZeile | null>(null);
+  const [hochzustufen, setHochzustufen] = useState<ReferentZeile | null>(null);
   const [neuOffen, setNeuOffen] = useState(false);
 
   return (
@@ -157,6 +162,21 @@ export function ReferentenVerwaltung({
                           <KeyRound className="size-3.5" />
                         </Button>
                       ) : null}
+                      {darfZuAdministrationHochstufen &&
+                      r.aktiv &&
+                      r.zugang?.aktiv &&
+                      r.zugang.passwortGesetzt &&
+                      r.zugang.rolle === "REFERENT" ? (
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          aria-label={`${r.vorname} ${r.nachname} zur Administration hochstufen`}
+                          title="Zur Administration hochstufen"
+                          onClick={() => setHochzustufen(r)}
+                        >
+                          <ShieldCheck className="size-3.5" />
+                        </Button>
+                      ) : null}
                       <Button
                         variant="ghost"
                         size="icon-xs"
@@ -211,6 +231,12 @@ export function ReferentenVerwaltung({
         onOpenChange={(offen) => !offen && setZugangFuer(null)}
         referent={zugangFuer}
       />
+      <AdministrationDialog
+        key={`administration-${hochzustufen?.id ?? "leer"}`}
+        offen={hochzustufen !== null}
+        onOpenChange={(offen) => !offen && setHochzustufen(null)}
+        referent={hochzustufen}
+      />
     </div>
   );
 }
@@ -222,6 +248,14 @@ function ZugangsStand({ zugang }: { zugang: ReferentZeile["zugang"] }) {
   if (!zugang.aktiv) {
     return <span className="text-sm text-muted-foreground">entzogen</span>;
   }
+  if (zugang.rolle === "ADMIN") {
+    return (
+      <span className="flex items-center gap-1.5 text-sm text-primary">
+        <ShieldCheck className="size-3.5" aria-hidden />
+        Administration
+      </span>
+    );
+  }
   if (!zugang.passwortGesetzt) {
     return (
       <span className="text-sm text-ferien">Einladung offen</span>
@@ -232,6 +266,80 @@ function ZugangsStand({ zugang }: { zugang: ReferentZeile["zugang"] }) {
       <ShieldCheck className="size-3.5 text-primary" aria-hidden />
       aktiv
     </span>
+  );
+}
+
+/** Die E-Mail-Eingabe verhindert versehentliche, weitreichende Rollenwechsel. */
+function AdministrationDialog({
+  offen,
+  onOpenChange,
+  referent,
+}: {
+  offen: boolean;
+  onOpenChange: (offen: boolean) => void;
+  referent: ReferentZeile | null;
+}) {
+  const action = stufeReferentZuAdministrationHoch.bind(
+    null,
+    referent?.zugang?.userId ?? "",
+  );
+  const [state, formAction] = useActionState<FormularState, FormData>(action, {});
+  const fehler = state.fehler ?? {};
+
+  return (
+    <Dialog open={offen} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <form action={formAction}>
+          <DialogHeader>
+            <DialogTitle>Zur Administration hochstufen</DialogTitle>
+            <DialogDescription>
+              {referent
+                ? `${referent.vorname} ${referent.nachname} erhält alle administrativen Rechte, einschließlich Benutzerverwaltung und Systemtexten.`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-4">
+            <p className="border-l-4 border-l-destructive bg-destructive/5 px-3 py-2 text-sm text-pretty">
+              Dieser Rollenwechsel ist weitreichend. Die Person wird danach aus
+              bestehenden Sitzungen abgemeldet und muss sich erneut anmelden.
+            </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="bestaetigung">
+                E-Mail-Adresse zur Bestätigung eingeben
+              </Label>
+              <Input
+                id="bestaetigung"
+                name="bestaetigung"
+                type="email"
+                autoComplete="off"
+                required
+                placeholder={referent?.email ?? "E-Mail-Adresse"}
+                aria-invalid={Boolean(fehler.bestaetigung)}
+              />
+              {fehler.bestaetigung ? (
+                <p role="alert" className="text-sm text-destructive">
+                  {fehler.bestaetigung}
+                </p>
+              ) : null}
+            </div>
+            {fehler._ ? (
+              <p role="alert" className="text-sm text-destructive">
+                {fehler._}
+              </p>
+            ) : null}
+            {state.erfolg ? <p className="text-sm text-primary">{state.meldung}</p> : null}
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              {state.erfolg ? "Schließen" : "Abbrechen"}
+            </Button>
+            {!state.erfolg ? <HochstufenKnopf /> : null}
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -475,6 +583,16 @@ function SpeichernKnopf() {
   return (
     <Button type="submit" disabled={pending}>
       {pending ? "Wird gespeichert …" : "Speichern"}
+    </Button>
+  );
+}
+
+function HochstufenKnopf() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" variant="destructive" disabled={pending}>
+      <ShieldCheck className="size-3.5" aria-hidden />
+      {pending ? "Wird hochgestuft …" : "Jetzt hochstufen"}
     </Button>
   );
 }

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CheckCircle2, Clock, Globe, MapPin } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
-import { REDAKTION, requireRole } from "@/lib/auth";
+import { requireRole } from "@/lib/auth";
 import { formatDatumZeit, formatZeitraum } from "@/lib/datetime";
 import {
   formatLabel,
@@ -16,7 +16,7 @@ export const metadata = { title: "Freigaben" };
 export const dynamic = "force-dynamic";
 
 export default async function FreigabenSeite() {
-  await requireRole(...REDAKTION);
+  await requireRole("ADMIN");
 
   const eingereicht = await prisma.fortbildung.findMany({
     where: { status: "EINGEREICHT" },
@@ -49,9 +49,9 @@ export default async function FreigabenSeite() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Freigaben</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground text-pretty">
-          Fortbildungen, die Referentinnen und Referenten zur Freigabe
-          eingereicht haben. Erst nach der Freigabe erscheinen sie im Frontend
-          — und erst dann sollten sie auch in FIBS eingetragen werden.
+          Fortbildungen, die zur administrativen Freigabe eingereicht wurden.
+          Prüfen, veröffentlichen und anschließend den tatsächlichen
+          FIBS-Eintrag markieren darf ausschließlich die Administration.
         </p>
       </div>
 

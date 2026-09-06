@@ -1,14 +1,20 @@
 import Link from "next/link";
+import { Fragment } from "react";
 import type { UmfeldTermin } from "@/actions/terminumfeld";
 import {
   ebeneKlassen,
   statusLabel,
 } from "@/constants/fortbildung";
-import { berlinIsoDatum, formatZeit, formatZeitraum } from "@/lib/datetime";
+import {
+  berlinIsoDatum,
+  formatZeit,
+  formatZeitraum,
+  isoKalenderwoche,
+  montagIndex,
+  WOCHENTAGE_KURZ,
+} from "@/lib/datetime";
 import { ferienStatus } from "@/lib/ferien";
 import { cn } from "@/lib/utils";
-
-const WOCHENTAGE = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
 export function Planungskalender({
   jahr,
@@ -59,8 +65,9 @@ export function Planungskalender({
       </div>
 
       <div className="hidden overflow-hidden border-2 border-foreground sm:block">
-        <div className="grid grid-cols-7 border-b-2 border-foreground bg-card">
-          {WOCHENTAGE.map((tag) => (
+        <div className="grid grid-cols-[2.25rem_repeat(7,minmax(0,1fr))] border-b-2 border-foreground bg-card">
+          <div className="etikett px-1 py-2 text-center text-muted-foreground">KW</div>
+          {WOCHENTAGE_KURZ.map((tag) => (
             <div
               key={tag}
               className="etikett px-2 py-2 text-center text-muted-foreground"
@@ -70,14 +77,20 @@ export function Planungskalender({
           ))}
         </div>
 
-        <div className="grid grid-cols-7">
-          {tage.map((tag) => (
-            <KalenderTag
-              key={tag.iso}
-              tag={tag}
-              termine={nachTag.get(tag.iso) ?? []}
-              darfAlleOeffnen={darfAlleOeffnen}
-            />
+        <div className="grid grid-cols-[2.25rem_repeat(7,minmax(0,1fr))]">
+          {tage.map((tag, index) => (
+            <Fragment key={tag.iso}>
+              {index % 7 === 0 ? (
+                <div className="zahl border-r border-b bg-muted/30 px-1 pt-1.5 text-center text-xs text-muted-foreground">
+                  {tag.kalenderwoche}
+                </div>
+              ) : null}
+              <KalenderTag
+                tag={tag}
+                termine={nachTag.get(tag.iso) ?? []}
+                darfAlleOeffnen={darfAlleOeffnen}
+              />
+            </Fragment>
           ))}
         </div>
       </div>
@@ -91,7 +104,7 @@ export function Planungskalender({
             <div key={tag.iso} className="border-l-4 border-l-primary bg-card p-3">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <p className="text-sm font-medium">
-                  {WOCHENTAGE[tag.wochentag]}, {tag.tagesZahl}.
+                  KW {tag.kalenderwoche} · {WOCHENTAGE_KURZ[tag.wochentag]}, {tag.tagesZahl}.
                 </p>
                 <Dichte anzahl={tagTermine.length} />
               </div>
@@ -331,11 +344,12 @@ interface RasterTag {
   tagesZahl: number;
   imMonat: boolean;
   wochentag: number;
+  kalenderwoche: number;
 }
 
 function rasterTage(jahr: number, monatsIndex: number): RasterTag[] {
   const erster = new Date(Date.UTC(jahr, monatsIndex, 1));
-  const versatz = (erster.getUTCDay() + 6) % 7;
+  const versatz = montagIndex(erster);
   const start = new Date(erster.getTime() - versatz * 24 * 60 * 60 * 1000);
   const tage: RasterTag[] = [];
 
@@ -345,7 +359,8 @@ function rasterTage(jahr: number, monatsIndex: number): RasterTag[] {
       iso: berlinIsoDatum(datum),
       tagesZahl: datum.getUTCDate(),
       imMonat: datum.getUTCMonth() === monatsIndex,
-      wochentag: (datum.getUTCDay() + 6) % 7,
+      wochentag: montagIndex(datum),
+      kalenderwoche: isoKalenderwoche(datum),
     });
 
     if (i >= 34 && i % 7 === 6 && !tage.slice(-7).some((tag) => tag.imMonat)) {

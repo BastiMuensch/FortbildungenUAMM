@@ -1,12 +1,17 @@
 import Link from "next/link";
+import { Fragment } from "react";
 
-import { berlinIsoDatum, formatZeit } from "@/lib/datetime";
+import {
+  berlinIsoDatum,
+  formatZeit,
+  isoKalenderwoche,
+  montagIndex,
+  WOCHENTAGE_KURZ,
+} from "@/lib/datetime";
 import { ferienStatus } from "@/lib/ferien";
 import { ebeneKlassen } from "@/constants/fortbildung";
 import type { FortbildungKachel } from "@/lib/queries";
 import { cn } from "@/lib/utils";
-
-const WOCHENTAGE = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
 /**
  * Monatsraster als Server Component — kein Client-JavaScript.
@@ -42,8 +47,9 @@ export function Monatskalender({
     <>
       {/* Rasteransicht ab Tablet-Breite */}
       <div className="hidden overflow-hidden border-2 border-foreground sm:block">
-        <div className="grid grid-cols-7 border-b-2 border-foreground bg-card">
-          {WOCHENTAGE.map((tag) => (
+        <div className="grid grid-cols-[2.25rem_repeat(7,minmax(0,1fr))] border-b-2 border-foreground bg-card">
+          <div className="etikett px-1 py-2 text-center text-muted-foreground">KW</div>
+          {WOCHENTAGE_KURZ.map((tag) => (
             <div
               key={tag}
               className="etikett px-2 py-2 text-center text-muted-foreground"
@@ -53,45 +59,51 @@ export function Monatskalender({
           ))}
         </div>
 
-        <div className="grid grid-cols-7">
-          {tage.map((tag) => {
+        <div className="grid grid-cols-[2.25rem_repeat(7,minmax(0,1fr))]">
+          {tage.map((tag, index) => {
             const status = ferienStatus(new Date(`${tag.iso}T12:00:00Z`));
             const termine = nachTag.get(tag.iso) ?? [];
 
             return (
-              <div
-                key={tag.iso}
-                className={cn(
-                  "min-h-28 border-r border-b p-1.5 last:border-r-0",
-                  !tag.imMonat && "bg-muted/40",
-                  status.art === "ferien" && "bg-ferien-weich",
-                  status.art === "feiertag" && "bg-feiertag-weich",
-                )}
-              >
-                <div className="mb-1 flex items-baseline justify-between gap-1">
-                  <span
-                    className={cn(
-                      "zahl text-xs",
-                      tag.imMonat ? "text-foreground" : "text-muted-foreground/50",
-                      tag.iso === heute &&
-                        "bg-primary px-1.5 py-0.5 font-semibold text-primary-foreground",
-                    )}
-                  >
-                    {tag.tagesZahl}
-                  </span>
-                  {status.label && status.art !== "wochenende" ? (
-                    <span className="etikett truncate text-[0.6rem] text-muted-foreground">
-                      {status.label}
+              <Fragment key={tag.iso}>
+                {index % 7 === 0 ? (
+                  <div className="zahl border-r border-b bg-muted/30 px-1 pt-1.5 text-center text-xs text-muted-foreground">
+                    {tag.kalenderwoche}
+                  </div>
+                ) : null}
+                <div
+                  className={cn(
+                    "min-h-28 border-r border-b p-1.5 last:border-r-0",
+                    !tag.imMonat && "bg-muted/40",
+                    status.art === "ferien" && "bg-ferien-weich",
+                    status.art === "feiertag" && "bg-feiertag-weich",
+                  )}
+                >
+                  <div className="mb-1 flex items-baseline justify-between gap-1">
+                    <span
+                      className={cn(
+                        "zahl text-xs",
+                        tag.imMonat ? "text-foreground" : "text-muted-foreground/50",
+                        tag.iso === heute &&
+                          "bg-primary px-1.5 py-0.5 font-semibold text-primary-foreground",
+                      )}
+                    >
+                      {tag.tagesZahl}
                     </span>
-                  ) : null}
-                </div>
+                    {status.label && status.art !== "wochenende" ? (
+                      <span className="etikett truncate text-[0.6rem] text-muted-foreground">
+                        {status.label}
+                      </span>
+                    ) : null}
+                  </div>
 
-                <div className="space-y-1">
-                  {termine.map((f) => (
-                    <TerminChip key={f.id + tag.iso} fortbildung={f} />
-                  ))}
+                  <div className="space-y-1">
+                    {termine.map((f) => (
+                      <TerminChip key={f.id + tag.iso} fortbildung={f} />
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </Fragment>
             );
           })}
         </div>
@@ -106,7 +118,7 @@ export function Monatskalender({
             return (
               <div key={tag.iso} className="border-l-4 border-l-primary bg-card p-3">
                 <p className="mb-2 text-sm font-medium">
-                  {tag.tagesZahl}. {WOCHENTAGE[tag.wochentag]}
+                  KW {tag.kalenderwoche} · {tag.tagesZahl}. {WOCHENTAGE_KURZ[tag.wochentag]}
                   {status.label ? (
                     <span className="ml-2 text-xs font-normal text-muted-foreground">
                       {status.label}
@@ -156,13 +168,13 @@ interface RasterTag {
   tagesZahl: number;
   imMonat: boolean;
   wochentag: number;
+  kalenderwoche: number;
 }
 
 /** Kalenderraster von Montag bis Sonntag, inklusive angrenzender Tage. */
 function rasterTage(jahr: number, monatsIndex: number): RasterTag[] {
   const erster = new Date(Date.UTC(jahr, monatsIndex, 1));
-  // getUTCDay: 0 = Sonntag. Die Woche beginnt hier am Montag.
-  const versatz = (erster.getUTCDay() + 6) % 7;
+  const versatz = montagIndex(erster);
 
   const start = new Date(erster.getTime() - versatz * 24 * 60 * 60 * 1000);
   const tage: RasterTag[] = [];
@@ -175,7 +187,8 @@ function rasterTage(jahr: number, monatsIndex: number): RasterTag[] {
       iso: berlinIsoDatum(datum),
       tagesZahl: datum.getUTCDate(),
       imMonat,
-      wochentag: (datum.getUTCDay() + 6) % 7,
+      wochentag: montagIndex(datum),
+      kalenderwoche: isoKalenderwoche(datum),
     });
 
     // Sechste Zeile nur zeigen, wenn der Monat sie braucht.

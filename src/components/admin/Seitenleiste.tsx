@@ -7,14 +7,12 @@ import {
   CalendarDays,
   CalendarRange,
   BookOpen,
-  ClipboardCheck,
   Download,
   ExternalLink,
   FileText,
   LogOut,
   MapPin,
   Menu,
-  ShieldCheck,
   Tags,
   Users,
   X,
@@ -27,15 +25,12 @@ import { cn } from "@/lib/utils";
 const ALLE: Rolle[] = ["ADMIN", "REDAKTEUR", "REFERENT"];
 const REDAKTION: Rolle[] = ["ADMIN", "REDAKTEUR"];
 const NUR_ADMIN: Rolle[] = ["ADMIN"];
-const ADMIN_UND_REFERENT: Rolle[] = ["ADMIN", "REFERENT"];
 
 interface Eintrag {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
   rollen: Rolle[];
-  /** Zahl neben dem Eintrag. */
-  zaehler?: "offeneMeldungen" | "offeneFreigaben";
 }
 
 /**
@@ -60,20 +55,6 @@ const GRUPPEN: Array<{ titel: string; eintraege: Eintrag[] }> = [
         icon: BookOpen,
         rollen: ALLE,
       },
-      {
-        href: "/admin/freigaben",
-        label: "Freigaben",
-        icon: ShieldCheck,
-        rollen: NUR_ADMIN,
-        zaehler: "offeneFreigaben",
-      },
-      {
-        href: "/admin/nachbereitung",
-        label: "Nachbereitung",
-        icon: ClipboardCheck,
-        rollen: ADMIN_UND_REFERENT,
-        zaehler: "offeneMeldungen",
-      },
     ],
   },
   {
@@ -96,13 +77,9 @@ const GRUPPEN: Array<{ titel: string; eintraege: Eintrag[] }> = [
 export function Seitenleiste({
   name,
   rolle,
-  offeneMeldungen,
-  offeneFreigaben,
 }: {
   name: string;
   rolle: Rolle;
-  offeneMeldungen: number;
-  offeneFreigaben: number;
 }) {
   const [offen, setOffen] = useState(false);
 
@@ -165,7 +142,6 @@ export function Seitenleiste({
                     <li key={eintrag.href}>
                       <Punkt
                         eintrag={eintrag}
-                        zaehler={{ offeneMeldungen, offeneFreigaben }}
                         onNavigate={() => setOffen(false)}
                       />
                     </li>
@@ -217,11 +193,9 @@ export function Seitenleiste({
 
 function Punkt({
   eintrag,
-  zaehler,
   onNavigate,
 }: {
   eintrag: Eintrag;
-  zaehler: { offeneMeldungen: number; offeneFreigaben: number };
   onNavigate: () => void;
 }) {
   const pfad = usePathname();
@@ -232,7 +206,6 @@ function Punkt({
       ? pfad === "/admin" || pfad.startsWith("/admin/fortbildungen")
       : pfad.startsWith(eintrag.href);
 
-  const zahl = eintrag.zaehler ? zaehler[eintrag.zaehler] : 0;
   const Icon = eintrag.icon;
 
   return (
@@ -249,14 +222,6 @@ function Punkt({
     >
       <Icon className="size-4 shrink-0" aria-hidden />
       <span className="flex-1 truncate">{eintrag.label}</span>
-      {zahl > 0 ? (
-        <span
-          title={`${zahl} offen`}
-          className="zahl flex min-w-5 items-center justify-center bg-ferien px-1.5 text-xs font-semibold text-white"
-        >
-          {zahl}
-        </span>
-      ) : null}
     </Link>
   );
 }

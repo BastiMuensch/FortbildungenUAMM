@@ -25,6 +25,8 @@ import { aktuellesSchuljahr, schuljahrZeitraum } from "@/lib/datetime";
 import { Button } from "@/components/ui/button";
 import { AdminFilterLeiste } from "@/components/admin/AdminFilterLeiste";
 import { FortbildungTabelle } from "@/components/admin/FortbildungTabelle";
+import { FreigabenBereich } from "@/components/admin/FreigabenBereich";
+import { NachbereitungsBereich } from "@/components/admin/NachbereitungsBereich";
 import { SchuljahrWahl } from "@/components/admin/SchuljahrWahl";
 
 export const metadata = { title: "Fortbildungen verwalten" };
@@ -40,6 +42,16 @@ export default async function AdminDashboard({
   const scope = fortbildungScope(user);
   const istAdmin = darfFreigeben(user.role);
   const darfNachbereiten = user.role === "ADMIN" || user.role === "REFERENT";
+  const bereichParam = Array.isArray(params.bereich) ? params.bereich[0] : params.bereich;
+  const aktiverBereich =
+    bereichParam === "freigaben" && istAdmin
+      ? "freigaben"
+      : bereichParam === "nachbereitung" && darfNachbereiten
+        ? "nachbereitung"
+        : null;
+  const freigabenUrl = `${baueUrl("/admin", params, { bereich: "freigaben" })}#arbeitsbereich`;
+  const nachbereitungUrl = `${baueUrl("/admin", params, { bereich: "nachbereitung" })}#arbeitsbereich`;
+  const uebersichtUrl = baueUrl("/admin", params, { bereich: undefined });
   const where = { AND: [scope, filterZuWhere(filter)] };
 
   const laufendes = aktuellesSchuljahr();
@@ -131,14 +143,24 @@ export default async function AdminDashboard({
         </div>
       </div>
 
-      <WorkflowHinweis istAdmin={istAdmin} />
+      <WorkflowHinweis istAdmin={istAdmin} freigabenUrl={freigabenUrl} />
 
       <div className="grid gap-px overflow-hidden border bg-border sm:grid-cols-2 lg:grid-cols-4">
         <Kachel wert={imSchuljahr} label={`Termine im Schuljahr ${kennzahlJahr}`} icon={CalendarDays} />
-        {istAdmin ? <Kachel wert={zurFreigabe} label="warten auf administrative Freigabe" icon={ShieldCheck} hervorheben={zurFreigabe > 0} href="/admin/freigaben" /> : null}
+        {istAdmin ? <Kachel wert={zurFreigabe} label="warten auf administrative Freigabe" icon={ShieldCheck} hervorheben={zurFreigabe > 0} aktiv={aktiverBereich === "freigaben"} href={freigabenUrl} /> : null}
         <Kachel wert={ohneFibs} label="veröffentlicht, aber nicht in FIBS" icon={Globe2} hervorheben={ohneFibs > 0} href={baueUrl("/admin", {}, { status: "VEROEFFENTLICHT", fibs: "offen" })} />
-        {darfNachbereiten ? <Kachel wert={offeneMeldungen} label={user.role === "ADMIN" ? "Nachbereitungen noch offen" : "SchiLf-Teilnehmerzahlen noch offen"} icon={ClipboardCheck} hervorheben={offeneMeldungen > 0} href="/admin/nachbereitung" /> : null}
+        {darfNachbereiten ? <Kachel wert={offeneMeldungen} label={user.role === "ADMIN" ? "Nachbereitungen noch offen" : "SchiLf-Teilnehmerzahlen noch offen"} icon={ClipboardCheck} hervorheben={offeneMeldungen > 0} aktiv={aktiverBereich === "nachbereitung"} href={nachbereitungUrl} /> : null}
       </div>
+
+      {aktiverBereich ? (
+        <section id="arbeitsbereich" className="scroll-mt-6 space-y-3" aria-label="Arbeitsbereich">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-2">
+            <p className="etikett text-primary">Arbeitsbereich</p>
+            <Button nativeButton={false} size="sm" variant="outline" render={<Link href={uebersichtUrl}>Zur Fortbildungsübersicht</Link>} />
+          </div>
+          {aktiverBereich === "freigaben" ? <FreigabenBereich eingebettet /> : <NachbereitungsBereich eingebettet />}
+        </section>
+      ) : null}
 
       <AdminFilterLeiste params={params} schlagworte={schlagworte.map((s) => s.name)} />
 
@@ -159,7 +181,7 @@ export default async function AdminDashboard({
                   </h2>
                   <p className="mt-0.5 text-sm text-muted-foreground">{gruppe.beschreibung}</p>
                 </div>
-                {gruppe.id === "eingereicht" && istAdmin ? <Button nativeButton={false} size="sm" render={<Link href="/admin/freigaben"><ShieldCheck className="size-3.5" aria-hidden />Freigaben öffnen</Link>} /> : null}
+                {gruppe.id === "eingereicht" && istAdmin ? <Button nativeButton={false} size="sm" render={<Link href={freigabenUrl}><ShieldCheck className="size-3.5" aria-hidden />Freigaben öffnen</Link>} /> : null}
               </div>
               <FortbildungTabelle fortbildungen={gruppe.fortbildungen} />
             </section>
@@ -172,7 +194,7 @@ export default async function AdminDashboard({
   );
 }
 
-function WorkflowHinweis({ istAdmin }: { istAdmin: boolean }) {
+function WorkflowHinweis({ istAdmin, freigabenUrl }: { istAdmin: boolean; freigabenUrl: string }) {
   const schritte = [
     { icon: PencilLine, titel: "Entwurf", text: "Fortbildung ausarbeiten" },
     { icon: Send, titel: "Einreichen", text: "zur Prüfung senden" },
@@ -184,7 +206,7 @@ function WorkflowHinweis({ istAdmin }: { istAdmin: boolean }) {
     <section className="border bg-card p-4" aria-labelledby="workflow-titel">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><p className="etikett text-primary">Veröffentlichungsweg</p><h2 id="workflow-titel" className="mt-0.5 font-semibold">Vom Entwurf zur Anmeldung</h2></div>
-        {istAdmin ? <Button nativeButton={false} size="sm" render={<Link href="/admin/freigaben">Freigaben bearbeiten</Link>} /> : <p className="max-w-sm text-right text-xs leading-relaxed text-muted-foreground">Freigaben, Veröffentlichung und FIBS-Markierung übernimmt ausschließlich die Administration.</p>}
+        {istAdmin ? <Button nativeButton={false} size="sm" render={<Link href={freigabenUrl}>Freigaben bearbeiten</Link>} /> : <p className="max-w-sm text-right text-xs leading-relaxed text-muted-foreground">Freigaben, Veröffentlichung und FIBS-Markierung übernimmt ausschließlich die Administration.</p>}
       </div>
       <ol className="mt-4 grid gap-2 sm:grid-cols-5">
         {schritte.map(({ icon: Icon, titel, text }, index) => (
@@ -208,10 +230,10 @@ function gruppiereFortbildungen<T extends { status: string; inFibs: boolean }>(f
   ].filter((gruppe) => gruppe.fortbildungen.length > 0);
 }
 
-function Kachel({ wert, label, icon: Icon, hervorheben, href }: { wert: number; label: string; icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>; hervorheben?: boolean; href?: string }) {
+function Kachel({ wert, label, icon: Icon, hervorheben, aktiv, href }: { wert: number; label: string; icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>; hervorheben?: boolean; aktiv?: boolean; href?: string }) {
   const inhalt = <div className="flex items-center gap-3"><span className="zahl min-w-9 text-2xl leading-none font-semibold">{String(wert).padStart(2, "0")}</span><span className="flex min-w-0 items-start gap-1.5 text-xs leading-snug text-muted-foreground"><Icon className={`mt-0.5 size-3.5 shrink-0 ${hervorheben ? "text-primary" : ""}`} aria-hidden />{label}</span></div>;
-  const klassen = `p-3 ${hervorheben ? "bg-primary/5" : "bg-card"}`;
-  return href ? <Link href={href} className={`${klassen} zeile block hover:bg-accent`}>{inhalt}</Link> : <div className={klassen}>{inhalt}</div>;
+  const klassen = `p-3 ${aktiv ? "bg-primary/10 ring-2 ring-inset ring-primary" : hervorheben ? "bg-primary/5" : "bg-card"}`;
+  return href ? <Link href={href} aria-current={aktiv ? "page" : undefined} className={`${klassen} zeile block hover:bg-accent`}>{inhalt}</Link> : <div className={klassen}>{inhalt}</div>;
 }
 
 function vorhandeneSchuljahre(erste: Date | undefined, letzte: Date | undefined, laufendes: string): string[] {

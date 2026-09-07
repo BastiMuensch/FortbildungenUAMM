@@ -50,12 +50,11 @@ export default async function Startseite() {
           </p>
 
           <h1 className="max-w-3xl text-4xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-6xl">
-            Neue Impulse. Für Ihren Unterricht.
+            Impulse, die Unterricht bewegen.
           </h1>
 
           <p className="mt-3 max-w-2xl text-base text-muted-foreground">
-            Lehrerfortbildungen für Grund- und Mittelschulen. Jeder Termin zeigt
-            transparent, ob die Anmeldung über FIBS oder schulintern organisiert wird.
+            Suche für das neue digitale Fortbildungspotential für Grund- und Mittelschulen in Memmingen und dem Unterallgäu
           </p>
 
           {/* Einfaches GET-Formular: funktioniert auch ohne JavaScript. */}

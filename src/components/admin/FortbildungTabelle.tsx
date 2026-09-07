@@ -43,10 +43,10 @@ interface Zeile {
 export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }) {
   return (
     <>
-      {/* Auf dem Telefon ist eine Zeile mit zehn Spalten kein Arbeitsmittel.
-          Die wichtigsten Angaben werden deshalb als kompakte Vorgangskarten
-          gezeigt; ab Tabletbreite bleibt die informationsreiche Tabelle. */}
-      <div className="grid gap-3 md:hidden">
+      {/* Unterhalb der Desktopbreite sind Karten besser lesbar als eine
+          zusammengequetschte Tabelle. Sie enthalten dieselben Arbeitshinweise
+          wie die sechs Spalten der großen Ansicht. */}
+      <div className="grid gap-3 xl:hidden">
         {fortbildungen.map((f) => {
           const ebene = ebeneKlassen(f.organisationsform);
           return (
@@ -72,61 +72,80 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
                 <span className={cn("etikett px-1.5 py-0.5", ebene.flaeche)}>
                   {organisationsformKurz(f.organisationsform)}
                 </span>
+                <span className="text-xs text-muted-foreground">
+                  {formatLabel(f.format)}
+                </span>
+                {f.quelle === "FIBS_IMPORT" ? (
+                  <Badge variant="outline">aus FIBS</Badge>
+                ) : null}
                 <StatusKennzeichen status={f.status} />
                 <FibsKennzeichen
                   inFibs={f.inFibs}
                   lehrgangsnummer={f.fibsLehrgangsnummer}
+                  ausfuehrlich
                 />
               </div>
 
-              <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
-                {f.veranstaltungsort.istOnline ? (
-                  <Globe className="size-3.5 shrink-0" aria-hidden />
-                ) : (
-                  <MapPin className="size-3.5 shrink-0" aria-hidden />
-                )}
-                {f.veranstaltungsort.name}
-                <span aria-hidden>·</span>
-                <span className="zahl">{f.tnTatsaechlich ?? "—"} / {f.maxTn} TN</span>
-              </p>
+              <div className="mt-3 space-y-1.5 text-sm text-muted-foreground">
+                <p className="flex items-start gap-1.5">
+                  {f.veranstaltungsort.istOnline ? (
+                    <Globe className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+                  ) : (
+                    <MapPin className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+                  )}
+                  <span>
+                    {f.veranstaltungsort.name}
+                    {f.veranstaltungsort.ort ? `, ${f.veranstaltungsort.ort}` : ""}
+                  </span>
+                </p>
+                <p>
+                  {f.referenten.length === 0
+                    ? "Keine Referent:innen hinterlegt"
+                    : f.referenten
+                        .map((r) => `${r.referent.vorname} ${r.referent.nachname}`)
+                        .join(", ")}
+                </p>
+                <p className="zahl">
+                  {f.tnTatsaechlich ?? "—"} / {f.maxTn} TN
+                </p>
+              </div>
             </Link>
           );
         })}
       </div>
 
-      <div className="hidden overflow-x-auto border md:block">
-      <Table>
+      <div className="hidden border xl:block">
+      <Table className="table-fixed">
         <TableHeader>
           <TableRow>
-            <TableHead className="min-w-40">Termin</TableHead>
-            <TableHead className="min-w-64">Titel</TableHead>
-            <TableHead>Art</TableHead>
-            <TableHead>Format</TableHead>
-            <TableHead className="min-w-40">Ort</TableHead>
-            <TableHead className="min-w-40">Referenten</TableHead>
-            <TableHead className="text-right" title="Tatsächliche Teilnehmerzahl von geplanten Plätzen">
+            <TableHead className="w-[15%]">Termin</TableHead>
+            <TableHead className="w-[25%]">Fortbildung</TableHead>
+            <TableHead className="w-[22%]">Ort &amp; Leitung</TableHead>
+            <TableHead
+              className="w-[9%] text-right"
+              title="Tatsächliche Teilnehmerzahl von geplanten Plätzen"
+            >
               TN / Plätze
             </TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>FIBS</TableHead>
-            <TableHead className="w-10" />
+            <TableHead className="w-[21%]">Bearbeitungsstand</TableHead>
+            <TableHead className="w-12 text-right">Aktion</TableHead>
           </TableRow>
         </TableHeader>
 
         <TableBody>
           {fortbildungen.map((f) => (
             <TableRow key={f.id}>
-              <TableCell className="zahl whitespace-nowrap">
+              <TableCell className="zahl whitespace-normal">
                 {formatDatumZeit(f.beginn)}
                 <span className="zahl block text-xs text-muted-foreground">
                   bis {formatZeit(f.ende)} Uhr
                 </span>
               </TableCell>
 
-              <TableCell>
+              <TableCell className="whitespace-normal">
                 <Link
                   href={`/admin/fortbildungen/${f.id}`}
-                  className="font-medium underline-offset-4 hover:underline"
+                  className="font-medium leading-snug underline-offset-4 hover:underline"
                 >
                   {f.titel}
                 </Link>
@@ -135,48 +154,44 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
                     {f.kurztitel}
                   </span>
                 ) : null}
-                {f.quelle === "FIBS_IMPORT" ? (
-                  <Badge variant="outline" className="mt-1">
-                    aus FIBS
-                  </Badge>
-                ) : null}
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  {/* Dieselbe Farbzuordnung wie im Frontend und im Kalender. */}
+                  <span
+                    className={`etikett inline-flex px-1.5 py-0.5 ${ebeneKlassen(f.organisationsform).flaeche}`}
+                  >
+                    {organisationsformKurz(f.organisationsform)}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatLabel(f.format)}
+                  </span>
+                  {f.quelle === "FIBS_IMPORT" ? (
+                    <Badge variant="outline">aus FIBS</Badge>
+                  ) : null}
+                </div>
               </TableCell>
 
-              <TableCell className="whitespace-nowrap">
-                {/* Dieselbe Farbzuordnung wie im Frontend und im Kalender. */}
-                <span
-                  className={`etikett inline-flex px-1.5 py-0.5 ${
-                    ebeneKlassen(f.organisationsform).flaeche
-                  }`}
-                >
-                  {organisationsformKurz(f.organisationsform)}
-                </span>
-              </TableCell>
-
-              <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                {formatLabel(f.format)}
-              </TableCell>
-
-              <TableCell className="text-sm">
-                <span className="flex items-center gap-1.5">
+              <TableCell className="whitespace-normal text-sm">
+                <div className="flex items-start gap-1.5 leading-snug">
                   {f.veranstaltungsort.istOnline ? (
-                    <Globe className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                    <Globe className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" aria-hidden />
                   ) : (
-                    <MapPin className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                    <MapPin className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" aria-hidden />
                   )}
-                  {f.veranstaltungsort.name}
-                </span>
+                  <span>
+                    {f.veranstaltungsort.name}
+                    {f.veranstaltungsort.ort ? `, ${f.veranstaltungsort.ort}` : ""}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs leading-snug text-muted-foreground">
+                  {f.referenten.length === 0
+                    ? "Keine Referent:innen hinterlegt"
+                    : f.referenten
+                        .map((r) => `${r.referent.vorname} ${r.referent.nachname}`)
+                        .join(", ")}
+                </p>
               </TableCell>
 
-              <TableCell className="text-sm text-muted-foreground">
-                {f.referenten.length === 0
-                  ? "—"
-                  : f.referenten
-                      .map((r) => `${r.referent.vorname} ${r.referent.nachname}`)
-                      .join(", ")}
-              </TableCell>
-
-              <TableCell className="zahl text-right whitespace-nowrap">
+              <TableCell className="zahl whitespace-normal text-right">
                 {f.tnTatsaechlich !== null ? (
                   <span className="font-medium">{f.tnTatsaechlich}</span>
                 ) : (
@@ -185,22 +200,22 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
                 <span className="text-muted-foreground"> / {f.maxTn}</span>
               </TableCell>
 
-              <TableCell>
-                <StatusKennzeichen status={f.status} />
+              <TableCell className="whitespace-normal">
+                <div className="flex flex-col items-start gap-1.5">
+                  <StatusKennzeichen status={f.status} />
+                  <FibsKennzeichen
+                    inFibs={f.inFibs}
+                    lehrgangsnummer={f.fibsLehrgangsnummer}
+                    ausfuehrlich
+                  />
+                </div>
               </TableCell>
 
-              <TableCell>
-                <FibsKennzeichen
-                  inFibs={f.inFibs}
-                  lehrgangsnummer={f.fibsLehrgangsnummer}
-                />
-              </TableCell>
-
-              <TableCell>
+              <TableCell className="whitespace-normal text-right">
                 <Link
                   href={`/admin/fortbildungen/${f.id}`}
                   aria-label={`${f.titel} bearbeiten`}
-                  className="flex size-7 items-center justify-center text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  className="ml-auto flex size-7 items-center justify-center text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <Pencil className="size-3.5" />
                 </Link>

@@ -49,8 +49,19 @@ export default async function AdminDashboard({
       : bereichParam === "nachbereitung" && darfNachbereiten
         ? "nachbereitung"
         : null;
+  const fibsAktiv =
+    aktiverBereich === null &&
+    filter.status === "VEROEFFENTLICHT" &&
+    filter.fibs === "offen";
   const freigabenUrl = `${baueUrl("/admin", params, { bereich: "freigaben" })}#arbeitsbereich`;
   const nachbereitungUrl = `${baueUrl("/admin", params, { bereich: "nachbereitung" })}#arbeitsbereich`;
+  const fibsUrl = `${baueUrl(
+    "/admin",
+    params,
+    fibsAktiv
+      ? { status: undefined, fibs: undefined }
+      : { status: "VEROEFFENTLICHT", fibs: "offen", bereich: undefined },
+  )}#fortbildungslisten`;
   const uebersichtUrl = baueUrl("/admin", params, { bereich: undefined });
   const where = { AND: [scope, filterZuWhere(filter)] };
 
@@ -146,10 +157,43 @@ export default async function AdminDashboard({
       <WorkflowHinweis istAdmin={istAdmin} freigabenUrl={freigabenUrl} />
 
       <div className="grid gap-px overflow-hidden border bg-border sm:grid-cols-2 lg:grid-cols-4">
-        <Kachel wert={imSchuljahr} label={`Termine im Schuljahr ${kennzahlJahr}`} icon={CalendarDays} />
-        {istAdmin ? <Kachel wert={zurFreigabe} label="warten auf administrative Freigabe" icon={ShieldCheck} hervorheben={zurFreigabe > 0} aktiv={aktiverBereich === "freigaben"} href={freigabenUrl} /> : null}
-        <Kachel wert={ohneFibs} label="veröffentlicht, aber nicht in FIBS" icon={Globe2} hervorheben={ohneFibs > 0} href={baueUrl("/admin", {}, { status: "VEROEFFENTLICHT", fibs: "offen" })} />
-        {darfNachbereiten ? <Kachel wert={offeneMeldungen} label={user.role === "ADMIN" ? "Nachbereitungen noch offen" : "SchiLf-Teilnehmerzahlen noch offen"} icon={ClipboardCheck} hervorheben={offeneMeldungen > 0} aktiv={aktiverBereich === "nachbereitung"} href={nachbereitungUrl} /> : null}
+        <Kachel
+          wert={imSchuljahr}
+          label={`Termine im Schuljahr ${kennzahlJahr}`}
+          icon={CalendarDays}
+        />
+        {istAdmin ? (
+          <Kachel
+            wert={zurFreigabe}
+            label="warten auf administrative Freigabe"
+            icon={ShieldCheck}
+            hervorheben={zurFreigabe > 0}
+            aktiv={aktiverBereich === "freigaben"}
+            href={freigabenUrl}
+          />
+        ) : null}
+        <Kachel
+          wert={ohneFibs}
+          label="veröffentlicht, aber nicht in FIBS"
+          icon={Globe2}
+          hervorheben={ohneFibs > 0}
+          aktiv={fibsAktiv}
+          href={fibsUrl}
+        />
+        {darfNachbereiten ? (
+          <Kachel
+            wert={offeneMeldungen}
+            label={
+              user.role === "ADMIN"
+                ? "Nachbereitungen noch offen"
+                : "SchiLf-Teilnehmerzahlen noch offen"
+            }
+            icon={ClipboardCheck}
+            hervorheben={offeneMeldungen > 0}
+            aktiv={aktiverBereich === "nachbereitung"}
+            href={nachbereitungUrl}
+          />
+        ) : null}
       </div>
 
       {aktiverBereich ? (
@@ -162,7 +206,9 @@ export default async function AdminDashboard({
         </section>
       ) : null}
 
-      <AdminFilterLeiste params={params} schlagworte={schlagworte.map((s) => s.name)} />
+      <div id="fortbildungslisten" className="scroll-mt-6">
+        <AdminFilterLeiste params={params} schlagworte={schlagworte.map((s) => s.name)} />
+      </div>
 
       {fortbildungen.length === 0 ? (
         <div className="border border-l-4 border-l-primary bg-card py-16 text-center">
@@ -177,7 +223,10 @@ export default async function AdminDashboard({
                 <div>
                   <p className="etikett text-primary">{gruppe.eyebrow}</p>
                   <h2 id={`gruppe-${gruppe.id}`} className="mt-0.5 text-lg font-semibold tracking-tight">
-                    {gruppe.titel}<span className="ml-2 text-sm font-normal text-muted-foreground">({gruppe.fortbildungen.length})</span>
+                    {gruppe.titel}
+                    <span className="ml-2 inline-flex min-w-5 items-center justify-center rounded-full border border-border bg-muted px-1.5 py-0.5 align-middle text-xs font-medium leading-none text-muted-foreground">
+                      <span className="sr-only">Anzahl: </span>{gruppe.fortbildungen.length}
+                    </span>
                   </h2>
                   <p className="mt-0.5 text-sm text-muted-foreground">{gruppe.beschreibung}</p>
                 </div>
@@ -230,10 +279,68 @@ function gruppiereFortbildungen<T extends { status: string; inFibs: boolean }>(f
   ].filter((gruppe) => gruppe.fortbildungen.length > 0);
 }
 
-function Kachel({ wert, label, icon: Icon, hervorheben, aktiv, href }: { wert: number; label: string; icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>; hervorheben?: boolean; aktiv?: boolean; href?: string }) {
-  const inhalt = <div className="flex items-center gap-3"><span className="zahl min-w-9 text-2xl leading-none font-semibold">{String(wert).padStart(2, "0")}</span><span className="flex min-w-0 items-start gap-1.5 text-xs leading-snug text-muted-foreground"><Icon className={`mt-0.5 size-3.5 shrink-0 ${hervorheben ? "text-primary" : ""}`} aria-hidden />{label}</span></div>;
-  const klassen = `p-3 ${aktiv ? "bg-primary/10 ring-2 ring-inset ring-primary" : hervorheben ? "bg-primary/5" : "bg-card"}`;
-  return href ? <Link href={href} aria-current={aktiv ? "page" : undefined} className={`${klassen} zeile block hover:bg-accent`}>{inhalt}</Link> : <div className={klassen}>{inhalt}</div>;
+function Kachel({
+  wert,
+  label,
+  icon: Icon,
+  hervorheben,
+  aktiv,
+  href,
+}: {
+  wert: number;
+  label: string;
+  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  hervorheben?: boolean;
+  aktiv?: boolean;
+  href?: string;
+}) {
+  const inhalt = (
+    <div className="flex items-center gap-3">
+      <span
+        className={`zahl min-w-9 text-2xl leading-none font-semibold ${
+          hervorheben || aktiv ? "text-primary" : ""
+        }`}
+      >
+        {String(wert).padStart(2, "0")}
+      </span>
+      <span className="flex min-w-0 items-start gap-1.5 text-xs leading-snug text-muted-foreground">
+        <Icon
+          className={`mt-0.5 size-3.5 shrink-0 ${
+            hervorheben || aktiv ? "text-primary" : ""
+          }`}
+          aria-hidden
+        />
+        {label}
+        {hervorheben && !aktiv ? (
+          <span
+            className="mt-1 size-1.5 shrink-0 rounded-full bg-primary"
+            aria-label="Offene Aufgabe"
+          />
+        ) : null}
+      </span>
+    </div>
+  );
+  const klassen = `border-l-4 p-3 transition-colors ${
+    aktiv
+      ? "border-primary bg-primary/10 ring-2 ring-inset ring-primary"
+      : hervorheben
+        ? "border-primary/60 bg-card"
+        : "border-transparent bg-card"
+  }`;
+
+  return href ? (
+    <Link
+      href={href}
+      aria-current={aktiv ? "page" : undefined}
+      className={`${klassen} zeile block hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+        aktiv ? "hover:bg-primary/15" : ""
+      }`}
+    >
+      {inhalt}
+    </Link>
+  ) : (
+    <div className={klassen}>{inhalt}</div>
+  );
 }
 
 function vorhandeneSchuljahre(erste: Date | undefined, letzte: Date | undefined, laufendes: string): string[] {

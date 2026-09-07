@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { useTransition } from "react";
-import { Search, X } from "lucide-react";
+import { ChevronDown, Search, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -55,10 +55,20 @@ export function AdminFilterLeiste({
     "schlagwort",
     "fibs",
   ].some((name) => wert(name));
+  const weitereFilterAktiv = [
+    "von",
+    "bis",
+    "organisationsform",
+    "format",
+    "schulart",
+    "status",
+    "schlagwort",
+    "fibs",
+  ].some((name) => wert(name));
 
   return (
     <div
-      className={`space-y-3 border bg-card p-4 ${laeuft ? "opacity-60" : ""}`}
+      className={`space-y-3 rounded-2xl border bg-card p-4 shadow-sm ${laeuft ? "opacity-60" : ""}`}
     >
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-56 flex-1">
@@ -74,6 +84,7 @@ export function AdminFilterLeiste({
               aria-hidden
             />
             <Input
+              key={wert("q")}
               id="filter-q"
               defaultValue={wert("q")}
               placeholder="Titel, Beschreibung, Fach, Ort"
@@ -91,22 +102,39 @@ export function AdminFilterLeiste({
             />
           </div>
         </div>
-
-        <Auswahl
-          label="Von"
-          typ="date"
-          wert={wert("von")}
-          onChange={(v) => setzen({ von: v })}
-        />
-        <Auswahl
-          label="Bis"
-          typ="date"
-          wert={wert("bis")}
-          onChange={(v) => setzen({ bis: v })}
-        />
+        {aktiv ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              setzen({
+                q: undefined,
+                von: undefined,
+                bis: undefined,
+                organisationsform: undefined,
+                format: undefined,
+                schulart: undefined,
+                status: undefined,
+                schlagwort: undefined,
+                fibs: undefined,
+              })
+            }
+          >
+            <X className="size-3.5" aria-hidden />
+            Filter zurücksetzen
+          </Button>
+        ) : null}
       </div>
 
-      <div className="flex flex-wrap items-end gap-3">
+      <details className="group" open={weitereFilterAktiv}>
+        <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-muted-foreground [&::-webkit-details-marker]:hidden">
+          Weitere Filter
+          <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden />
+          <span className="text-xs font-normal">{weitereFilterAktiv ? "aktiv" : "optional"}</span>
+        </summary>
+        <div className="mt-3 flex flex-wrap items-end gap-3 border-t pt-3">
+        <Auswahl label="Von" typ="date" wert={wert("von")} onChange={(v) => setzen({ von: v })} />
+        <Auswahl label="Bis" typ="date" wert={wert("bis")} onChange={(v) => setzen({ bis: v })} />
         {!ohne.includes("organisationsform") ? (
           <Liste
             label="Organisationsform"
@@ -159,30 +187,8 @@ export function AdminFilterLeiste({
           optionen={schlagworte.map((s) => ({ value: s, label: s }))}
           onChange={(v) => setzen({ schlagwort: v })}
         />
-
-        {aktiv ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() =>
-              setzen({
-                q: undefined,
-                von: undefined,
-                bis: undefined,
-                organisationsform: undefined,
-                format: undefined,
-                schulart: undefined,
-                status: undefined,
-                schlagwort: undefined,
-                fibs: undefined,
-              })
-            }
-          >
-            <X className="size-3.5" aria-hidden />
-            Filter zurücksetzen
-          </Button>
-        ) : null}
-      </div>
+        </div>
+      </details>
     </div>
   );
 }

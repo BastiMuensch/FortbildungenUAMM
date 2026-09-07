@@ -16,9 +16,9 @@ const STATUS_STIL: Record<
   { klasse: string; icon: React.ComponentType<{ className?: string }> }
 > = {
   ENTWURF: { klasse: "bg-muted text-muted-foreground", icon: FileEdit },
-  EINGEREICHT: { klasse: "bg-ferien text-white", icon: Clock },
-  VEROEFFENTLICHT: { klasse: "bg-primary text-primary-foreground", icon: CheckCircle2 },
-  ABGESAGT: { klasse: "bg-destructive text-white", icon: XCircle },
+  EINGEREICHT: { klasse: "bg-ferien/15 text-foreground", icon: Clock },
+  VEROEFFENTLICHT: { klasse: "bg-primary/10 text-primary", icon: CheckCircle2 },
+  ABGESAGT: { klasse: "bg-destructive/10 text-destructive", icon: XCircle },
   ARCHIVIERT: { klasse: "bg-muted text-muted-foreground", icon: CircleDashed },
 };
 
@@ -35,12 +35,12 @@ export function StatusKennzeichen({
   return (
     <span
       className={cn(
-        "etikett inline-flex items-center gap-1.5 px-1.5 py-0.5 whitespace-nowrap",
+        "inline-flex max-w-full items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium leading-snug break-words",
         stil.klasse,
         className,
       )}
     >
-      <Icon className="size-3" aria-hidden />
+      <Icon className="size-3 shrink-0" aria-hidden />
       {statusLabel(status)}
     </span>
   );
@@ -72,13 +72,12 @@ export function FibsKennzeichen({
   return (
     <span
       className={cn(
-        "etikett inline-flex items-center gap-1.5 px-1.5 py-0.5",
-        istSchilfNachtrag ? "whitespace-normal" : "whitespace-nowrap",
+        "inline-flex max-w-full items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium leading-snug break-words",
         inFibs
-          ? "bg-primary text-primary-foreground"
+          ? "bg-primary/10 text-primary"
           : istSchilfNachtrag
             ? "border border-border bg-muted text-muted-foreground"
-            : "bg-ferien text-white",
+            : "bg-ferien/15 text-foreground",
         className,
       )}
       title={
@@ -95,7 +94,7 @@ export function FibsKennzeichen({
             : "Noch nicht in FIBS ausgeschrieben"
       }
     >
-      <Globe2 className="size-3" aria-hidden />
+      <Globe2 className="size-3 shrink-0" aria-hidden />
       {inFibs
         ? istSchilf
           ? "in FIBS erfasst"
@@ -104,7 +103,7 @@ export function FibsKennzeichen({
           ? "FIBS-Nachtrag nach Termin"
           : "nicht in FIBS"}
       {ausfuehrlich && inFibs && lehrgangsnummer ? (
-        <span className="zahl font-normal opacity-85">· {lehrgangsnummer}</span>
+        <span className="zahl min-w-0 break-all font-normal opacity-85">· {lehrgangsnummer}</span>
       ) : null}
     </span>
   );

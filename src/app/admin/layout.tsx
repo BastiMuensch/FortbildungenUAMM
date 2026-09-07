@@ -24,8 +24,8 @@ export default async function AdminLayout({
         rolle={user.role}
       />
 
-      <main className="min-w-0 flex-1 px-4 py-8 sm:px-8">
-        <div className="mx-auto max-w-6xl">{children}</div>
+      <main id="hauptinhalt" className="min-w-0 flex-1 px-4 py-7 sm:px-8 sm:py-10 lg:px-10">
+        <div className="mx-auto max-w-[82.5rem] scroll-mt-6">{children}</div>
       </main>
     </div>
   );

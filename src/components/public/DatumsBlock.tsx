@@ -29,10 +29,12 @@ export function DatumsBlock({
   datum,
   organisationsform,
   gross = false,
+  className,
 }: {
   datum: Date;
   organisationsform: string;
   gross?: boolean;
+  className?: string;
 }) {
   const iso = berlinIsoDatum(datum);
   const tag = Number(iso.slice(8, 10));
@@ -42,8 +44,9 @@ export function DatumsBlock({
   return (
     <div
       className={cn(
-        "flex shrink-0 flex-col items-center leading-none",
+        "flex shrink-0 flex-col items-center rounded-xl bg-secondary/70 px-2 py-2 leading-none",
         gross ? "w-24" : "w-16",
+        className,
       )}
       // Für Screenreader steht das vollständige Datum im Fließtext.
       aria-hidden

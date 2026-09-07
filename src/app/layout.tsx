@@ -11,7 +11,7 @@ import "./globals.css";
 // Endungen und engem Innenraum. Sie trägt große Überschriften, ohne
 // beliebig zu wirken.
 const archivo = Archivo({
-  variable: "--font-sans",
+  variable: "--font-archivo",
   subsets: ["latin"],
   display: "swap",
   weight: ["400", "500", "600", "700"],
@@ -20,7 +20,7 @@ const archivo = Archivo({
 // Für alles Zählbare. Dieselbe Zeichenbreite lässt Uhrzeiten und Platzzahlen
 // in Listen untereinander stehen.
 const plexMono = IBM_Plex_Mono({
-  variable: "--font-mono",
+  variable: "--font-plex-mono",
   subsets: ["latin"],
   display: "swap",
   weight: ["400", "500", "600"],

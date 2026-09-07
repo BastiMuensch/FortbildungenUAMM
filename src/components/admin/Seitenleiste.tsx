@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BookOpen,
   CalendarDays,
   CalendarRange,
-  BookOpen,
   Download,
   ExternalLink,
   FileText,
@@ -33,28 +33,13 @@ interface Eintrag {
   rollen: Rolle[];
 }
 
-/**
- * Die Bereiche sind nach Arbeitsweise gruppiert, nicht alphabetisch:
- * Was täglich gebraucht wird, steht oben; Stammdaten werden gelegentlich
- * gepflegt; Systemthemen selten.
- */
 const GRUPPEN: Array<{ titel: string; eintraege: Eintrag[] }> = [
   {
     titel: "Arbeit",
     eintraege: [
       { href: "/admin", label: "Fortbildungen", icon: CalendarDays, rollen: ALLE },
-      {
-        href: "/admin/kalender",
-        label: "Planungskalender",
-        icon: CalendarRange,
-        rollen: ALLE,
-      },
-      {
-        href: "/admin/katalog",
-        label: "Fortbildungskatalog",
-        icon: BookOpen,
-        rollen: ALLE,
-      },
+      { href: "/admin/kalender", label: "Planungskalender", icon: CalendarRange, rollen: ALLE },
+      { href: "/admin/katalog", label: "Fortbildungskatalog", icon: BookOpen, rollen: ALLE },
     ],
   },
   {
@@ -74,113 +59,158 @@ const GRUPPEN: Array<{ titel: string; eintraege: Eintrag[] }> = [
   },
 ];
 
-export function Seitenleiste({
-  name,
-  rolle,
-}: {
-  name: string;
-  rolle: Rolle;
-}) {
+export function Seitenleiste({ name, rolle }: { name: string; rolle: Rolle }) {
   const [offen, setOffen] = useState(false);
+  const [mobil, setMobil] = useState(false);
+  const ausloeserRef = useRef<HTMLButtonElement>(null);
+  const schliessenRef = useRef<HTMLButtonElement>(null);
+  const navigationRef = useRef<HTMLElement>(null);
+
+  const schliesseNavigation = useCallback(() => {
+    setOffen(false);
+    window.requestAnimationFrame(() => ausloeserRef.current?.focus());
+  }, []);
+
+  useEffect(() => {
+    const abfrage = window.matchMedia("(max-width: 1023px)");
+    const aktualisieren = () => {
+      setMobil(abfrage.matches);
+      if (!abfrage.matches) setOffen(false);
+    };
+    aktualisieren();
+    abfrage.addEventListener("change", aktualisieren);
+    return () => abfrage.removeEventListener("change", aktualisieren);
+  }, []);
+
+  useEffect(() => {
+    if (!mobil || !offen) return;
+
+    const beiTaste = (ereignis: KeyboardEvent) => {
+      if (ereignis.key === "Escape") {
+        ereignis.preventDefault();
+        schliesseNavigation();
+        return;
+      }
+
+      if (ereignis.key !== "Tab") return;
+      const fokusierbare = Array.from(
+        navigationRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((element) => element.tabIndex >= 0 && !element.hasAttribute("inert"));
+      const erstes = fokusierbare[0];
+      const letztes = fokusierbare.at(-1);
+
+      if (!erstes || !letztes) return;
+      if (ereignis.shiftKey && document.activeElement === erstes) {
+        ereignis.preventDefault();
+        letztes.focus();
+      } else if (!ereignis.shiftKey && document.activeElement === letztes) {
+        ereignis.preventDefault();
+        erstes.focus();
+      }
+    };
+
+    document.addEventListener("keydown", beiTaste);
+    window.requestAnimationFrame(() => schliessenRef.current?.focus());
+    return () => document.removeEventListener("keydown", beiTaste);
+  }, [mobil, offen, schliesseNavigation]);
 
   return (
     <>
-      {/* Kopfzeile nur auf schmalen Bildschirmen */}
-      <div className="sticky top-0 z-40 flex items-center gap-3 border-b-2 border-primary bg-card px-4 py-3 lg:hidden">
+      <a
+        href="#hauptinhalt"
+        className="sr-only fixed left-4 top-4 z-[60] rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground focus:not-sr-only"
+      >
+        Zum Inhalt springen
+      </a>
+
+      <div className="sticky top-0 z-40 flex items-center gap-3 border-b border-border bg-card/95 px-4 py-3 backdrop-blur lg:hidden">
         <button
+          ref={ausloeserRef}
           type="button"
           onClick={() => setOffen(true)}
           aria-label="Navigation öffnen"
-          className="flex size-9 items-center justify-center border transition-colors hover:bg-accent"
+          aria-controls="admin-navigation"
+          aria-expanded={offen}
+          className="flex size-9 items-center justify-center rounded-md border border-border bg-card transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/35"
         >
           <Menu className="size-4" aria-hidden />
         </button>
         <Wortmarke />
       </div>
 
-      {/* Abdunkelung hinter der ausgeklappten Leiste */}
       {offen ? (
         <button
           type="button"
           aria-label="Navigation schließen"
-          onClick={() => setOffen(false)}
-          className="fixed inset-0 z-40 bg-foreground/20 lg:hidden"
+          onClick={schliesseNavigation}
+          className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-[1px] lg:hidden"
         />
       ) : null}
 
       <nav
+        id="admin-navigation"
+        ref={navigationRef}
         aria-label="Bereiche"
+        aria-hidden={mobil && !offen ? true : undefined}
+        inert={mobil && !offen ? true : undefined}
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r-2 border-primary bg-card transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-border bg-sidebar shadow-xl transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shadow-none",
           offen ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex items-center justify-between border-b-2 border-foreground px-4 py-4">
-          <Wortmarke />
+        <div className="flex items-center justify-between border-b border-border px-5 py-5">
+          <Wortmarke onNavigate={() => setOffen(false)} />
           <button
+            ref={schliessenRef}
             type="button"
-            onClick={() => setOffen(false)}
+            onClick={schliesseNavigation}
             aria-label="Navigation schließen"
-            className="flex size-8 items-center justify-center transition-colors hover:bg-accent lg:hidden"
+            className="flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/35 lg:hidden"
           >
             <X className="size-4" aria-hidden />
           </button>
         </div>
 
-        <div className="flex-1 space-y-6 overflow-y-auto p-3">
+        <div className="flex-1 space-y-7 overflow-y-auto px-3 py-6">
           {GRUPPEN.map((gruppe) => {
-            const sichtbar = gruppe.eintraege.filter((e) => e.rollen.includes(rolle));
+            const sichtbar = gruppe.eintraege.filter((eintrag) => eintrag.rollen.includes(rolle));
             if (sichtbar.length === 0) return null;
 
             return (
-              <div key={gruppe.titel}>
-                <p className="etikett mb-1.5 px-3 text-muted-foreground">
-                  {gruppe.titel}
-                </p>
-                <ul className="space-y-0.5">
+              <section key={gruppe.titel} aria-label={gruppe.titel}>
+                <p className="mb-2 px-3 text-xs font-medium text-muted-foreground">{gruppe.titel}</p>
+                <ul className="space-y-1">
                   {sichtbar.map((eintrag) => (
                     <li key={eintrag.href}>
-                      <Punkt
-                        eintrag={eintrag}
-                        onNavigate={() => setOffen(false)}
-                      />
+                      <Punkt eintrag={eintrag} onNavigate={() => setOffen(false)} />
                     </li>
                   ))}
                 </ul>
-              </div>
+              </section>
             );
           })}
         </div>
 
-        <div className="space-y-1 border-t p-3">
-          <Link
-            href="/"
-            className="flex items-center gap-2.5 px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
+        <div className="space-y-1 border-t border-border p-3">
+          <Link href="/" onClick={() => setOffen(false)} className="flex items-center gap-2.5 rounded-md px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
             <ExternalLink className="size-4 shrink-0" aria-hidden />
             Frontend ansehen
           </Link>
 
-          <Link
-            href="/admin/konto"
-            className="flex items-center gap-2.5 px-3 py-2 transition-colors hover:bg-accent"
-          >
-            <span className="zahl flex size-7 shrink-0 items-center justify-center bg-primary text-xs font-semibold text-primary-foreground">
+          <Link href="/admin/konto" onClick={() => setOffen(false)} className="flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors hover:bg-muted">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
               {initialen(name)}
             </span>
             <span className="min-w-0 leading-tight">
-              <span className="block truncate text-sm">{name}</span>
-              <span className="block text-xs text-muted-foreground">
-                {rolleLabel(rolle)}
-              </span>
+              <span className="block truncate text-sm font-medium">{name}</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">{rolleLabel(rolle)}</span>
             </span>
           </Link>
 
           <form action={logout}>
-            <button
-              type="submit"
-              className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
+            <button type="submit" className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
               <LogOut className="size-4 shrink-0" aria-hidden />
               Abmelden
             </button>
@@ -191,21 +221,9 @@ export function Seitenleiste({
   );
 }
 
-function Punkt({
-  eintrag,
-  onNavigate,
-}: {
-  eintrag: Eintrag;
-  onNavigate: () => void;
-}) {
+function Punkt({ eintrag, onNavigate }: { eintrag: Eintrag; onNavigate: () => void }) {
   const pfad = usePathname();
-
-  // "/admin" ist die Übersicht und darf nicht bei jedem Unterpfad aktiv sein.
-  const aktiv =
-    eintrag.href === "/admin"
-      ? pfad === "/admin" || pfad.startsWith("/admin/fortbildungen")
-      : pfad.startsWith(eintrag.href);
-
+  const aktiv = eintrag.href === "/admin" ? pfad === "/admin" || pfad.startsWith("/admin/fortbildungen") : pfad.startsWith(eintrag.href);
   const Icon = eintrag.icon;
 
   return (
@@ -214,10 +232,10 @@ function Punkt({
       onClick={onNavigate}
       aria-current={aktiv ? "page" : undefined}
       className={cn(
-        "zeile flex items-center gap-2.5 border-l-2 px-3 py-2 text-sm",
+        "zeile relative flex items-center gap-2.5 rounded-md px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/35",
         aktiv
-          ? "border-l-primary bg-primary/10 font-semibold text-primary"
-          : "border-l-transparent text-muted-foreground hover:bg-accent hover:text-foreground",
+          ? "bg-accent font-medium text-primary before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:bg-primary"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
     >
       <Icon className="size-4 shrink-0" aria-hidden />
@@ -226,17 +244,15 @@ function Punkt({
   );
 }
 
-function Wortmarke() {
+function Wortmarke({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <Link href="/admin" className="flex items-center gap-2.5">
-      <span aria-hidden className="size-3.5 shrink-0 rotate-45 bg-primary" />
+    <Link href="/admin" onClick={onNavigate} className="flex items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/35">
+      <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary shadow-sm">
+        <span className="size-2.5 rotate-45 border border-primary-foreground/90" />
+      </span>
       <span className="leading-tight">
-        <span className="etikett block text-[0.8rem] tracking-[0.14em]">
-          Fortbildungen
-        </span>
-        <span className="block text-xs text-muted-foreground">
-          Schulamt UAMM
-        </span>
+        <span className="block text-sm font-semibold tracking-[-0.01em] text-primary">Fortbildungen</span>
+        <span className="mt-0.5 block text-xs text-muted-foreground">Schulamt UAMM</span>
       </span>
     </Link>
   );

@@ -71,14 +71,14 @@ export function TeilnehmerMeldung({
   return (
     <div
       className={cn(
-        "border bg-card p-5",
+        "rounded-2xl border bg-card p-5 shadow-sm",
         gemeldet && !bearbeiten && "border-dashed",
       )}
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex flex-wrap items-center gap-2 text-xs">
-            <Badge variant="outline">
+            <Badge variant="outline" className="max-w-full break-words">
               {organisationsformKurz(fortbildung.organisationsform)}
             </Badge>
             <span className="text-muted-foreground">
@@ -327,7 +327,7 @@ function VersandBestaetigung({
   );
 
   return (
-    <div className={cn("border p-3", versandt && "border-dashed bg-primary/5")}>
+    <div className={cn("rounded-xl border p-3", versandt && "border-dashed bg-primary/5")}>
       <p className="text-sm font-medium">{label}</p>
       {versandt ? (
         <p className="mt-1 text-xs text-muted-foreground">

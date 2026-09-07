@@ -62,7 +62,7 @@ export async function FreigabenBereich({
       aria-labelledby="freigaben-ueberschrift"
       className={
         eingebettet
-          ? "space-y-5 border border-l-4 border-l-primary bg-card p-5 sm:p-6"
+          ? "space-y-5 rounded-2xl border border-l-4 border-l-primary bg-card p-5 shadow-sm sm:p-6"
           : "max-w-4xl space-y-6"
       }
     >
@@ -88,7 +88,7 @@ export async function FreigabenBereich({
       </div>
 
       {eingereicht.length === 0 ? (
-        <div className="border border-l-4 border-l-primary bg-card py-16 text-center">
+          <div className="rounded-2xl border border-l-4 border-l-primary bg-card py-16 text-center shadow-sm">
           <CheckCircle2
             className="mx-auto mb-3 size-7 text-muted-foreground/60"
             aria-hidden
@@ -103,10 +103,10 @@ export async function FreigabenBereich({
           {eingereicht.map((f) => (
             <article
               key={f.id}
-              className="border border-l-4 border-l-ferien bg-card p-5"
+              className="rounded-2xl border border-l-4 border-l-ferien bg-card p-5 shadow-sm"
             >
               <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
-                <span className="bg-secondary px-2 py-0.5 font-medium">
+                <span className="rounded-full bg-secondary px-2 py-1 font-medium">
                   {organisationsformKurz(f.organisationsform)}
                 </span>
                 <span className="text-muted-foreground">

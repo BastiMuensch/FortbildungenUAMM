@@ -149,10 +149,11 @@ export default async function FortbildungsListe({
   }
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-3xl font-semibold tracking-tight">Fortbildungen</h1>
-        <p className="mt-1.5 text-muted-foreground">
+    <div className="space-y-7">
+      <header className="rounded-2xl border border-border bg-secondary/45 px-5 py-7 sm:px-7">
+        <p className="mb-2 text-sm font-medium text-primary">Fortbildungsprogramm</p>
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Fortbildungen</h1>
+        <p className="mt-2 text-muted-foreground">
           {fortbildungen.length === 0
             ? "Kein Treffer"
             : `${fortbildungen.length} ${fortbildungen.length === 1 ? "Angebot" : "Angebote"}`}

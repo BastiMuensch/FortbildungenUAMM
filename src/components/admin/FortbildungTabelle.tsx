@@ -54,12 +54,12 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
               key={f.id}
               href={`/admin/fortbildungen/${f.id}`}
               className={cn(
-                "border border-l-4 bg-card p-4 outline-none transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring",
+                "rounded-2xl border border-l-4 bg-card p-4 shadow-sm outline-none transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring",
                 ebene.kante,
               )}
             >
               <div className="flex items-start justify-between gap-3">
-                <div>
+                <div className="min-w-0">
                   <p className="zahl text-xs text-muted-foreground">
                     {formatDatumZeit(f.beginn)}–{formatZeit(f.ende)} Uhr
                   </p>
@@ -69,7 +69,7 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
               </div>
 
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className={cn("etikett px-1.5 py-0.5", ebene.flaeche)}>
+                <span className={cn("inline-flex max-w-full rounded-full px-2 py-1 text-xs font-medium break-words", ebene.flaeche)}>
                   {organisationsformKurz(f.organisationsform)}
                 </span>
                 <span className="text-xs text-muted-foreground">
@@ -115,7 +115,7 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
         })}
       </div>
 
-      <div className="hidden border xl:block">
+      <div className="hidden overflow-hidden rounded-2xl border bg-card shadow-sm xl:block">
       <Table className="table-fixed">
         <TableHeader>
           <TableRow>
@@ -136,14 +136,14 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
         <TableBody>
           {fortbildungen.map((f) => (
             <TableRow key={f.id}>
-              <TableCell className="zahl whitespace-normal">
+              <TableCell className="zahl whitespace-normal py-5">
                 {formatDatumZeit(f.beginn)}
                 <span className="zahl block text-xs text-muted-foreground">
                   bis {formatZeit(f.ende)} Uhr
                 </span>
               </TableCell>
 
-              <TableCell className="whitespace-normal">
+              <TableCell className="whitespace-normal py-5">
                 <Link
                   href={`/admin/fortbildungen/${f.id}`}
                   className="font-medium leading-snug underline-offset-4 hover:underline"
@@ -158,7 +158,7 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
                 <div className="mt-1 flex flex-wrap items-center gap-1.5">
                   {/* Dieselbe Farbzuordnung wie im Frontend und im Kalender. */}
                   <span
-                    className={`etikett inline-flex px-1.5 py-0.5 ${ebeneKlassen(f.organisationsform).flaeche}`}
+                    className={`inline-flex max-w-full rounded-full px-2 py-1 text-xs font-medium break-words ${ebeneKlassen(f.organisationsform).flaeche}`}
                   >
                     {organisationsformKurz(f.organisationsform)}
                   </span>
@@ -171,7 +171,7 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
                 </div>
               </TableCell>
 
-              <TableCell className="whitespace-normal text-sm">
+              <TableCell className="whitespace-normal py-5 text-sm">
                 <div className="flex items-start gap-1.5 leading-snug">
                   {f.veranstaltungsort.istOnline ? (
                     <Globe className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" aria-hidden />
@@ -192,7 +192,7 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
                 </p>
               </TableCell>
 
-              <TableCell className="zahl whitespace-normal text-right">
+              <TableCell className="zahl whitespace-normal py-5 text-right">
                 {f.tnTatsaechlich !== null ? (
                   <span className="font-medium">{f.tnTatsaechlich}</span>
                 ) : (
@@ -201,7 +201,7 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
                 <span className="text-muted-foreground"> / {f.maxTn}</span>
               </TableCell>
 
-              <TableCell className="whitespace-normal">
+              <TableCell className="whitespace-normal py-5">
                 <div className="flex flex-col items-start gap-1.5">
                   <StatusKennzeichen status={f.status} />
                   <FibsKennzeichen
@@ -213,7 +213,7 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
                 </div>
               </TableCell>
 
-              <TableCell className="whitespace-normal text-right">
+              <TableCell className="whitespace-normal py-5 text-right">
                 <Link
                   href={`/admin/fortbildungen/${f.id}`}
                   aria-label={`${f.titel} bearbeiten`}

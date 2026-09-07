@@ -42,32 +42,24 @@ export default async function Startseite() {
   ]);
 
   return (
-    <div className="space-y-10">
-      {/* --- Kopfbereich mit Rautentextur ---------------------------------- */}
-      <section className="relative pt-8 pb-4">
-        {/* Bricht aus der Inhaltsspalte aus, damit die Textur über die volle
-            Fensterbreite läuft. */}
-        <div
-          aria-hidden
-          className="rauten absolute inset-y-0 left-1/2 -top-10 w-[100vw] -translate-x-1/2 border-b border-border"
-        />
-
-        <div className="relative max-w-4xl">
-          <p className="etikett zahl mb-3 text-primary">
-            Schuljahr {schuljahr}
+    <div className="space-y-14">
+      <section className="rounded-2xl border border-border/80 bg-[linear-gradient(135deg,var(--card)_0%,var(--card)_62%,var(--secondary)_100%)] px-5 py-10 shadow-sm sm:px-10 sm:py-14">
+        <div className="max-w-4xl">
+          <p className="mb-4 text-sm font-medium text-primary">
+            Memmingen · Unterallgäu
           </p>
 
-          <h1 className="max-w-3xl text-4xl leading-[1.02] font-bold tracking-tight text-balance sm:text-5xl">
-            Fortbildungen in Memmingen und im Unterallgäu
+          <h1 className="max-w-3xl text-4xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-6xl">
+            Neue Impulse. Für Ihren Unterricht.
           </h1>
 
           <p className="mt-3 max-w-2xl text-base text-muted-foreground">
-            Passendes Angebot finden. Der jeweilige Termin zeigt, ob die
-            Anmeldung über FIBS oder die Teilnahme schulintern organisiert wird.
+            Lehrerfortbildungen für Grund- und Mittelschulen. Jeder Termin zeigt
+            transparent, ob die Anmeldung über FIBS oder schulintern organisiert wird.
           </p>
 
           {/* Einfaches GET-Formular: funktioniert auch ohne JavaScript. */}
-          <form action="/fortbildungen" className="mt-6 flex max-w-2xl">
+          <form action="/fortbildungen" className="mt-7 flex max-w-2xl flex-col gap-2 sm:flex-row sm:gap-0">
             <div className="relative flex-1">
               <Search
                 className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
@@ -77,18 +69,18 @@ export default async function Startseite() {
                 name="q"
                 placeholder="Thema oder Fach"
                 aria-label="Fortbildungen durchsuchen"
-                className="h-12 w-full border-2 border-primary bg-card pr-4 pl-10 text-base outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="h-13 w-full rounded-xl border border-input bg-card pr-4 pl-11 text-base shadow-sm outline-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:rounded-r-none"
               />
             </div>
             <button
               type="submit"
-              className="etikett h-12 border-2 border-l-0 border-primary bg-primary px-6 text-primary-foreground transition-colors hover:bg-primary/90"
+              className="h-13 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:rounded-l-none"
             >
               Suchen
             </button>
           </form>
 
-          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm">
             <Link
               href="/fortbildungen?format=ESESSION"
               className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
@@ -106,17 +98,19 @@ export default async function Startseite() {
           </div>
         </div>
 
-        <dl className="relative mt-6 flex flex-wrap gap-x-6 gap-y-2 border-t border-primary/20 pt-3">
+        <dl className="mt-8 flex flex-wrap gap-x-6 gap-y-2 border-t border-border pt-4">
           <Kennzahl wert={anzahlKommend} label="kommende Termine" />
           <Kennzahl wert={anzahlOnline} label="online" />
           <Kennzahl wert={anzahlSchuljahr} label={`im Schuljahr ${schuljahr}`} />
         </dl>
       </section>
 
-      {/* --- Nächste Termine ---------------------------------------------- */}
       <section>
-        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3 border-b-2 border-foreground pb-2">
-          <h2 className="text-xl font-semibold tracking-tight">Nächste Termine</h2>
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="mb-1 text-sm font-medium text-primary">Im Blick behalten</p>
+            <h2 className="text-2xl font-semibold tracking-tight">Nächste Termine</h2>
+          </div>
           <div className="flex items-center gap-5 text-sm">
             <Link
               href="/fortbildungen"
@@ -143,7 +137,7 @@ export default async function Startseite() {
             </p>
           </div>
         ) : (
-          <div className="grid">
+          <div className="grid gap-3">
             {naechste.map((f) => (
               <FortbildungKarte key={f.id} fortbildung={f} maxTn={f.maxTn} />
             ))}
@@ -151,8 +145,7 @@ export default async function Startseite() {
         )}
       </section>
 
-      {/* --- Kalender-Abo -------------------------------------------------- */}
-      <section className="border-l-4 border-primary bg-card py-4 pr-5 pl-4">
+      <section className="rounded-2xl border border-border bg-secondary/55 px-5 py-5 sm:px-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <CalendarPlus className="size-5 shrink-0 text-primary" aria-hidden />
 
@@ -166,7 +159,7 @@ export default async function Startseite() {
 
           <a
             href="/api/ics"
-            className="etikett shrink-0 border-2 border-primary px-4 py-2.5 text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+            className="shrink-0 rounded-lg border border-primary px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
           >
             Kalender abonnieren
           </a>
@@ -181,8 +174,8 @@ function Kennzahl({ wert, label }: { wert: number; label: string }) {
     <div className="flex items-baseline gap-1.5">
       <dt className="sr-only">{label}</dt>
       <dd className="flex items-baseline gap-1.5">
-        <span className="zahl text-base font-semibold">{wert}</span>
-        <span className="text-xs text-muted-foreground">{label}</span>
+        <span className="zahl text-lg font-semibold">{wert}</span>
+        <span className="text-sm text-muted-foreground">{label}</span>
       </dd>
     </div>
   );

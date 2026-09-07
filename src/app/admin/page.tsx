@@ -2,7 +2,7 @@ import Link from "next/link";
 import {
   CalendarDays,
   CalendarPlus,
-  CalendarRange,
+  ChevronDown,
   CheckCircle2,
   ClipboardCheck,
   Download,
@@ -66,7 +66,14 @@ export default async function AdminDashboard({
           bereich: undefined,
         },
   )}#fortbildungslisten`;
-  const uebersichtUrl = baueUrl("/admin", params, { bereich: undefined });
+  const uebersichtUrl = baueUrl(
+    "/admin",
+    params,
+    fibsAktiv
+      ? { bereich: undefined, status: undefined, fibs: undefined }
+      : { bereich: undefined },
+  );
+  const uebersichtAktiv = aktiverBereich === null && !fibsAktiv;
   const where = { AND: [scope, filterZuWhere(filter)] };
 
   const laufendes = aktuellesSchuljahr();
@@ -151,34 +158,42 @@ export default async function AdminDashboard({
   const gruppen = gruppiereFortbildungen(fortbildungen);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b-2 border-foreground pb-4">
+    <div className="space-y-7">
+      <div className="flex flex-wrap items-end justify-between gap-5">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
+          <p className="text-sm text-muted-foreground">Verwaltung · {kennzahlJahr}</p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">
             {user.role === "REFERENT" ? "Meine Fortbildungen" : "Fortbildungen"}
           </h1>
-          <div className="mt-1.5"><SchuljahrWahl params={params} jahrgaenge={jahrgaenge} aktuell={laufendes} /></div>
+          <p className="mt-2 max-w-xl text-sm text-muted-foreground">Planen, freigeben und nachbereiten – alles an einem Ort.</p>
+          <div className="mt-3"><SchuljahrWahl params={params} jahrgaenge={jahrgaenge} aktuell={laufendes} /></div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button nativeButton={false} render={<Link href="/admin/fortbildungen/neu"><CalendarPlus className="size-4" aria-hidden />Neue Fortbildung</Link>} />
-          <Button nativeButton={false} variant="outline" render={<Link href="/admin/kalender"><CalendarRange className="size-4" aria-hidden />Planungskalender</Link>} />
-          <Button nativeButton={false} variant="outline" render={<a href={baueUrl("/api/admin/export", params, {})}><FileSpreadsheet className="size-4" aria-hidden />Excel</a>} />
-          <Button nativeButton={false} variant="outline" title="Bericht nach SchiLf, RLFB und ALP gegliedert" render={<a href={baueUrl("/api/admin/export/pdf", params, {})}><FileText className="size-4" aria-hidden />PDF-Bericht</a>} />
+          <details className="group relative">
+            <summary className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-medium shadow-xs transition-colors hover:bg-accent [&::-webkit-details-marker]:hidden">
+              <Download className="size-4" aria-hidden />Export<ChevronDown className="size-3.5 transition-transform group-open:rotate-180" aria-hidden />
+            </summary>
+            <div className="absolute right-0 z-10 mt-2 grid min-w-48 gap-1 rounded-xl border bg-popover p-1.5 text-sm shadow-lg">
+              <a className="flex items-center gap-2 rounded-lg px-2.5 py-2 hover:bg-accent" href={baueUrl("/api/admin/export", params, {})}><FileSpreadsheet className="size-4" aria-hidden />Excel exportieren</a>
+              <a className="flex items-center gap-2 rounded-lg px-2.5 py-2 hover:bg-accent" title="Bericht nach SchiLf, RLFB und ALP gegliedert" href={baueUrl("/api/admin/export/pdf", params, {})}><FileText className="size-4" aria-hidden />PDF-Bericht</a>
+            </div>
+          </details>
         </div>
       </div>
 
-      <WorkflowHinweis istAdmin={istAdmin} freigabenUrl={freigabenUrl} />
-
-      <div className="grid gap-px overflow-hidden border bg-border sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kachel
           wert={imSchuljahr}
           label={`Termine im Schuljahr ${kennzahlJahr}`}
           icon={CalendarDays}
+          href={uebersichtUrl}
+          aktiv={uebersichtAktiv}
         />
         {istAdmin ? (
           <Kachel
             wert={zurFreigabe}
-            label="warten auf administrative Freigabe"
+            label="Freigaben offen"
             icon={ShieldCheck}
             hervorheben={zurFreigabe > 0}
             aktiv={aktiverBereich === "freigaben"}
@@ -187,7 +202,7 @@ export default async function AdminDashboard({
         ) : null}
         <Kachel
           wert={ohneFibs}
-          label="FIBS-Ausschreibung noch offen"
+          label="FIBS-Ausschreibung offen"
           icon={Globe2}
           hervorheben={ohneFibs > 0}
           aktiv={fibsAktiv}
@@ -198,8 +213,8 @@ export default async function AdminDashboard({
             wert={offeneMeldungen}
             label={
               user.role === "ADMIN"
-                ? "Nachbereitungen noch offen"
-                : "SchiLf-Teilnehmerzahlen noch offen"
+                ? "Nachbereitungen offen"
+                : "SchiLf-Zahlen offen"
             }
             icon={ClipboardCheck}
             hervorheben={offeneMeldungen > 0}
@@ -208,6 +223,8 @@ export default async function AdminDashboard({
           />
         ) : null}
       </div>
+
+      <WorkflowHinweis istAdmin={istAdmin} freigabenUrl={freigabenUrl} />
 
       {aktiverBereich ? (
         <section id="arbeitsbereich" className="scroll-mt-6 space-y-3" aria-label="Arbeitsbereich">
@@ -265,20 +282,27 @@ function WorkflowHinweis({ istAdmin, freigabenUrl }: { istAdmin: boolean; freiga
     { icon: CheckCircle2, titel: "FIBS", text: "Anmeldung oder SchiLf-Nachtrag" },
   ];
   return (
-    <section className="border bg-card p-4" aria-labelledby="workflow-titel">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div><p className="etikett text-primary">Veröffentlichungsweg</p><h2 id="workflow-titel" className="mt-0.5 font-semibold">Vom Entwurf zur Anmeldung</h2></div>
-        {istAdmin ? <Button nativeButton={false} size="sm" render={<Link href={freigabenUrl}>Freigaben bearbeiten</Link>} /> : <p className="max-w-sm text-right text-xs leading-relaxed text-muted-foreground">Freigaben, Veröffentlichung und FIBS-Markierung übernimmt ausschließlich die Administration.</p>}
+    <details className="group rounded-2xl border bg-card px-4 py-3 shadow-sm" aria-labelledby="workflow-titel">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+        <div><p className="text-sm font-semibold">Veröffentlichungsweg</p><p className="mt-0.5 text-xs text-muted-foreground">Vom Entwurf zur Anmeldung</p></div>
+        <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
+      </summary>
+      <div className="mt-4 border-t pt-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <h2 id="workflow-titel" className="text-sm font-semibold">Die fünf Schritte</h2>
+          {istAdmin ? <Button nativeButton={false} size="sm" render={<Link href={freigabenUrl}>Freigaben bearbeiten</Link>} /> : <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">Freigaben, Veröffentlichung und FIBS-Markierung übernimmt die Administration.</p>}
+        </div>
+        <ol className="mt-3 grid gap-2 sm:grid-cols-5">
+          {schritte.map(({ icon: Icon, titel, text }, index) => (
+            <li key={titel} className="flex gap-2 rounded-xl border bg-background p-2.5 sm:block">
+              <span className="zahl flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground sm:mb-2">{index + 1}</span>
+              <div><p className="flex items-center gap-1.5 text-xs font-semibold"><Icon className="size-3.5 shrink-0 text-primary" aria-hidden />{titel}</p><p className="mt-0.5 text-xs leading-snug text-muted-foreground">{text}</p></div>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-3 text-xs text-muted-foreground">SchiLf wird üblicherweise erst nach dem Termin in FIBS nachgetragen.</p>
       </div>
-      <ol className="mt-4 grid gap-2 sm:grid-cols-5">
-        {schritte.map(({ icon: Icon, titel, text }, index) => (
-          <li key={titel} className="flex gap-2 border bg-background p-2.5 sm:block">
-            <span className="zahl flex size-6 shrink-0 items-center justify-center bg-primary text-xs font-semibold text-primary-foreground sm:mb-2">{index + 1}</span>
-            <div><p className="flex items-center gap-1.5 text-xs font-semibold"><Icon className="size-3.5 text-primary" aria-hidden />{titel}</p><p className="mt-0.5 text-xs leading-snug text-muted-foreground">{text}</p></div>
-          </li>
-        ))}
-      </ol>
-    </section>
+    </details>
   );
 }
 
@@ -286,12 +310,12 @@ function gruppiereFortbildungen<
   T extends { status: string; inFibs: boolean; organisationsform: string },
 >(fortbildungen: T[]) {
   return [
-    { id: "entwuerfe", eyebrow: "1. Vorbereitung", titel: "Entwürfe und zurückgewiesene Fortbildungen", beschreibung: "Noch in Arbeit oder mit Hinweisen aus der Freigabe.", fortbildungen: fortbildungen.filter((f) => f.status === "ENTWURF") },
-    { id: "eingereicht", eyebrow: "2. Nächster Schritt", titel: "Zur administrativen Freigabe eingereicht", beschreibung: "Warten auf Prüfung, Veröffentlichung und den anschließenden FIBS-Schritt.", fortbildungen: fortbildungen.filter((f) => f.status === "EINGEREICHT") },
-    { id: "ohne-fibs", eyebrow: "3. Veröffentlichung", titel: "FIBS-Ausschreibung noch offen", beschreibung: "RLFB und ALP sind bereits sichtbar; die verbindliche Anmeldung ist erst nach der FIBS-Ausschreibung möglich.", fortbildungen: fortbildungen.filter((f) => f.status === "VEROEFFENTLICHT" && !f.inFibs && f.organisationsform !== "SCHILF") },
-    { id: "schilf-nachtrag", eyebrow: "SchiLf-Sonderweg", titel: "FIBS-Nachtrag nach Termin", beschreibung: "Kein offener Ausschreibungsfehler: SchiLf wird üblicherweise erst bei der Nachbereitung in FIBS vermerkt.", fortbildungen: fortbildungen.filter((f) => f.status === "VEROEFFENTLICHT" && !f.inFibs && f.organisationsform === "SCHILF") },
-    { id: "in-fibs", eyebrow: "4. FIBS", titel: "In FIBS eingetragen", beschreibung: "Als Ausschreibung veröffentlicht oder nach einem SchiLf-Termin nachgetragen.", fortbildungen: fortbildungen.filter((f) => f.status === "VEROEFFENTLICHT" && f.inFibs) },
-    { id: "abgeschlossen", eyebrow: "Abgeschlossen", titel: "Archiviert oder abgesagt", beschreibung: "Bleiben zur Dokumentation erhalten und sind nicht Teil des aktiven Angebots.", fortbildungen: fortbildungen.filter((f) => f.status === "ARCHIVIERT" || f.status === "ABGESAGT") },
+    { id: "entwuerfe", eyebrow: "Vorbereitung", titel: "Entwürfe", beschreibung: "Noch in Bearbeitung.", fortbildungen: fortbildungen.filter((f) => f.status === "ENTWURF") },
+    { id: "eingereicht", eyebrow: "Nächster Schritt", titel: "Zur Freigabe", beschreibung: "Warten auf administrative Prüfung.", fortbildungen: fortbildungen.filter((f) => f.status === "EINGEREICHT") },
+    { id: "ohne-fibs", eyebrow: "Veröffentlichung", titel: "FIBS-Ausschreibung offen", beschreibung: "RLFB und ALP warten auf den FIBS-Schritt.", fortbildungen: fortbildungen.filter((f) => f.status === "VEROEFFENTLICHT" && !f.inFibs && f.organisationsform !== "SCHILF") },
+    { id: "schilf-nachtrag", eyebrow: "SchiLf", titel: "FIBS-Nachtrag", beschreibung: "Nach dem Termin in FIBS vermerken.", fortbildungen: fortbildungen.filter((f) => f.status === "VEROEFFENTLICHT" && !f.inFibs && f.organisationsform === "SCHILF") },
+    { id: "in-fibs", eyebrow: "FIBS", titel: "In FIBS eingetragen", beschreibung: "Ausschreibung oder Nachtrag erledigt.", fortbildungen: fortbildungen.filter((f) => f.status === "VEROEFFENTLICHT" && f.inFibs) },
+    { id: "abgeschlossen", eyebrow: "Abgeschlossen", titel: "Archiviert oder abgesagt", beschreibung: "Zur Dokumentation erhalten.", fortbildungen: fortbildungen.filter((f) => f.status === "ARCHIVIERT" || f.status === "ABGESAGT") },
   ].filter((gruppe) => gruppe.fortbildungen.length > 0);
 }
 
@@ -311,46 +335,22 @@ function Kachel({
   href?: string;
 }) {
   const inhalt = (
-    <div className="flex items-center gap-3">
-      <span
-        className={`zahl min-w-9 text-2xl leading-none font-semibold ${
-          hervorheben || aktiv ? "text-primary" : ""
-        }`}
-      >
-        {String(wert).padStart(2, "0")}
-      </span>
-      <span className="flex min-w-0 items-start gap-1.5 text-xs leading-snug text-muted-foreground">
-        <Icon
-          className={`mt-0.5 size-3.5 shrink-0 ${
-            hervorheben || aktiv ? "text-primary" : ""
-          }`}
-          aria-hidden
-        />
-        {label}
-        {hervorheben && !aktiv ? (
-          <span
-            className="mt-1 size-1.5 shrink-0 rounded-full bg-primary"
-            aria-label="Offene Aufgabe"
-          />
-        ) : null}
-      </span>
+    <div className="grid h-[140px] grid-rows-[1.25rem_1fr_2.5rem] p-4 max-[360px]:h-[160px] max-[360px]:grid-rows-[1.25rem_1fr_3.75rem] sm:h-[160px] sm:p-5">
+      <div className="flex items-center justify-between gap-3">
+        <Icon className={`size-5 shrink-0 ${aktiv ? "text-primary-foreground" : "text-primary"}`} aria-hidden />
+        {hervorheben && !aktiv ? <span className="size-2 shrink-0 rounded-full bg-ferien" aria-label="Offene Aufgabe" /> : null}
+      </div>
+      <p className={`zahl self-end text-3xl leading-none font-semibold sm:text-4xl ${aktiv ? "text-primary-foreground" : "text-foreground"}`}>{String(wert).padStart(2, "0")}</p>
+      <p className={`min-h-10 pt-2 text-sm leading-snug ${aktiv ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{label}</p>
     </div>
   );
-  const klassen = `border-l-4 p-3 transition-colors ${
-    aktiv
-      ? "border-primary bg-primary/10 ring-2 ring-inset ring-primary"
-      : hervorheben
-        ? "border-primary/60 bg-card"
-        : "border-transparent bg-card"
-  }`;
+  const klassen = `rounded-2xl border shadow-sm transition-colors ${aktiv ? "border-primary bg-primary shadow-md" : "border-border bg-card"}`;
 
   return href ? (
     <Link
       href={href}
       aria-current={aktiv ? "page" : undefined}
-      className={`${klassen} zeile block hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-        aktiv ? "hover:bg-primary/15" : ""
-      }`}
+      className={`${klassen} block ${aktiv ? "hover:bg-primary/90" : "hover:bg-accent"} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`}
     >
       {inhalt}
     </Link>

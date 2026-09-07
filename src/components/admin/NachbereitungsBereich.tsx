@@ -92,7 +92,7 @@ export async function NachbereitungsBereich({
 
   return (
     <section
-      className={eingebettet ? "space-y-5 border bg-card p-4 sm:p-5" : "max-w-4xl space-y-8"}
+      className={eingebettet ? "space-y-5 rounded-2xl border bg-card p-4 shadow-sm sm:p-5" : "max-w-4xl space-y-8"}
       aria-labelledby="nachbereitung-titel"
     >
       <div>
@@ -135,7 +135,7 @@ export async function NachbereitungsBereich({
         )}
 
         {offen.length === 0 ? (
-          <div className="border border-l-4 border-l-primary bg-card py-14 text-center">
+          <div className="rounded-2xl border border-l-4 border-l-primary bg-card py-14 text-center shadow-sm">
             <CheckCircle2
               className="mx-auto mb-3 size-7 text-muted-foreground/60"
               aria-hidden

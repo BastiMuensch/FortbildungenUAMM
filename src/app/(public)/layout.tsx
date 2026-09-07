@@ -21,22 +21,24 @@ export default function OeffentlichesLayout({
         Zum Inhalt springen
       </a>
 
-      <header className="sticky top-0 z-40 border-b-2 border-primary bg-background/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl items-stretch gap-x-2 px-4 sm:gap-x-6">
+      <header className="sticky top-0 z-40 border-b border-border/80 bg-background/95 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-6xl items-stretch gap-x-1 px-3 sm:gap-x-6 sm:px-4">
           <Link
             href="/"
-            className="flex items-center gap-3 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Fortbildungen – Startseite"
+            className="flex shrink-0 items-center gap-2 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring sm:gap-3"
           >
-            {/* Raute statt Rundung — dasselbe Motiv wie im Seitenkopf. */}
             <span
               aria-hidden
-              className="size-4 rotate-45 bg-primary"
-            />
-            <span className="hidden leading-tight min-[420px]:block">
-              <span className="etikett block text-[0.8rem] tracking-[0.14em]">
+              className="flex size-8 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground shadow-sm sm:size-9 sm:rounded-xl"
+            >
+              F
+            </span>
+            <span className="leading-tight">
+              <span className="hidden text-sm font-semibold tracking-tight text-foreground min-[360px]:block">
                 Fortbildungen
               </span>
-              <span className="block text-xs text-muted-foreground">
+              <span className="hidden text-xs text-muted-foreground min-[420px]:block">
                 Schulamt Memmingen-Unterallgäu
               </span>
             </span>
@@ -50,12 +52,12 @@ export default function OeffentlichesLayout({
                 aria-label={label}
                 className={
                   hervorheben
-                    ? "etikett my-2 ml-2 flex items-center gap-2 bg-primary px-3 text-primary-foreground transition-opacity hover:opacity-85"
-                    : "etikett flex items-center gap-2 border-b-2 border-transparent px-3 text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+                    ? "my-2 ml-1 flex items-center gap-2 rounded-lg bg-primary px-2.5 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 sm:px-3"
+                    : "flex items-center gap-2 border-b-2 border-transparent px-2.5 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-foreground sm:px-3"
                 }
               >
                 <Icon className="size-4" aria-hidden />
-                <span className={hervorheben ? "" : "sr-only sm:not-sr-only"}>
+            <span className={hervorheben ? "inline" : "sr-only sm:not-sr-only"}>
                   {label}
                 </span>
               </Link>
@@ -64,18 +66,18 @@ export default function OeffentlichesLayout({
         </div>
       </header>
 
-      <main id="inhalt" className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">
+      <main id="inhalt" className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:py-14">
         {children}
       </main>
 
-      <footer className="mt-16 border-t-2 border-primary bg-card">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-start gap-x-8 gap-y-4 px-4 py-8 text-sm">
+      <footer className="mt-16 border-t border-border bg-card/60">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-start gap-x-8 gap-y-4 px-4 py-8 text-sm">
           <p className="text-muted-foreground">
             Staatliches Schulamt im Landkreis Unterallgäu
             <br className="hidden sm:block" /> und in der Stadt Memmingen
           </p>
 
-          <nav className="etikett ml-auto flex flex-wrap items-center gap-x-5 gap-y-2 text-muted-foreground">
+          <nav className="ml-auto flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
             <Link href="/impressum" className="hover:text-foreground">
               Impressum
             </Link>

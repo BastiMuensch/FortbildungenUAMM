@@ -30,8 +30,8 @@ export function Anmeldestatus({
       <span
         className={
           kompakt
-            ? "anmeldestatus anmeldestatus-offen"
-            : "anmeldestatus anmeldestatus-offen flex items-start gap-3 p-4"
+            ? "anmeldestatus anmeldestatus-offen rounded-lg"
+            : "anmeldestatus anmeldestatus-offen flex items-start gap-3 rounded-xl p-4"
         }
       >
         <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden />
@@ -53,8 +53,8 @@ export function Anmeldestatus({
       <span
         className={
           kompakt
-            ? "anmeldestatus anmeldestatus-hinweis"
-            : "anmeldestatus anmeldestatus-hinweis flex items-start gap-3 p-4"
+            ? "anmeldestatus anmeldestatus-hinweis rounded-lg"
+            : "anmeldestatus anmeldestatus-hinweis flex items-start gap-3 rounded-xl p-4"
         }
       >
         <School className="mt-0.5 size-4 shrink-0" aria-hidden />
@@ -76,8 +76,8 @@ export function Anmeldestatus({
       <span
         className={
           kompakt
-            ? "anmeldestatus anmeldestatus-hinweis"
-            : "anmeldestatus anmeldestatus-hinweis flex items-start gap-3 p-4"
+            ? "anmeldestatus anmeldestatus-hinweis rounded-lg"
+            : "anmeldestatus anmeldestatus-hinweis flex items-start gap-3 rounded-xl p-4"
         }
       >
         <Clock3 className="mt-0.5 size-4 shrink-0" aria-hidden />
@@ -97,8 +97,8 @@ export function Anmeldestatus({
     <span
       className={
         kompakt
-          ? "anmeldestatus anmeldestatus-folgt"
-          : "anmeldestatus anmeldestatus-folgt flex items-start gap-3 p-4"
+          ? "anmeldestatus anmeldestatus-folgt rounded-lg"
+          : "anmeldestatus anmeldestatus-folgt flex items-start gap-3 rounded-xl p-4"
       }
     >
       <Clock3 className="mt-0.5 size-4 shrink-0" aria-hidden />

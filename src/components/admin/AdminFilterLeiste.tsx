@@ -144,8 +144,10 @@ export function AdminFilterLeiste({
             label="FIBS"
             wert={wert("fibs")}
             optionen={[
-              { value: "offen", label: "noch nicht eingetragen" },
-              { value: "erledigt", label: "eingetragen" },
+              { value: "offen", label: "alle noch nicht in FIBS" },
+              { value: "offen-ausschreibung", label: "Ausschreibung offen (RLFB/ALP)" },
+              { value: "schilf-nachtrag", label: "SchiLf · Nachtrag vorgesehen" },
+              { value: "erledigt", label: "in FIBS eingetragen" },
             ]}
             onChange={(v) => setzen({ fibs: v })}
           />

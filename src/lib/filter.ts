@@ -36,7 +36,10 @@ export interface FortbildungFilter {
   kb?: string;
   schlagwort?: string;
   status?: string;
-  /** "offen" = noch nicht in FIBS, "erledigt" = eingetragen. */
+  /**
+   * FIBS-Stand. "offen" bleibt als Sammelfilter kompatibel; die genaueren
+   * Werte trennen reguläre Ausschreibungen vom SchiLf-Nachtrag.
+   */
   fibs?: string;
   /** Schuljahr in der Form "2026/2027". Leer bedeutet alle Jahrgänge. */
   schuljahr?: string;
@@ -62,7 +65,12 @@ export function leseFilter(params: SuchParameter): FortbildungFilter {
     kb: /^[1-6]$/.test(einzeln("kb") ?? "") ? einzeln("kb") : undefined,
     schlagwort: einzeln("schlagwort"),
     status: erlaubt(einzeln("status"), STATUS_VALUES),
-    fibs: erlaubt(einzeln("fibs"), ["offen", "erledigt"]),
+    fibs: erlaubt(einzeln("fibs"), [
+      "offen",
+      "offen-ausschreibung",
+      "schilf-nachtrag",
+      "erledigt",
+    ]),
     schuljahr: /^\d{4}\/\d{4}$/.test(einzeln("schuljahr") ?? "")
       ? einzeln("schuljahr")
       : undefined,
@@ -130,6 +138,17 @@ export function filterZuWhere(filter: FortbildungFilter): Prisma.FortbildungWher
   }
 
   if (filter.fibs === "offen") und.push({ inFibs: false });
+  if (filter.fibs === "offen-ausschreibung") {
+    und.push({
+      inFibs: false,
+      organisationsform: { not: "SCHILF" },
+      // Der Kennzahl-Link soll exakt dieselben noch anstehenden Fälle zeigen.
+      ende: { gte: new Date() },
+    });
+  }
+  if (filter.fibs === "schilf-nachtrag") {
+    und.push({ inFibs: false, organisationsform: "SCHILF" });
+  }
   if (filter.fibs === "erledigt") und.push({ inFibs: true });
 
   if (filter.schlagwort) {

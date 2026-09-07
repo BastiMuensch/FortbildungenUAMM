@@ -20,9 +20,13 @@ import {
 } from "@/lib/datetime";
 import { ferienStatus, terminWarnung } from "@/lib/ferien";
 import { bildeSlug } from "@/lib/queries";
-import { filterZuWhere, suchbegriffe } from "@/lib/filter";
+import { filterZuWhere, leseFilter, suchbegriffe } from "@/lib/filter";
 import { mapFibsLehrgang } from "@/lib/fibs/mapper";
 import { parseSuchergebnis } from "@/lib/fibs/parser";
+import {
+  bestimmeFibsAnmeldestatus,
+  fibsStatusText,
+} from "@/lib/fibs/status";
 import { fehlendeReferentIds, pruefeVeroeffentlichung } from "@/lib/validation/fortbildung";
 import { readFileSync } from "node:fs";
 import jsQR from "jsqr";
@@ -170,6 +174,68 @@ pruefe(
   ["Niveaustufe I/II", "Niveaustufe III/IV", "Niveaustufe V/VI"],
 );
 
+console.log("\nFIBS-Anmeldung und SchiLf-Nachtrag");
+pruefe(
+  "vorgemerkter Link öffnet die FIBS-Anmeldung noch nicht",
+  bestimmeFibsAnmeldestatus({
+    organisationsform: "REGIONAL",
+    inFibs: false,
+    fibsUrl: "https://fibs.example/termin",
+  }),
+  "FIBS_FOLGT",
+);
+pruefe(
+  "bestätigter FIBS-Eintrag mit Link öffnet die Anmeldung",
+  bestimmeFibsAnmeldestatus({
+    organisationsform: "REGIONAL",
+    inFibs: true,
+    fibsUrl: "https://fibs.example/termin",
+  }),
+  "FIBS_OFFEN",
+);
+pruefe(
+  "SchiLf ohne aktiven Link bleibt schulinterne Teilnahme",
+  bestimmeFibsAnmeldestatus({
+    organisationsform: "SCHILF",
+    inFibs: true,
+    fibsUrl: null,
+  }),
+  "SCHILF_INTERN",
+);
+pruefe(
+  "kommende SchiLf erhält den Nachtrag erst nach dem Termin",
+  fibsStatusText({
+    organisationsform: "SCHILF",
+    inFibs: false,
+    ende: new Date("2026-10-01T14:00:00Z"),
+    status: "VEROEFFENTLICHT",
+    jetzt: new Date("2026-09-01T12:00:00Z"),
+  }),
+  "Nachtrag nach Termin",
+);
+pruefe(
+  "vergangene SchiLf weist auf offenen Nachtrag hin",
+  fibsStatusText({
+    organisationsform: "SCHILF",
+    inFibs: false,
+    ende: new Date("2026-08-01T14:00:00Z"),
+    status: "VEROEFFENTLICHT",
+    jetzt: new Date("2026-09-01T12:00:00Z"),
+  }),
+  "Nachtrag offen",
+);
+pruefe(
+  "SchiLf-Entwurf erzeugt noch keine Nachbereitungsaufgabe",
+  fibsStatusText({
+    organisationsform: "SCHILF",
+    inFibs: false,
+    ende: new Date("2026-08-01T14:00:00Z"),
+    status: "ENTWURF",
+    jetzt: new Date("2026-09-01T12:00:00Z"),
+  }),
+  "noch nicht vorgesehen",
+);
+
 console.log("\nSlug");
 pruefe(
   "Umlaute werden umgeschrieben",
@@ -212,6 +278,46 @@ pruefe(
     "jede Bedingung durchsucht sechs Felder",
     wo.AND.every((teil) => teil.OR?.length === 6),
     true,
+  );
+}
+
+{
+  pruefe(
+    "genauer FIBS-Ausschreibungsfilter wird gelesen",
+    leseFilter({ fibs: "offen-ausschreibung" }).fibs,
+    "offen-ausschreibung",
+  );
+  pruefe(
+    "SchiLf-Nachtragsfilter wird gelesen",
+    leseFilter({ fibs: "schilf-nachtrag" }).fibs,
+    "schilf-nachtrag",
+  );
+
+  const ausschreibung = filterZuWhere({ fibs: "offen-ausschreibung" }) as {
+    AND: Array<{
+      inFibs?: boolean;
+      organisationsform?: { not: string };
+      ende?: { gte: Date };
+    }>;
+  };
+  pruefe(
+    "offene Ausschreibung schließt SchiLf aus",
+    ausschreibung.AND.some(
+      (teil) =>
+        teil.inFibs === false &&
+        teil.organisationsform?.not === "SCHILF" &&
+        teil.ende?.gte instanceof Date,
+    ),
+    true,
+  );
+
+  const schilf = filterZuWhere({ fibs: "schilf-nachtrag" }) as {
+    AND: Array<{ inFibs?: boolean; organisationsform?: string }>;
+  };
+  pruefe(
+    "SchiLf-Nachtrag bleibt ein eigener FIBS-Fall",
+    schilf.AND,
+    [{ inFibs: false, organisationsform: "SCHILF" }],
   );
 }
 

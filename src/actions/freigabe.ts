@@ -148,7 +148,19 @@ export async function fibsStatusSetzen(id: string, inFibs: boolean): Promise<voi
   const user = await requireRole("ADMIN");
 
   const aktualisiert = await prisma.fortbildung.updateMany({
-    where: { id, status: "VEROEFFENTLICHT" },
+    where: {
+      id,
+      status: "VEROEFFENTLICHT",
+      // Teilnahmebestätigungen dokumentieren einen bereits erfolgten
+      // FIBS-Vorgang. Solange einer dieser Vermerke besteht, darf auch über
+      // die allgemeine Detailansicht kein widersprüchlicher Status entstehen.
+      ...(inFibs
+        ? {}
+        : {
+            teilnahmebestaetigungenReferentenVersandtAm: null,
+            teilnahmebestaetigungenTeilnehmendeVersandtAm: null,
+          }),
+    },
     data: {
       inFibs,
       fibsEingetragenAm: inFibs ? new Date() : null,

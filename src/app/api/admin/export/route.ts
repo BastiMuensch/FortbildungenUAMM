@@ -6,6 +6,7 @@ import { fortbildungScope, getSessionUser } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 import { filterZuWhere, leseFilter, type SuchParameter } from "@/lib/filter";
 import { berlinIsoDatum, formatDatumZeit } from "@/lib/datetime";
+import { fibsStatusText } from "@/lib/fibs/status";
 import {
   formatLabel,
   niveaustufeLabel,
@@ -82,13 +83,14 @@ export async function GET(request: NextRequest) {
     { header: "Schlagworte", key: "schlagworte", width: 30 },
     { header: "Referenten", key: "referenten", width: 30 },
     { header: "Status", key: "status", width: 22 },
-    { header: "In FIBS", key: "inFibs", width: 10 },
+    { header: "FIBS-Status", key: "inFibs", width: 22 },
     { header: "FIBS-Nummer", key: "fibs", width: 18 },
     { header: "FIBS-Link", key: "fibsUrl", width: 40 },
   ];
 
   blatt.getRow(1).font = { bold: true };
 
+  const jetzt = new Date();
   for (const f of fortbildungen) {
     blatt.addRow({
       beginn: zelle(formatDatumZeit(f.beginn)),
@@ -121,7 +123,13 @@ export async function GET(request: NextRequest) {
           .join(", "),
       ),
       status: zelle(statusLabel(f.status)),
-      inFibs: f.inFibs ? "ja" : "nein",
+      inFibs: fibsStatusText({
+        organisationsform: f.organisationsform,
+        inFibs: f.inFibs,
+        ende: f.ende,
+        status: f.status,
+        jetzt,
+      }),
       fibs: zelle(f.fibsLehrgangsnummer ?? ""),
       fibsUrl: zelle(f.fibsUrl ?? ""),
     });

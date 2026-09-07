@@ -6,7 +6,9 @@ Ersetzt die bisherige Tabellenlösung und orientiert sich an der Feldlogik von
 FIBS sowie am Kompetenzrahmen DigCompEdu Bavaria.
 
 **Wichtig zum Zuschnitt:** Die Anwendung verwaltet das Fortbildungs*angebot*.
-Die verbindliche **Anmeldung läuft weiterhin über FIBS** — es werden keine
+Die verbindliche Anmeldung für RLFB und ALP läuft weiterhin über **FIBS**;
+bei SchiLf wird die Teilnahme üblicherweise schulintern organisiert und die
+Veranstaltung erst nach dem Termin in FIBS nachgetragen. Es werden keine
 personenbezogenen Daten von teilnehmenden Lehrkräften gespeichert.
 
 ## Was die Anwendung kann
@@ -29,7 +31,8 @@ und Berichte.
   einzeln entfernbare Chips über der Liste
 - **Leerzustand mit Auswegen**: Statt „kein Treffer" wird gezeigt, welcher
   einzelne Filter im Weg steht und was sein Wegfall brächte
-- Detailseiten mit Link zur Anmeldung in FIBS
+- Detailseiten mit passendem Teilnahmehinweis: FIBS-Anmeldung für RLFB/ALP,
+  schulinterne Organisation bei SchiLf
 - Kalender-Abo (ICS) unter `/api/ics`
 
 **Für das Medienteam** (Redaktionsbereich unter `/admin`):
@@ -44,7 +47,8 @@ und Berichte.
 - **Änderungsverlauf** je Fortbildung
 - **Schuljahres-Umschalter** über Liste, Kennzahlen und Exporte
 - Listenansicht als getrennte Arbeitstabellen für Entwürfe, Eingereicht,
-  veröffentlicht ohne FIBS, in FIBS sowie archiviert/abgesagt
+  veröffentlichte FIBS-Ausschreibungen, den SchiLf-Sonderweg sowie
+  archivierte/abgesagte Termine
 - Duplizieren wiederkehrender Formate
 - **Excel-Export** und **PDF-Bericht** (nach Ebenen gegliedert, mit Summen)
 - Verwaltung von Referenten, Schlagworten und Veranstaltungsorten
@@ -81,18 +85,22 @@ Zurückweisen verlangt eine Begründung, die der einreichenden Person beim
 Öffnen angezeigt wird.
 
 **Der FIBS-Eintrag ist ein eigener Schritt.** Ob eine Fortbildung tatsächlich
-in FIBS ausgeschrieben ist, steht im Feld `inFibs` — bewusst nicht aus der
+in FIBS erfasst ist, steht im Feld `inFibs` — bewusst nicht aus der
 Lehrgangsnummer abgeleitet, weil eine Nummer vorgemerkt sein kann, bevor der
-Eintrag steht. Jede Fortbildung trägt im Redaktionsbereich eines von zwei
-Kennzeichen:
+Eintrag steht. Bei RLFB und ALP ist das der Ausschreibungsschritt vor der
+Anmeldung. SchiLf werden dagegen in der Regel erst nach dem Termin im Rahmen
+der Nachbereitung in FIBS dokumentiert.
 
-- **in FIBS** — dort eingetragen, mit Zeitpunkt und Person festgehalten
-- **nicht in FIBS** — noch nicht ausgeschrieben, Lehrkräfte können sich also
-  nicht anmelden
+- **in FIBS** — dort erfasst, mit Zeitpunkt und Person festgehalten
+- **FIBS-Ausschreibung offen** — bei RLFB/ALP noch nicht für die Anmeldung
+  eingetragen
+- **FIBS-Nachtrag nach Termin/offen** — erwarteter beziehungsweise noch zu
+  erledigender SchiLf-Schritt
 
-Die Kennzeichen erscheinen in Liste, Detailansicht und beiden Exporten. Eine
-Kennzahl auf dem Dashboard zählt, was veröffentlicht, aber noch nicht in FIBS
-ist; der Filter „FIBS" grenzt die Liste darauf ein.
+Die Kennzeichen erscheinen in Liste, Detailansicht und beiden Exporten. Die
+Kennzahl auf dem Dashboard zählt ausschließlich veröffentlichte RLFB-/ALP-
+Angebote mit noch offener FIBS-Ausschreibung. SchiLf-Nachträge sind davon
+getrennt und werden nach dem Termin in der Nachbereitung geführt.
 
 ### Aushang fürs Lehrerzimmer
 
@@ -173,8 +181,9 @@ des Schlagworts: Abgerundete Chips mit Schlagwort-Symbol grenzen die Begriffe
 klar voneinander ab, ohne Zeichen in Suche und Export mitzuschleppen.
 
 Nach einem Termin erscheint er bis zu 400 Tage in der Nachbereitung. Die
-Administration trägt Teilnehmerzahlen für alle Organisationsformen ein und
-bestätigt getrennt den FIBS-Versand an Referent:innen und Teilnehmende.
+Administration trägt Teilnehmerzahlen für alle Organisationsformen ein,
+vermerkt dort den FIBS-Nachtrag einer SchiLf und bestätigt anschließend
+getrennt den FIBS-Versand an Referent:innen und Teilnehmende.
 Referent:innen sehen dort ausschließlich eigene oder zugeordnete SchiLf und
 können nur deren Teilnehmerzahl nachtragen. Redaktion hat auf diese
 Nachbereitungsaktionen keinen Zugriff.
@@ -346,7 +355,9 @@ jeder Lauf wird protokolliert.
 
 Die Anwendung ist auf Datensparsamkeit ausgelegt:
 
-- **Keine Teilnehmerdaten.** Anmeldung läuft über FIBS.
+- **Keine Teilnehmerdaten.** Die Anmeldung läuft für RLFB/ALP über FIBS;
+  SchiLf-Teilnahmen werden schulintern organisiert und ebenfalls nicht in
+  dieser Anwendung als Personenliste gespeichert.
 - **Referentinnen und Referenten** sind die einzigen personenbezogenen Daten
   neben den Redaktionszugängen. E-Mail, Telefon und Notizen sind Innendaten und
   werden nie an das Frontend ausgeliefert (`src/lib/queries.ts`). Ob der Name

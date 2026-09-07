@@ -19,15 +19,19 @@ export function FibsSchalter({
   id,
   inFibs,
   lehrgangsnummer,
+  organisationsform,
   eingetragenAm,
   eingetragenVon,
 }: {
   id: string;
   inFibs: boolean;
   lehrgangsnummer?: string | null;
+  organisationsform?: string | null;
   eingetragenAm?: Date | null;
   eingetragenVon?: string | null;
 }) {
+  const istSchilf = organisationsform === "SCHILF";
+
   return (
     <div className="border bg-card p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -41,6 +45,7 @@ export function FibsSchalter({
             <FibsKennzeichen
               inFibs={inFibs}
               lehrgangsnummer={lehrgangsnummer}
+              organisationsform={organisationsform}
               ausfuehrlich
             />
           </div>
@@ -48,28 +53,31 @@ export function FibsSchalter({
           <p className="mt-2 max-w-md text-sm text-muted-foreground text-pretty">
             {inFibs ? (
               <>
-                Als in FIBS ausgeschrieben markiert
+                {istSchilf
+                  ? "Als in FIBS erfasst markiert"
+                  : "Als in FIBS ausgeschrieben markiert"}
                 {eingetragenAm ? ` am ${formatDatumZeit(eingetragenAm)}` : ""}
                 {eingetragenVon ? ` von ${eingetragenVon}` : ""}.
               </>
             ) : (
               <>
-                Diese Fortbildung ist noch nicht in FIBS ausgeschrieben.
-                Lehrkräfte können sich also noch nicht verbindlich anmelden.
+                {istSchilf
+                  ? "SchiLf wird üblicherweise erst nach dem Termin in FIBS vermerkt. Der Nachtrag gehört deshalb zur Nachbereitung."
+                  : "Diese Fortbildung ist noch nicht in FIBS ausgeschrieben. Lehrkräfte können sich also noch nicht verbindlich anmelden."}
               </>
             )}
           </p>
         </div>
 
         <form action={fibsStatusSetzen.bind(null, id, !inFibs)}>
-          <Schalter inFibs={inFibs} />
+          <Schalter inFibs={inFibs} istSchilf={istSchilf} />
         </form>
       </div>
     </div>
   );
 }
 
-function Schalter({ inFibs }: { inFibs: boolean }) {
+function Schalter({ inFibs, istSchilf }: { inFibs: boolean; istSchilf: boolean }) {
   const { pending } = useFormStatus();
 
   return (
@@ -78,7 +86,9 @@ function Schalter({ inFibs }: { inFibs: boolean }) {
         ? "Wird gespeichert …"
         : inFibs
           ? "Markierung zurücknehmen"
-          : "In FIBS eingetragen"}
+          : istSchilf
+            ? "In FIBS erfasst"
+            : "In FIBS eingetragen"}
     </Button>
   );
 }

@@ -112,6 +112,7 @@ export function FortbildungKarte({
             <Anmeldestatus
               fibsUrl={fortbildung.fibsUrl}
               inFibs={fortbildung.inFibs}
+              organisationsform={fortbildung.organisationsform}
               kompakt
             />
           ) : null}

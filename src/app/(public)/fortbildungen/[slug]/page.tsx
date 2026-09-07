@@ -18,6 +18,7 @@ import {
 } from "@/lib/queries";
 import { formatDatumLang, formatZeitraum } from "@/lib/datetime";
 import { terminWarnung } from "@/lib/ferien";
+import { hatAktiveFibsAnmeldung } from "@/lib/fibs/status";
 import {
   ebeneKlassen,
   formatLabel,
@@ -74,6 +75,9 @@ export default async function FortbildungDetail({
   }
 
   const ebene = ebeneKlassen(fortbildung.organisationsform);
+  const fibsAnmeldungAktiv = hatAktiveFibsAnmeldung(fortbildung);
+  const teilnahmeSchulintern =
+    fortbildung.organisationsform === "SCHILF" && !fibsAnmeldungAktiv;
 
   return (
     <article className="mx-auto max-w-3xl">
@@ -231,12 +235,16 @@ export default async function FortbildungDetail({
       {!abgesagt ? (
         <section className="mt-10 border-t pt-6" aria-labelledby="anmeldung">
           <h2 id="anmeldung" className="etikett mb-3 text-muted-foreground">
-            Anmeldung
+            {teilnahmeSchulintern ? "Teilnahme" : "Anmeldung"}
           </h2>
-          <Anmeldestatus fibsUrl={fortbildung.fibsUrl} inFibs={fortbildung.inFibs} />
+          <Anmeldestatus
+            fibsUrl={fortbildung.fibsUrl}
+            inFibs={fortbildung.inFibs}
+            organisationsform={fortbildung.organisationsform}
+          />
 
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            {fortbildung.fibsUrl ? (
+            {fibsAnmeldungAktiv && fortbildung.fibsUrl ? (
               <Button nativeButton={false}
                 render={<a href={fortbildung.fibsUrl} target="_blank" rel="noopener noreferrer">
                     Zur Anmeldung in FIBS

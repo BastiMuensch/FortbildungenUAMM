@@ -27,6 +27,10 @@ const BestaetigungsVersandSchema = z.object({
   versandt: z.boolean(),
 });
 
+const FibsNachtragSchema = z.object({ eingetragen: z.boolean() });
+
+const NACHBEREITUNGS_STATUS = new Set(["VEROEFFENTLICHT", "ARCHIVIERT"]);
+
 /**
  * Meldet die tatsächliche Teilnehmerzahl einer bereits gelaufenen Veranstaltung.
  *
@@ -71,8 +75,12 @@ export async function meldeTeilnehmerzahl(
     };
   }
 
-  if (fortbildung.status === "ABGESAGT") {
-    return { fehler: { _: "Für abgesagte Veranstaltungen gibt es keine Teilnehmerzahl." } };
+  if (!NACHBEREITUNGS_STATUS.has(fortbildung.status)) {
+    return {
+      fehler: {
+        _: "Teilnehmerzahlen lassen sich nur für veröffentlichte oder archivierte Veranstaltungen nachtragen.",
+      },
+    };
   }
 
   // Eine Zahl für einen Termin, der noch gar nicht stattgefunden hat, ist
@@ -127,7 +135,7 @@ export async function meldungZuruecknehmen(id: string): Promise<void> {
   if (
     !fortbildung ||
     fortbildung.ende > new Date() ||
-    fortbildung.status === "ABGESAGT" ||
+    !NACHBEREITUNGS_STATUS.has(fortbildung.status) ||
     !(await darfTeilnehmerzahlMelden(user, id, fortbildung.organisationsform))
   ) {
     return;
@@ -157,6 +165,63 @@ export async function meldungZuruecknehmen(id: string): Promise<void> {
 }
 
 /**
+ * Vermerkt eine bereits gelaufene SchiLf nachträglich in FIBS.
+ *
+ * Anders als die allgemeine FIBS-Markierung darf dieser Nachbereitungsschritt
+ * auch bei einer inzwischen archivierten SchiLf ausgeführt werden. Die Action
+ * prüft Rolle, Veranstaltungsart, Termin und Status selbst.
+ */
+export async function setzeSchilfFibsNachtrag(
+  id: string,
+  eingetragen: boolean,
+): Promise<void> {
+  const admin = await requireRole("ADMIN");
+  const geparst = FibsNachtragSchema.safeParse({ eingetragen });
+  if (!geparst.success) return;
+
+  const jetzt = new Date();
+  const aktualisiert = await prisma.fortbildung.updateMany({
+    where: {
+      id,
+      organisationsform: "SCHILF",
+      ende: { lt: jetzt },
+      status: { in: ["VEROEFFENTLICHT", "ARCHIVIERT"] },
+      // Ein bereits dokumentierter Versand setzt den FIBS-Nachtrag voraus.
+      // Die Markierung darf daher nur zurückgenommen werden, solange noch
+      // keine der beiden Versandbestätigungen gesetzt ist.
+      ...(geparst.data.eingetragen
+        ? {}
+        : {
+            teilnahmebestaetigungenReferentenVersandtAm: null,
+            teilnahmebestaetigungenTeilnehmendeVersandtAm: null,
+          }),
+    },
+    data: {
+      inFibs: geparst.data.eingetragen,
+      fibsEingetragenAm: geparst.data.eingetragen ? jetzt : null,
+      fibsEingetragenVonId: geparst.data.eingetragen ? admin.id : null,
+    },
+  });
+
+  if (aktualisiert.count === 0) return;
+
+  await auditLog({
+    userId: admin.id,
+    aktion: "UPDATE",
+    entitaet: "Fortbildung",
+    entitaetId: id,
+    details: {
+      inFibs: geparst.data.eingetragen,
+      schilfNachtrag: true,
+    },
+  });
+
+  revalidatePath("/admin/nachbereitung");
+  revalidatePath(`/admin/fortbildungen/${id}`);
+  revalidatePath("/admin");
+}
+
+/**
  * Bestätigt getrennt den Versand der FIBS-Teilnahmebestätigungen. Es werden
  * keine Empfängerlisten oder FIBS-Nachrichten gespeichert, nur der Vermerk
  * inklusive Zeitpunkt und administrativem Konto.
@@ -174,13 +239,25 @@ export async function setzeTeilnahmebestaetigungsVersand(
 
   const fortbildung = await prisma.fortbildung.findUnique({
     where: { id },
-    select: { ende: true, status: true, tnTatsaechlich: true },
+    select: {
+      ende: true,
+      status: true,
+      organisationsform: true,
+      inFibs: true,
+      tnTatsaechlich: true,
+    },
   });
   if (
     !fortbildung ||
     fortbildung.tnTatsaechlich === null ||
     fortbildung.ende > new Date() ||
-    fortbildung.status === "ABGESAGT"
+    !NACHBEREITUNGS_STATUS.has(fortbildung.status) ||
+    // Für SchiLf ist der FIBS-Eintrag selbst Teil der Nachbereitung. Neue
+    // Versandbestätigungen dürfen deshalb erst nach diesem Schritt entstehen.
+    // Das Zurücknehmen eines bestehenden Vermerks bleibt zur Korrektur erlaubt.
+    (versand.versandt &&
+      fortbildung.organisationsform === "SCHILF" &&
+      !fortbildung.inFibs)
   ) {
     return;
   }

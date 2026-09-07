@@ -97,6 +97,7 @@ export default async function FortbildungBearbeitenPage({
             <FibsKennzeichen
               inFibs={fortbildung.inFibs}
               lehrgangsnummer={fortbildung.fibsLehrgangsnummer}
+              organisationsform={fortbildung.organisationsform}
             />
           </div>
 
@@ -189,6 +190,7 @@ export default async function FortbildungBearbeitenPage({
             id={fortbildung.id}
             inFibs={fortbildung.inFibs}
             lehrgangsnummer={fortbildung.fibsLehrgangsnummer}
+            organisationsform={fortbildung.organisationsform}
             eingetragenAm={fortbildung.fibsEingetragenAm}
             eingetragenVon={
               fortbildung.fibsEingetragenVon?.name ??

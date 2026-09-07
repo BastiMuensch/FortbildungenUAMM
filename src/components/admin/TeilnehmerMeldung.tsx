@@ -3,11 +3,20 @@
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
-import { CheckCircle2, Globe, MailCheck, MapPin, Pencil, Undo2 } from "lucide-react";
+import {
+  CheckCircle2,
+  ClipboardCheck,
+  Globe,
+  MailCheck,
+  MapPin,
+  Pencil,
+  Undo2,
+} from "lucide-react";
 
 import {
   meldeTeilnehmerzahl,
   meldungZuruecknehmen,
+  setzeSchilfFibsNachtrag,
   setzeTeilnahmebestaetigungsVersand,
 } from "@/actions/nachbereitung";
 import type { FormularState } from "@/lib/validation/fortbildung";
@@ -28,6 +37,8 @@ export interface MeldungsZeile {
   beginn: Date;
   ende: Date;
   maxTn: number;
+  inFibs: boolean;
+  fibsEingetragenAm: Date | null;
   tnTatsaechlich: number | null;
   tnBemerkung: string | null;
   tnGemeldetAm: Date | null;
@@ -51,6 +62,7 @@ export function TeilnehmerMeldung({
   const [state, formAction] = useActionState<FormularState, FormData>(action, {});
 
   const gemeldet = fortbildung.tnTatsaechlich !== null;
+  const istSchilf = fortbildung.organisationsform === "SCHILF";
   const [bearbeiten, setBearbeiten] = useState(false);
   const zeigeFormular = !gemeldet || bearbeiten || state.erfolg === false;
 
@@ -211,12 +223,22 @@ export function TeilnehmerMeldung({
         </form>
       ) : null}
 
+      {darfBestaetigungen && istSchilf ? (
+        <FibsNachtrag fortbildung={fortbildung} />
+      ) : null}
+
       {darfBestaetigungen && gemeldet ? (
         <section className="mt-4 border-t pt-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-medium">
             <MailCheck className="size-4 text-muted-foreground" aria-hidden />
-            Teilnahmebestätigungen in FIBS
+            {istSchilf ? "Letzter Schritt: " : ""}Teilnahmebestätigungen in FIBS
           </div>
+          {istSchilf && !fortbildung.inFibs ? (
+            <p className="mb-3 border-l-2 border-l-ferien bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+              Zuerst den FIBS-Nachtrag dieser SchiLf bestätigen. Erst danach
+              lassen sich neue Versandbestätigungen setzen.
+            </p>
+          ) : null}
           <div className="grid gap-3 sm:grid-cols-2">
             <VersandBestaetigung
               fortbildungId={fortbildung.id}
@@ -224,6 +246,7 @@ export function TeilnehmerMeldung({
               label="An Referent:innen"
               versandtAm={fortbildung.teilnahmebestaetigungenReferentenVersandtAm}
               versandtVon={fortbildung.teilnahmebestaetigungenReferentenVersandtVon}
+              gesperrt={istSchilf && !fortbildung.inFibs}
             />
             <VersandBestaetigung
               fortbildungId={fortbildung.id}
@@ -231,11 +254,51 @@ export function TeilnehmerMeldung({
               label="An Teilnehmende"
               versandtAm={fortbildung.teilnahmebestaetigungenTeilnehmendeVersandtAm}
               versandtVon={fortbildung.teilnahmebestaetigungenTeilnehmendeVersandtVon}
+              gesperrt={istSchilf && !fortbildung.inFibs}
             />
           </div>
         </section>
       ) : null}
     </div>
+  );
+}
+
+function FibsNachtrag({ fortbildung }: { fortbildung: MeldungsZeile }) {
+  return (
+    <section className="mt-4 border-t pt-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <ClipboardCheck className="size-4 text-muted-foreground" aria-hidden />
+            SchiLf: FIBS-Nachtrag nach dem Termin
+          </div>
+          {fortbildung.inFibs ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Nachtrag erledigt
+              {fortbildung.fibsEingetragenAm
+                ? ` am ${formatDatumZeit(fortbildung.fibsEingetragenAm)}`
+                : ""}
+              .
+            </p>
+          ) : (
+            <p className="mt-1 max-w-2xl text-xs text-muted-foreground text-pretty">
+              SchiLf werden in der Regel nicht vorab ausgeschrieben. Vermerken
+              Sie hier, sobald die gelaufene Veranstaltung in FIBS nachgetragen ist.
+            </p>
+          )}
+        </div>
+
+        <form
+          action={setzeSchilfFibsNachtrag.bind(
+            null,
+            fortbildung.id,
+            !fortbildung.inFibs,
+          )}
+        >
+          <FibsNachtragKnopf erledigt={fortbildung.inFibs} />
+        </form>
+      </div>
+    </section>
   );
 }
 
@@ -245,12 +308,15 @@ function VersandBestaetigung({
   label,
   versandtAm,
   versandtVon,
+  gesperrt,
 }: {
   fortbildungId: string;
   empfaenger: "REFERENTEN" | "TEILNEHMENDE";
   label: string;
   versandtAm: Date | null;
   versandtVon: { name: string | null; email: string } | null;
+  /** Neue Bestätigungen bleiben bis zum FIBS-Nachtrag gesperrt. */
+  gesperrt?: boolean;
 }) {
   const versandt = versandtAm !== null;
   const action = setzeTeilnahmebestaetigungsVersand.bind(
@@ -270,13 +336,29 @@ function VersandBestaetigung({
         </p>
       ) : (
         <p className="mt-1 text-xs text-muted-foreground">
-          Versand in FIBS noch nicht bestätigt.
+          {gesperrt
+            ? "Wartet auf den FIBS-Nachtrag."
+            : "Versand in FIBS noch nicht bestätigt."}
         </p>
       )}
       <form action={action} className="mt-3">
-        <VersandKnopf versandt={versandt} />
+        <VersandKnopf versandt={versandt} gesperrt={Boolean(gesperrt && !versandt)} />
       </form>
     </div>
+  );
+}
+
+function FibsNachtragKnopf({ erledigt }: { erledigt: boolean }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <Button type="submit" variant={erledigt ? "ghost" : "outline"} size="sm" disabled={pending}>
+      {pending
+        ? "Wird gespeichert …"
+        : erledigt
+          ? "Nachtrag zurücknehmen"
+          : "Als in FIBS nachgetragen markieren"}
+    </Button>
   );
 }
 
@@ -290,11 +372,22 @@ function MeldenKnopf({ gemeldet }: { gemeldet: boolean }) {
   );
 }
 
-function VersandKnopf({ versandt }: { versandt: boolean }) {
+function VersandKnopf({
+  versandt,
+  gesperrt,
+}: {
+  versandt: boolean;
+  gesperrt: boolean;
+}) {
   const { pending } = useFormStatus();
 
   return (
-    <Button type="submit" variant={versandt ? "ghost" : "outline"} size="sm" disabled={pending}>
+    <Button
+      type="submit"
+      variant={versandt ? "ghost" : "outline"}
+      size="sm"
+      disabled={pending || gesperrt}
+    >
       {pending
         ? "Wird gespeichert …"
         : versandt

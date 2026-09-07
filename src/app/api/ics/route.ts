@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { filterZuWhere, leseFilter, type SuchParameter } from "@/lib/filter";
 import { oeffentlicheFortbildungWhere } from "@/lib/queries";
 import { htmlZuText } from "@/lib/sanitize";
+import { bestimmeFibsAnmeldestatus } from "@/lib/fibs/status";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,8 @@ export async function GET(request: NextRequest) {
       ende: true,
       status: true,
       updatedAt: true,
+      organisationsform: true,
+      inFibs: true,
       fibsUrl: true,
       veranstaltungsort: { select: { name: true, ort: true, istOnline: true } },
     },
@@ -70,11 +73,21 @@ export async function GET(request: NextRequest) {
           .filter(Boolean)
           .join(", ");
 
+    const anmeldestatus = bestimmeFibsAnmeldestatus(f);
+    const anmeldehinweis =
+      anmeldestatus === "FIBS_OFFEN"
+        ? `Anmeldung über FIBS: ${f.fibsUrl}`
+        : anmeldestatus === "SCHILF_INTERN"
+          ? "Teilnahme wird schulintern organisiert."
+          : anmeldestatus === "FIBS_OHNE_LINK"
+            ? "In FIBS ausgeschrieben; dort über die Suche aufrufbar."
+            : "Anmeldung über FIBS folgt.";
+
     const beschreibung = [
       htmlZuText(f.beschreibungHtml),
       "",
       `Details: ${basis}/fortbildungen/${f.slug}`,
-      f.fibsUrl ? `Anmeldung über FIBS: ${f.fibsUrl}` : "Anmeldung über FIBS.",
+      anmeldehinweis,
     ].join("\n");
 
     zeilen.push(

@@ -1,4 +1,6 @@
-import { CheckCircle2, Clock3, ExternalLink } from "lucide-react";
+import { CheckCircle2, Clock3, ExternalLink, School } from "lucide-react";
+
+import { bestimmeFibsAnmeldestatus } from "@/lib/fibs/status";
 
 /**
  * Der Veröffentlichungsstatus und die Möglichkeit zur Anmeldung sind zwei
@@ -9,13 +11,21 @@ import { CheckCircle2, Clock3, ExternalLink } from "lucide-react";
 export function Anmeldestatus({
   fibsUrl,
   inFibs,
+  organisationsform,
   kompakt = false,
 }: {
   fibsUrl: string | null;
   inFibs: boolean;
+  organisationsform: string;
   kompakt?: boolean;
 }) {
-  if (fibsUrl) {
+  const status = bestimmeFibsAnmeldestatus({
+    organisationsform,
+    inFibs,
+    fibsUrl,
+  });
+
+  if (status === "FIBS_OFFEN") {
     return (
       <span
         className={
@@ -38,7 +48,30 @@ export function Anmeldestatus({
     );
   }
 
-  if (inFibs) {
+  if (status === "SCHILF_INTERN") {
+    return (
+      <span
+        className={
+          kompakt
+            ? "anmeldestatus anmeldestatus-hinweis"
+            : "anmeldestatus anmeldestatus-hinweis flex items-start gap-3 p-4"
+        }
+      >
+        <School className="mt-0.5 size-4 shrink-0" aria-hidden />
+        <span>
+          <span className="font-semibold">Schulinterne Teilnahme</span>
+          {!kompakt ? (
+            <span className="mt-0.5 block text-sm opacity-85">
+              Die Teilnahme wird schulintern organisiert; eine öffentliche
+              Anmeldung über FIBS ist nicht vorgesehen.
+            </span>
+          ) : null}
+        </span>
+      </span>
+    );
+  }
+
+  if (status === "FIBS_OHNE_LINK") {
     return (
       <span
         className={

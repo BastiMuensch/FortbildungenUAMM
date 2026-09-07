@@ -12,6 +12,7 @@ import {
   formatDatumZeit,
   formatZeit,
 } from "@/lib/datetime";
+import { fibsStatusText } from "@/lib/fibs/status";
 import {
   ORGANISATIONSFORMEN,
   ORGANISATIONSFORM_REIHENFOLGE,
@@ -64,6 +65,7 @@ export async function GET(request: NextRequest) {
       referenten: { include: { referent: true } },
     },
   });
+  const jetzt = new Date();
 
   // jsPDF nutzt die eingebauten Standardschriften mit WinAnsi-Kodierung.
   // Gedankenstriche (– —) sind darin nicht enthalten und verschlucken beim
@@ -89,7 +91,7 @@ export async function GET(request: NextRequest) {
   const zeitraum = beschreibeZeitraum(fortbildungen);
   doc.setTextColor(110);
   doc.text(zeitraum, rand, 27);
-  doc.text(`Erstellt am ${formatDatumZeit(new Date())}`, breite - rand, 27, {
+  doc.text(`Erstellt am ${formatDatumZeit(jetzt)}`, breite - rand, 27, {
     align: "right",
   });
   doc.setTextColor(0);
@@ -97,7 +99,14 @@ export async function GET(request: NextRequest) {
   let y = 34;
 
   // --- Je Ebene eine Tabelle ---------------------------------------------
-  const gesamt = { termine: 0, plaetze: 0, teilnehmer: 0, gemeldet: 0, inFibs: 0 };
+  const gesamt = {
+    termine: 0,
+    plaetze: 0,
+    teilnehmer: 0,
+    gemeldet: 0,
+    fibsOffen: 0,
+    schilfNachtragOffen: 0,
+  };
 
   for (const ebene of ORGANISATIONSFORM_REIHENFOLGE) {
     const gruppe = fortbildungen.filter((f) => f.organisationsform === ebene);
@@ -124,15 +133,63 @@ export async function GET(request: NextRequest) {
         teilnehmer: acc.teilnehmer + (f.tnTatsaechlich ?? 0),
         gemeldet: acc.gemeldet + (f.tnTatsaechlich === null ? 0 : 1),
         inFibs: acc.inFibs + (f.inFibs ? 1 : 0),
+        nachtragOffen:
+          acc.nachtragOffen +
+          (f.organisationsform === "SCHILF" &&
+          !f.inFibs &&
+          f.ende < jetzt &&
+          ["VEROEFFENTLICHT", "ARCHIVIERT"].includes(f.status)
+            ? 1
+            : 0),
+        nachtragNachTermin:
+          acc.nachtragNachTermin +
+          (f.organisationsform === "SCHILF" &&
+          !f.inFibs &&
+          f.ende >= jetzt &&
+          ["VEROEFFENTLICHT", "ARCHIVIERT"].includes(f.status)
+            ? 1
+            : 0),
       }),
-      { plaetze: 0, teilnehmer: 0, gemeldet: 0, inFibs: 0 },
+      {
+        plaetze: 0,
+        teilnehmer: 0,
+        gemeldet: 0,
+        inFibs: 0,
+        nachtragOffen: 0,
+        nachtragNachTermin: 0,
+      },
     );
 
     gesamt.termine += gruppe.length;
     gesamt.plaetze += summe.plaetze;
     gesamt.teilnehmer += summe.teilnehmer;
     gesamt.gemeldet += summe.gemeldet;
-    gesamt.inFibs += summe.inFibs;
+    gesamt.fibsOffen += gruppe.filter(
+      (f) =>
+        f.organisationsform !== "SCHILF" &&
+        !f.inFibs &&
+        ["VEROEFFENTLICHT", "ARCHIVIERT"].includes(f.status),
+    ).length;
+    gesamt.schilfNachtragOffen += gruppe.filter(
+      (f) =>
+        f.organisationsform === "SCHILF" &&
+        !f.inFibs &&
+        f.ende < jetzt &&
+        ["VEROEFFENTLICHT", "ARCHIVIERT"].includes(f.status),
+    ).length;
+
+    const fibsSumme =
+      ebene === "SCHILF"
+        ? [
+            `${summe.inFibs} nachgetragen`,
+            summe.nachtragOffen > 0 ? `${summe.nachtragOffen} offen` : "",
+            summe.nachtragNachTermin > 0
+              ? `${summe.nachtragNachTermin} nach Termin`
+              : "",
+          ]
+            .filter(Boolean)
+            .join(" / ")
+        : `${summe.inFibs}/${gruppe.length} eingetragen`;
 
     autoTable(doc, {
       startY: y,
@@ -168,7 +225,13 @@ export async function GET(request: NextRequest) {
         // Ein leeres Feld hieße "null Teilnehmende" — die offene Meldung wird
         // deshalb ausdrücklich als solche gekennzeichnet.
         f.tnTatsaechlich === null ? "offen" : String(f.tnTatsaechlich),
-        f.inFibs ? "ja" : "nein",
+        fibsStatusText({
+          organisationsform: f.organisationsform,
+          inFibs: f.inFibs,
+          ende: f.ende,
+          status: f.status,
+          jetzt,
+        }),
         statusLabel(f.status),
       ]),
       foot: [
@@ -179,7 +242,7 @@ export async function GET(request: NextRequest) {
           },
           String(summe.plaetze),
           `${summe.teilnehmer}${summe.gemeldet < gruppe.length ? ` (${gruppe.length - summe.gemeldet} offen)` : ""}`,
-          `${summe.inFibs}/${gruppe.length}`,
+          fibsSumme,
           "",
         ],
       ],
@@ -189,7 +252,7 @@ export async function GET(request: NextRequest) {
       columnStyles: {
         0: { cellWidth: 18 },
         1: { cellWidth: 17 },
-        2: { cellWidth: 55 },
+        2: { cellWidth: 49 },
         3: { cellWidth: 36 },
         4: { cellWidth: 15 },
         5: { cellWidth: 30 },
@@ -197,7 +260,7 @@ export async function GET(request: NextRequest) {
         7: { cellWidth: 30 },
         8: { cellWidth: 12, halign: "right" },
         9: { cellWidth: 13, halign: "right" },
-        10: { cellWidth: 12 },
+        10: { cellWidth: 18 },
         11: { cellWidth: 24 },
       },
     });
@@ -229,8 +292,11 @@ export async function GET(request: NextRequest) {
       (gesamt.termine - gesamt.gemeldet > 0
         ? ` · ${gesamt.termine - gesamt.gemeldet} Meldungen noch offen`
         : "") +
-      (gesamt.termine - gesamt.inFibs > 0
-        ? ` · ${gesamt.termine - gesamt.inFibs} nicht in FIBS`
+      (gesamt.fibsOffen > 0
+        ? ` · ${gesamt.fibsOffen} FIBS-Einträge offen`
+        : "") +
+      (gesamt.schilfNachtragOffen > 0
+        ? ` · ${gesamt.schilfNachtragOffen} SchiLf-Nachträge offen`
         : ""),
     rand,
     y + 5,

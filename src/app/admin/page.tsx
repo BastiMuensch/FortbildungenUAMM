@@ -52,7 +52,7 @@ export default async function AdminDashboard({
   const fibsAktiv =
     aktiverBereich === null &&
     filter.status === "VEROEFFENTLICHT" &&
-    filter.fibs === "offen";
+    filter.fibs === "offen-ausschreibung";
   const freigabenUrl = `${baueUrl("/admin", params, { bereich: "freigaben" })}#arbeitsbereich`;
   const nachbereitungUrl = `${baueUrl("/admin", params, { bereich: "nachbereitung" })}#arbeitsbereich`;
   const fibsUrl = `${baueUrl(
@@ -60,7 +60,11 @@ export default async function AdminDashboard({
     params,
     fibsAktiv
       ? { status: undefined, fibs: undefined }
-      : { status: "VEROEFFENTLICHT", fibs: "offen", bereich: undefined },
+      : {
+          status: "VEROEFFENTLICHT",
+          fibs: "offen-ausschreibung",
+          bereich: undefined,
+        },
   )}#fortbildungslisten`;
   const uebersichtUrl = baueUrl("/admin", params, { bereich: undefined });
   const where = { AND: [scope, filterZuWhere(filter)] };
@@ -102,7 +106,15 @@ export default async function AdminDashboard({
       prisma.fortbildung.count({ where: { AND: [scope, { beginn: { gte: start, lte: ende } }] } }),
       prisma.fortbildung.count({ where: { AND: [scope, { status: "EINGEREICHT" }] } }),
       prisma.fortbildung.count({
-        where: { AND: [scope, { status: "VEROEFFENTLICHT" }, { inFibs: false }, { ende: { gte: jetzt } }] },
+        where: {
+          AND: [
+            scope,
+            { status: "VEROEFFENTLICHT" },
+            { organisationsform: { not: "SCHILF" } },
+            { inFibs: false },
+            { ende: { gte: jetzt } },
+          ],
+        },
       }),
       darfNachbereiten
         ? prisma.fortbildung.count({
@@ -113,13 +125,14 @@ export default async function AdminDashboard({
                   ? [{ organisationsform: "SCHILF" }]
                   : []),
                 { ende: { lt: jetzt, gte: nachbereitungsGrenze } },
-                { status: { not: "ABGESAGT" } },
+                { status: { in: ["VEROEFFENTLICHT", "ARCHIVIERT"] } },
                 user.role === "ADMIN"
                   ? {
                       OR: [
                         { tnTatsaechlich: null },
                         { teilnahmebestaetigungenReferentenVersandtAm: null },
                         { teilnahmebestaetigungenTeilnehmendeVersandtAm: null },
+                        { organisationsform: "SCHILF", inFibs: false },
                       ],
                     }
                   : { tnTatsaechlich: null },
@@ -174,7 +187,7 @@ export default async function AdminDashboard({
         ) : null}
         <Kachel
           wert={ohneFibs}
-          label="veröffentlicht, aber nicht in FIBS"
+          label="FIBS-Ausschreibung noch offen"
           icon={Globe2}
           hervorheben={ohneFibs > 0}
           aktiv={fibsAktiv}
@@ -249,7 +262,7 @@ function WorkflowHinweis({ istAdmin, freigabenUrl }: { istAdmin: boolean; freiga
     { icon: Send, titel: "Einreichen", text: "zur Prüfung senden" },
     { icon: ShieldCheck, titel: "Admin-Freigabe", text: "prüfen und veröffentlichen" },
     { icon: Globe2, titel: "Öffentlich", text: "im Angebot sichtbar" },
-    { icon: CheckCircle2, titel: "FIBS", text: "Anmeldung möglich" },
+    { icon: CheckCircle2, titel: "FIBS", text: "Anmeldung oder SchiLf-Nachtrag" },
   ];
   return (
     <section className="border bg-card p-4" aria-labelledby="workflow-titel">
@@ -269,12 +282,15 @@ function WorkflowHinweis({ istAdmin, freigabenUrl }: { istAdmin: boolean; freiga
   );
 }
 
-function gruppiereFortbildungen<T extends { status: string; inFibs: boolean }>(fortbildungen: T[]) {
+function gruppiereFortbildungen<
+  T extends { status: string; inFibs: boolean; organisationsform: string },
+>(fortbildungen: T[]) {
   return [
     { id: "entwuerfe", eyebrow: "1. Vorbereitung", titel: "Entwürfe und zurückgewiesene Fortbildungen", beschreibung: "Noch in Arbeit oder mit Hinweisen aus der Freigabe.", fortbildungen: fortbildungen.filter((f) => f.status === "ENTWURF") },
     { id: "eingereicht", eyebrow: "2. Nächster Schritt", titel: "Zur administrativen Freigabe eingereicht", beschreibung: "Warten auf Prüfung, Veröffentlichung und den anschließenden FIBS-Schritt.", fortbildungen: fortbildungen.filter((f) => f.status === "EINGEREICHT") },
-    { id: "ohne-fibs", eyebrow: "3. Veröffentlichung", titel: "Veröffentlicht, noch nicht in FIBS eingetragen", beschreibung: "Im Frontend sichtbar; die verbindliche Anmeldung ist erst nach der FIBS-Ausschreibung möglich.", fortbildungen: fortbildungen.filter((f) => f.status === "VEROEFFENTLICHT" && !f.inFibs) },
-    { id: "in-fibs", eyebrow: "4. Anmeldung läuft", titel: "In FIBS eingetragen", beschreibung: "Veröffentlicht und für die Anmeldung über FIBS vorbereitet.", fortbildungen: fortbildungen.filter((f) => f.status === "VEROEFFENTLICHT" && f.inFibs) },
+    { id: "ohne-fibs", eyebrow: "3. Veröffentlichung", titel: "FIBS-Ausschreibung noch offen", beschreibung: "RLFB und ALP sind bereits sichtbar; die verbindliche Anmeldung ist erst nach der FIBS-Ausschreibung möglich.", fortbildungen: fortbildungen.filter((f) => f.status === "VEROEFFENTLICHT" && !f.inFibs && f.organisationsform !== "SCHILF") },
+    { id: "schilf-nachtrag", eyebrow: "SchiLf-Sonderweg", titel: "FIBS-Nachtrag nach Termin", beschreibung: "Kein offener Ausschreibungsfehler: SchiLf wird üblicherweise erst bei der Nachbereitung in FIBS vermerkt.", fortbildungen: fortbildungen.filter((f) => f.status === "VEROEFFENTLICHT" && !f.inFibs && f.organisationsform === "SCHILF") },
+    { id: "in-fibs", eyebrow: "4. FIBS", titel: "In FIBS eingetragen", beschreibung: "Als Ausschreibung veröffentlicht oder nach einem SchiLf-Termin nachgetragen.", fortbildungen: fortbildungen.filter((f) => f.status === "VEROEFFENTLICHT" && f.inFibs) },
     { id: "abgeschlossen", eyebrow: "Abgeschlossen", titel: "Archiviert oder abgesagt", beschreibung: "Bleiben zur Dokumentation erhalten und sind nicht Teil des aktiven Angebots.", fortbildungen: fortbildungen.filter((f) => f.status === "ARCHIVIERT" || f.status === "ABGESAGT") },
   ].filter((gruppe) => gruppe.fortbildungen.length > 0);
 }

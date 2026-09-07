@@ -62,7 +62,8 @@ export default async function Startseite() {
           </h1>
 
           <p className="mt-3 max-w-2xl text-base text-muted-foreground">
-            Passendes Angebot finden und anschließend über FIBS anmelden.
+            Passendes Angebot finden. Der jeweilige Termin zeigt, ob die
+            Anmeldung über FIBS oder die Teilnahme schulintern organisiert wird.
           </p>
 
           {/* Einfaches GET-Formular: funktioniert auch ohne JavaScript. */}

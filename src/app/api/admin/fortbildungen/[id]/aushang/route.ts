@@ -8,6 +8,7 @@ import { ladeLogo } from "@/lib/logo";
 import { zeichneQr } from "@/lib/qrZeichnen";
 import { htmlZuText } from "@/lib/sanitize";
 import { formatDatumLang, formatZeit } from "@/lib/datetime";
+import { bestimmeFibsAnmeldestatus } from "@/lib/fibs/status";
 import {
   formatLabel,
   niveaustufeLabel,
@@ -61,6 +62,8 @@ export async function GET(
     process.env.APP_BASE_URL ?? request.nextUrl.origin
   ).replace(/\/+$/, "");
   const adresse = `${basis}/fortbildungen/${fortbildung.slug}`;
+  const anmeldestatus = bestimmeFibsAnmeldestatus(fortbildung);
+  const teilnahmeSchulintern = anmeldestatus === "SCHILF_INTERN";
 
   // compress: Der gestaltete QR-Code besteht aus mehreren hundert
   // Vektorformen — unkomprimiert wäre die Datei über ein Megabyte groß.
@@ -229,14 +232,22 @@ export async function GET(
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
   doc.setTextColor(...BLAU);
-  doc.text("Alle Infos und Anmeldung", rand, qrOben + 10);
+  doc.text(
+    teilnahmeSchulintern ? "Alle Infos zum Termin" : "Alle Infos und Anmeldung",
+    rand,
+    qrOben + 10,
+  );
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.setTextColor(45, 50, 60);
-  const hinweis = fortbildung.fibsLehrgangsnummer
-    ? `Code scannen oder in FIBS nach der Lehrgangsnummer ${fortbildung.fibsLehrgangsnummer} suchen.`
-    : "Code scannen — die Anmeldung läuft über FIBS.";
+  const hinweis = teilnahmeSchulintern
+    ? "Code scannen - die Teilnahme wird schulintern organisiert."
+    : fortbildung.fibsLehrgangsnummer
+      ? `Code scannen oder in FIBS nach der Lehrgangsnummer ${fortbildung.fibsLehrgangsnummer} suchen.`
+      : anmeldestatus === "FIBS_OFFEN"
+        ? "Code scannen - die Anmeldung läuft über FIBS."
+        : "Code scannen - der FIBS-Anmeldelink wird ergänzt, sobald er verfügbar ist.";
   doc.text(
     doc.splitTextToSize(hinweis, inhalt - qrKante - 10) as string[],
     rand,

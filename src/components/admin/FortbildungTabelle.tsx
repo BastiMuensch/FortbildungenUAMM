@@ -82,6 +82,7 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
                 <FibsKennzeichen
                   inFibs={f.inFibs}
                   lehrgangsnummer={f.fibsLehrgangsnummer}
+                  organisationsform={f.organisationsform}
                   ausfuehrlich
                 />
               </div>
@@ -206,6 +207,7 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
                   <FibsKennzeichen
                     inFibs={f.inFibs}
                     lehrgangsnummer={f.fibsLehrgangsnummer}
+                    organisationsform={f.organisationsform}
                     ausfuehrlich
                   />
                 </div>

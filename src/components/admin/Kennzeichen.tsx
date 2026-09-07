@@ -49,38 +49,60 @@ export function StatusKennzeichen({
 /**
  * FIBS-Kennzeichen.
  *
- * Zeigt in beide Richtungen an: Ein fehlender Eintrag ist genauso eine
- * Information wie ein vorhandener — und der häufigere Fehler ist der
- * vergessene Eintrag, deshalb ist „nicht in FIBS" die auffälligere Variante.
+ * Zeigt in beide Richtungen an. Bei RLFB/ALP ist ein fehlender Eintrag eine
+ * auffällige offene Aufgabe; bei SchiLf dagegen der neutrale Normalfall bis
+ * zum nachträglichen Vermerk in der Nachbereitung.
  */
 export function FibsKennzeichen({
   inFibs,
   lehrgangsnummer,
+  organisationsform,
   className,
   ausfuehrlich = false,
 }: {
   inFibs: boolean;
   lehrgangsnummer?: string | null;
+  organisationsform?: string | null;
   className?: string;
   ausfuehrlich?: boolean;
 }) {
+  const istSchilf = organisationsform === "SCHILF";
+  const istSchilfNachtrag = !inFibs && istSchilf;
+
   return (
     <span
       className={cn(
-        "etikett inline-flex items-center gap-1.5 px-1.5 py-0.5 whitespace-nowrap",
-        inFibs ? "bg-primary text-primary-foreground" : "bg-ferien text-white",
+        "etikett inline-flex items-center gap-1.5 px-1.5 py-0.5",
+        istSchilfNachtrag ? "whitespace-normal" : "whitespace-nowrap",
+        inFibs
+          ? "bg-primary text-primary-foreground"
+          : istSchilfNachtrag
+            ? "border border-border bg-muted text-muted-foreground"
+            : "bg-ferien text-white",
         className,
       )}
       title={
         inFibs
-          ? lehrgangsnummer
-            ? `In FIBS ausgeschrieben, Lehrgangsnummer ${lehrgangsnummer}`
-            : "In FIBS ausgeschrieben"
-          : "Noch nicht in FIBS ausgeschrieben"
+          ? istSchilf
+            ? lehrgangsnummer
+              ? `In FIBS erfasst, Lehrgangsnummer ${lehrgangsnummer}`
+              : "In FIBS erfasst"
+            : lehrgangsnummer
+              ? `In FIBS ausgeschrieben, Lehrgangsnummer ${lehrgangsnummer}`
+              : "In FIBS ausgeschrieben"
+          : istSchilfNachtrag
+            ? "SchiLf wird üblicherweise erst nach dem Termin in FIBS vermerkt"
+            : "Noch nicht in FIBS ausgeschrieben"
       }
     >
       <Globe2 className="size-3" aria-hidden />
-      {inFibs ? "in FIBS" : "nicht in FIBS"}
+      {inFibs
+        ? istSchilf
+          ? "in FIBS erfasst"
+          : "in FIBS"
+        : istSchilfNachtrag
+          ? "FIBS-Nachtrag nach Termin"
+          : "nicht in FIBS"}
       {ausfuehrlich && inFibs && lehrgangsnummer ? (
         <span className="zahl font-normal opacity-85">· {lehrgangsnummer}</span>
       ) : null}

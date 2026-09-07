@@ -37,8 +37,10 @@ export async function NachbereitungsBereich({
     AND: [
       bereich,
       { ende: { lt: jetzt, gte: grenze } },
-      // Abgesagte Veranstaltungen haben keine Teilnehmer zu melden.
-      { status: { not: "ABGESAGT" } },
+      // Nur tatsächlich veröffentlichte oder inzwischen archivierte Termine
+      // werden nachbereitet. Entwürfe und abgesagte Veranstaltungen gehören
+      // nicht in diesen Arbeitsbereich.
+      { status: { in: ["VEROEFFENTLICHT", "ARCHIVIERT"] } },
     ],
   };
 
@@ -51,6 +53,10 @@ export async function NachbereitungsBereich({
             ? {
                 OR: [
                   { tnTatsaechlich: null },
+                  // SchiLf werden üblicherweise erst nach dem Termin in FIBS
+                  // nachgetragen. Dieser Nachtrag gehört deshalb ausdrücklich
+                  // zur administrativen Nachbereitung.
+                  { organisationsform: "SCHILF", inFibs: false },
                   { teilnahmebestaetigungenReferentenVersandtAm: null },
                   { teilnahmebestaetigungenTeilnehmendeVersandtAm: null },
                 ],
@@ -70,6 +76,10 @@ export async function NachbereitungsBereich({
                 tnTatsaechlich: { not: null },
                 teilnahmebestaetigungenReferentenVersandtAm: { not: null },
                 teilnahmebestaetigungenTeilnehmendeVersandtAm: { not: null },
+                OR: [
+                  { organisationsform: { not: "SCHILF" } },
+                  { inFibs: true },
+                ],
               }
             : { tnTatsaechlich: { not: null } },
         ],
@@ -103,8 +113,8 @@ export async function NachbereitungsBereich({
           }
         >
           {eingebettet
-            ? "Teilnehmerzahlen nachtragen und, als Administration, den FIBS-Versand der Teilnahmebestätigungen bestätigen."
-            : "Nach der Veranstaltung wird hier die tatsächliche Teilnehmerzahl gemeldet. Die Administration bestätigt anschließend getrennt den Versand der Teilnahmebestätigungen für Referent:innen und Teilnehmende in FIBS."}
+            ? "Teilnehmerzahlen nachtragen und, als Administration, SchiLf in FIBS nachtragen sowie den Versand der Teilnahmebestätigungen bestätigen."
+            : "Nach der Veranstaltung wird hier die tatsächliche Teilnehmerzahl gemeldet. Bei SchiLf trägt die Administration anschließend die Veranstaltung in FIBS nach. Danach bestätigt sie getrennt den Versand der Teilnahmebestätigungen für Referent:innen und Teilnehmende."}
           {user.role === "REFERENT"
             ? " Sie können ausschließlich für Ihre eigenen oder zugeordneten SchiLf Teilnehmerzahlen nachtragen."
             : ""}
@@ -133,7 +143,7 @@ export async function NachbereitungsBereich({
             <p className="font-medium">Alles erledigt.</p>
             <p className="mt-1 text-sm text-muted-foreground">
               {istAdmin
-                ? "Für keine vergangene Veranstaltung fehlt eine Teilnehmerzahl oder Versandbestätigung."
+                ? "Für keine vergangene Veranstaltung fehlt eine Teilnehmerzahl, ein SchiLf-Nachtrag in FIBS oder eine Versandbestätigung."
                 : "Für keine Ihrer vergangenen SchiLf fehlt eine Teilnehmerzahl."}
             </p>
           </div>
@@ -196,6 +206,8 @@ const auswahl = {
   beginn: true,
   ende: true,
   maxTn: true,
+  inFibs: true,
+  fibsEingetragenAm: true,
   tnTatsaechlich: true,
   tnBemerkung: true,
   tnGemeldetAm: true,

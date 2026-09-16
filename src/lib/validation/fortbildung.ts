@@ -300,3 +300,8 @@ export const FELD_ZU_TAB: Record<string, string> = {
   kompetenzen: "digcomp",
   referenten: "referenten",
 };
+
+/** Auch Listenfehler wie „schlagworte.0“ gehören zum jeweiligen Abschnitt. */
+export function fehlerTab(feld: string): string | undefined {
+  return FELD_ZU_TAB[feld.split(".")[0]!];
+}

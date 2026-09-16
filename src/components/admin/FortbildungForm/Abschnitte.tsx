@@ -71,7 +71,8 @@ export function EckdatenFelder({
       >
         <Input
           name="titel"
-          defaultValue={fortbildung?.titel}
+          value={zustand.titel}
+          onChange={(e) => zustand.setTitel(e.target.value)}
           maxLength={200}
           required
           className="w-full"
@@ -87,7 +88,8 @@ export function EckdatenFelder({
       >
         <Input
           name="kurztitel"
-          defaultValue={fortbildung?.kurztitel ?? ""}
+          value={zustand.kurztitel}
+          onChange={(e) => zustand.setKurztitel(e.target.value)}
           maxLength={100}
           className="w-full"
         />
@@ -128,7 +130,8 @@ export function EckdatenFelder({
           min={1}
           max={1000}
           step={1}
-          defaultValue={fortbildung?.maxTn ?? 20}
+          value={zustand.maxTn}
+          onChange={(e) => zustand.setMaxTn(e.target.value)}
           required
           className="w-full"
           aria-invalid={Boolean(fehler.maxTn)}
@@ -196,7 +199,6 @@ export function EckdatenFelder({
           type="text"
           inputMode="numeric"
           placeholder="TT.MM.JJJJ HH:MM"
-          pattern="[0-3][0-9]\.[0-1][0-9]\.[0-9]{4}[ ,]+[0-2][0-9]:[0-5][0-9]"
           lang="de-DE"
           required
           value={zustand.beginn}
@@ -212,7 +214,6 @@ export function EckdatenFelder({
           type="text"
           inputMode="numeric"
           placeholder="TT.MM.JJJJ HH:MM"
-          pattern="[0-3][0-9]\.[0-1][0-9]\.[0-9]{4}[ ,]+[0-2][0-9]:[0-5][0-9]"
           lang="de-DE"
           required
           value={zustand.ende}
@@ -264,7 +265,6 @@ export function EckdatenFelder({
 export function VeroeffentlichungFelder({
   zustand,
   fehler,
-  fortbildung,
   darfVeroeffentlichen = true,
 }: GemeinsameProps) {
   // Referentinnen und Referenten reichen ein; veröffentlicht wird von der
@@ -314,7 +314,8 @@ export function VeroeffentlichungFelder({
         <Feld label="FIBS-Lehrgangsnummer" fehler={fehler.fibsLehrgangsnummer}>
           <Input
             name="fibsLehrgangsnummer"
-            defaultValue={fortbildung?.fibsLehrgangsnummer ?? ""}
+            value={zustand.fibsLehrgangsnummer}
+            onChange={(e) => zustand.setFibsLehrgangsnummer(e.target.value)}
             placeholder="z. B. E123-4/56/7"
             className="w-full"
           />
@@ -328,7 +329,8 @@ export function VeroeffentlichungFelder({
           <Input
             name="fibsUrl"
             type="url"
-            defaultValue={fortbildung?.fibsUrl ?? ""}
+            value={zustand.fibsUrl}
+            onChange={(e) => zustand.setFibsUrl(e.target.value)}
             placeholder="https://fibs.alp.dillingen.de/…"
             className="w-full"
             aria-invalid={Boolean(fehler.fibsUrl)}
@@ -363,7 +365,6 @@ export function BeschreibungFelder({ zustand, fehler }: GemeinsameProps) {
 export function ZielgruppeFelder({
   zustand,
   fehler,
-  fortbildung,
   schlagwortVorschlaege,
 }: GemeinsameProps & { schlagwortVorschlaege: string[] }) {
   return (
@@ -401,7 +402,8 @@ export function ZielgruppeFelder({
       >
         <Input
           name="fach"
-          defaultValue={fortbildung?.fach ?? ""}
+          value={zustand.fach}
+          onChange={(e) => zustand.setFach(e.target.value)}
           maxLength={100}
           className="w-full"
         />

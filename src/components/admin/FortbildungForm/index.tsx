@@ -3,10 +3,10 @@
 import { useActionState, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
-import { AlertCircle } from "lucide-react";
 
 import { saveFortbildung } from "@/actions/fortbildung";
-import { FELD_ZU_TAB, type FormularState } from "@/lib/validation/fortbildung";
+import { fehlerTab, type FormularState } from "@/lib/validation/fortbildung";
+import { FehlerUebersicht } from "./FehlerUebersicht";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -71,7 +71,7 @@ export function FortbildungForm({
   const fehlerhafteTabs = useMemo(() => {
     const menge = new Set<string>();
     for (const feld of Object.keys(fehler)) {
-      const zielTab = FELD_ZU_TAB[feld];
+      const zielTab = fehlerTab(feld);
       if (zielTab) menge.add(zielTab);
     }
     return menge;
@@ -80,16 +80,13 @@ export function FortbildungForm({
   const gemeinsam = { zustand, fehler, fortbildung, darfVeroeffentlichen };
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} noValidate className="space-y-6">
+      {/* Verdeckte Pflichtfelder dürfen die Serverprüfung nicht lautlos blockieren. */}
       {/* Werte aus dem State, die kein sichtbares Formularfeld haben. */}
       <input type="hidden" name="beschreibungHtml" value={zustand.beschreibung} />
       <input type="hidden" name="niveaustufe" value={zustand.niveaustufe} />
 
-      {fehler._ ? <Fehlerkasten meldung={fehler._} /> : null}
-
-      {Object.keys(fehler).length > 0 && !fehler._ ? (
-        <Fehlerkasten meldung="Bitte die markierten Felder prüfen. Die betroffenen Reiter sind mit einem Punkt gekennzeichnet." />
-      ) : null}
+      <FehlerUebersicht fehler={fehler} onAbschnitt={(abschnitt) => setTab(abschnitt)} />
 
       <Tabs value={tab} onValueChange={(wert) => setTab(String(wert))}>
         <TabsList className="w-full justify-start overflow-x-auto">
@@ -149,17 +146,5 @@ function Speichern() {
     <Button type="submit" disabled={pending}>
       {pending ? "Wird gespeichert …" : "Änderungen speichern"}
     </Button>
-  );
-}
-
-function Fehlerkasten({ meldung }: { meldung: string }) {
-  return (
-    <p
-      role="alert"
-      className="flex items-start gap-2 bg-destructive/10 px-4 py-3 text-sm text-destructive"
-    >
-      <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
-      {meldung}
-    </p>
   );
 }

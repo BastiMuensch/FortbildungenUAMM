@@ -10,14 +10,19 @@ import type { FortbildungWerte, OrtOption } from "./types";
 /**
  * Der gemeinsame Formularzustand von Wizard und Bearbeiten-Ansicht.
  *
- * Im State liegt nur, was andere Felder beeinflusst oder kein natives
- * Eingabefeld ist. Titel, Kurztitel, Fach und die FIBS-Angaben bleiben
- * uncontrolled — weniger Code, und der Browser behält die Eingaben.
+ * Auch einfache Textfelder bleiben kontrolliert: React setzt unkontrollierte
+ * Felder nach einer Server Action zurück, selbst bei zurückgegebenen Fehlern.
  */
 export function useFortbildungState(
   fortbildung: FortbildungWerte | undefined,
   orte: OrtOption[],
 ) {
+  const [titel, setTitel] = useState(fortbildung?.titel ?? "");
+  const [kurztitel, setKurztitel] = useState(fortbildung?.kurztitel ?? "");
+  const [maxTn, setMaxTn] = useState(String(fortbildung?.maxTn ?? 20));
+  const [fach, setFach] = useState(fortbildung?.fach ?? "");
+  const [fibsLehrgangsnummer, setFibsLehrgangsnummer] = useState(fortbildung?.fibsLehrgangsnummer ?? "");
+  const [fibsUrl, setFibsUrl] = useState(fortbildung?.fibsUrl ?? "");
   const [format, setFormat] = useState(fortbildung?.format ?? "PRAESENZ");
   const [ortId, setOrtId] = useState(fortbildung?.veranstaltungsortId ?? "");
   const [organisationsform, setOrganisationsform] = useState(
@@ -94,6 +99,12 @@ export function useFortbildungState(
   }
 
   return {
+    titel, setTitel,
+    kurztitel, setKurztitel,
+    maxTn, setMaxTn,
+    fach, setFach,
+    fibsLehrgangsnummer, setFibsLehrgangsnummer,
+    fibsUrl, setFibsUrl,
     format,
     formatWechseln,
     ortId,

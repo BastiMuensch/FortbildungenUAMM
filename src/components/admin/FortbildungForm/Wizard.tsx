@@ -4,7 +4,6 @@ import { useActionState, useMemo, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import {
-  AlertCircle,
   ArrowLeft,
   ArrowRight,
   Check,
@@ -36,6 +35,7 @@ import {
   ortLabel,
 } from "./Abschnitte";
 import { SCHRITTE } from "./schritte";
+import { FehlerUebersicht } from "./FehlerUebersicht";
 import { schrittFehler, useFortbildungState } from "./state";
 import type {
   KompetenzBereichOption,
@@ -113,7 +113,8 @@ export function FortbildungWizard({
   const gemeinsam = { zustand, fehler, darfVeroeffentlichen };
 
   return (
-    <form ref={formularRef} action={formAction} className="space-y-8">
+    <form ref={formularRef} action={formAction} noValidate className="space-y-8">
+      {/* Eine gemeinsame Datumsprüfung statt nativer Prüfung versteckter Felder. */}
       <input type="hidden" name="beschreibungHtml" value={zustand.beschreibung} />
       <input type="hidden" name="niveaustufe" value={zustand.niveaustufe} />
 
@@ -128,15 +129,16 @@ export function FortbildungWizard({
         </p>
       </div>
 
-      {fehler._ ? (
-        <p
-          role="alert"
-          className="flex items-start gap-2 bg-destructive/10 px-4 py-3 text-sm text-destructive"
-        >
-          <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
-          {fehler._}
-        </p>
-      ) : null}
+      <FehlerUebersicht
+        fehler={serverFehler}
+        onAbschnitt={(abschnitt, feld) => {
+          // Die Status-/FIBS-Felder stehen im Wizard im letzten Schritt.
+          const ziel = ["status", "fibsUrl", "fibsLehrgangsnummer"].includes(feld)
+            ? SCHRITTE.length - 1
+            : SCHRITTE.findIndex((s) => s.id === abschnitt);
+          if (ziel >= 0) { setLokaleFehler({}); setIndex(ziel); }
+        }}
+      />
 
       {/*
         Alle Abschnitte bleiben im DOM — sonst fehlten die Felder der noch

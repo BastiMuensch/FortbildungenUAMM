@@ -27,7 +27,7 @@ import {
   bestimmeFibsAnmeldestatus,
   fibsStatusText,
 } from "@/lib/fibs/status";
-import { fehlendeReferentIds, pruefeVeroeffentlichung } from "@/lib/validation/fortbildung";
+import { fehlendeReferentIds, pruefeVeroeffentlichung, FortbildungSchema, formDataZuEingabe, fehlerTab } from "@/lib/validation/fortbildung";
 import { readFileSync } from "node:fs";
 import jsQR from "jsqr";
 import { qrMatrix } from "@/lib/qr";
@@ -81,6 +81,41 @@ pruefe(
 );
 pruefe("Datumseingabe bleibt deutsch", formatDatumZeitEingabe(new Date("2026-10-15T12:00:00Z")), "15.10.2026 14:00");
 pruefe("Datumseingabe braucht Uhrzeit", parseDatumZeitEingabe("15.10.2026"), null);
+for (const eingabe of ["16.9.2026 9:00", "16.09.2026 09.00", "16.09.2026, 09:00", " 16.09.2026 09:00 "]) {
+  pruefe(`Deutsche Eingabevariante: ${eingabe}`, parseDatumZeitEingabe(eingabe)?.toISOString(), "2026-09-16T07:00:00.000Z");
+}
+for (const eingabe of ["31.02.2026 09:00", "16.09.2026 24:00", "16.09.2026 09:60"]) {
+  pruefe(`Ungültige Eingabe: ${eingabe}`, parseDatumZeitEingabe(eingabe), null);
+}
+
+console.log("\nSchiLf-Formular: Entwurf und Einreichung");
+for (const status of ["ENTWURF", "EINGEREICHT"]) {
+  const formular = new FormData();
+  for (const [feld, wert] of Object.entries({
+    titel: "SchiLf Formularprüfung",
+    beschreibungHtml: "<p>Eine schulinterne Fortbildung.</p>",
+    organisationsform: "SCHILF",
+    maxTn: "20",
+    format: "PRAESENZ",
+    beginn: "16.9.2026 9:00",
+    ende: "16.9.2026 11.00",
+    veranstaltungsortId: "00000000-0000-4000-8000-000000000001",
+    schularten: "GRUNDSCHULE",
+    niveaustufe: "NIVEAU_I_II",
+    kompetenzen: "1.1",
+    referenten: "00000000-0000-4000-8000-000000000002",
+    status,
+  })) formular.append(feld, wert);
+  const ergebnis = FortbildungSchema.safeParse(formDataZuEingabe(formular));
+  pruefe(`${status}: Kurzdatum und leere FIBS-Felder sind zulässig`, ergebnis.success, true);
+  if (ergebnis.success) pruefe(`${status}: Einreichungspflichten erfüllt`, pruefeVeroeffentlichung(ergebnis.data), null);
+  formular.set("ende", "16.9.2026 8:00");
+  pruefe(`${status}: Ende vor Beginn bleibt verboten`, FortbildungSchema.safeParse(formDataZuEingabe(formular)).success, false);
+}
+pruefe("Listenfehler führt zum Schlagwort-Abschnitt", fehlerTab("schlagworte.0"), "zielgruppe");
+pruefe("Listenfehler führt zum Referenten-Abschnitt", fehlerTab("referenten.0"), "referenten");
+pruefe("Datumsfehler führt zu den Eckdaten", fehlerTab("beginn"), "eckdaten");
+pruefe("Allgemeiner Fehler hat keinen falschen Abschnitt", fehlerTab("_"), undefined);
 pruefe("ISO-Kalenderwoche beginnt montags", isoKalenderwoche(new Date("2026-01-01T12:00:00Z")), 1);
 pruefe("Anzeige auf Deutsch", formatDatumZeit(new Date("2026-10-15T12:00:00Z")), "15.10.2026, 14:00");
 pruefe("Schuljahr wechselt im August", aktuellesSchuljahr(new Date("2026-08-01T10:00:00Z")), "2026/2027");

@@ -17,7 +17,12 @@ import {
   parseDeDateTime,
   toDatetimeLocalValue,
   aktuellesSchuljahr,
+  berlinIsoDatum,
+  kalenderMonat,
+  kalenderTage,
+  montagIndex,
 } from "@/lib/datetime";
+import { filtereOrte, kompetenzAuswahlUmschalten } from "@/lib/formularauswahl";
 import { ferienStatus, terminWarnung } from "@/lib/ferien";
 import { bildeSlug } from "@/lib/queries";
 import { filterZuWhere, leseFilter, suchbegriffe } from "@/lib/filter";
@@ -52,6 +57,28 @@ function pruefe(name: string, ist: unknown, soll: unknown) {
         : `\n         ist:  ${JSON.stringify(ist)}\n         soll: ${JSON.stringify(soll)}`),
   );
 }
+
+console.log("\nFormularauswahl");
+pruefe("Unterkompetenz setzt nicht den gesamten Bereich", kompetenzAuswahlUmschalten([], "3.2", true), ["3.2"]);
+pruefe("Unterkompetenz abwählen lässt expliziten Bereich stehen", kompetenzAuswahlUmschalten(["3", "3.2"], "3.2", false), ["3"]);
+pruefe("Bereich abwählen lässt Unterkompetenz stehen", kompetenzAuswahlUmschalten(["3", "3.2"], "3", false), ["3.2"]);
+pruefe("Weitere Unterkompetenz unabhängig ergänzen", kompetenzAuswahlUmschalten(["3.2"], "3.3", true), ["3.2", "3.3"]);
+const suchOrte = [{ name: "Grundschule Amendingen", ort: "Memmingen" }, { name: "Mittelschule Süd", ort: "Mindelheim" }, { name: "ViKo (online)", ort: null }];
+pruefe("Schulsuche kombiniert Name und Ort", filtereOrte(suchOrte, "  MEMM grund "), [suchOrte[0]]);
+pruefe("Schulsuche findet Umlaute ohne Sonderzeichen", filtereOrte(suchOrte, "sud"), [suchOrte[1]]);
+pruefe("Leere Schulsuche zeigt alle angebotenen Orte", filtereOrte(suchOrte, " "), suchOrte);
+pruefe("Schulsuche ohne Treffer", filtereOrte(suchOrte, "unbekannt"), []);
+pruefe("Online-Ort ohne Ortsnamen ist suchbar", filtereOrte(suchOrte, "online"), [suchOrte[2]]);
+const september = new Date("2026-09-15T22:30:00Z");
+const septemberRaster = kalenderTage(september);
+pruefe("Kalenderraster beginnt mit Montag", montagIndex(septemberRaster[0]), 0);
+pruefe("Septemberraster beginnt am 31. August", berlinIsoDatum(septemberRaster[0]), "2026-08-31");
+pruefe("Kalender zeigt sechs volle Wochen", septemberRaster.length, 42);
+pruefe("Monatswechsel über Jahresgrenze", berlinIsoDatum(kalenderMonat(new Date("2026-12-15T12:00:00Z"), 1)), "2027-01-01");
+pruefe("Monatswechsel rückwärts", berlinIsoDatum(kalenderMonat(new Date("2027-01-15T12:00:00Z"), -1)), "2026-12-01");
+pruefe("Berliner Datum bestimmt Kalendermonat", berlinIsoDatum(kalenderMonat(new Date("2026-08-31T23:00:00Z"))), "2026-09-01");
+pruefe("Schaltjahr zeigt 29. Februar", kalenderTage(new Date("2028-02-15T12:00:00Z")).some((tag) => berlinIsoDatum(tag) === "2028-02-29"), true);
+pruefe("Kompetenzbereichsfilter findet auch Unterkompetenzen", JSON.stringify(filterZuWhere(leseFilter({ kb: "3" }))).includes('"startsWith":"3"'), true);
 
 console.log("\nHTML-Filterung");
 pruefe("script wird entfernt", sanitizeBeschreibung("<p>Hallo</p><script>alert(1)</script>"), "<p>Hallo</p>");

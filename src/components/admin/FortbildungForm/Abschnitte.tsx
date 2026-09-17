@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/select";
 
 import { DigCompAccordion } from "./DigCompAccordion";
+import { DatumZeitAuswahl } from "./DatumZeitAuswahl";
+import { OrtAuswahl } from "./OrtAuswahl";
 import { ReferentenPicker } from "./ReferentenPicker";
 import { RichTextEditor } from "./RichTextEditor";
 import { SchlagwortInput } from "./SchlagwortInput";
@@ -168,58 +170,32 @@ export function EckdatenFelder({
             : undefined
         }
       >
-        <Select
-          name="veranstaltungsortId"
-          value={zustand.ortId}
-          onValueChange={(wert) => zustand.setOrtId(String(wert))}
-          items={zustand.passendeOrte.map((o) => ({
-            value: o.id,
-            label: ortLabel(o),
-          }))}
-        >
-          <SelectTrigger
-            className="w-full"
-            aria-invalid={Boolean(fehler.veranstaltungsortId)}
-          >
-            <SelectValue placeholder="Bitte wählen" />
-          </SelectTrigger>
-          <SelectContent>
-            {zustand.passendeOrte.map((o) => (
-              <SelectItem key={o.id} value={o.id}>
-                {ortLabel(o)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </Feld>
-
-      <Feld label="Beginn" pflicht fehler={fehler.beginn} hinweis="Format TT.MM.JJJJ HH:MM">
-        <Input
-          name="beginn"
-          type="text"
-          inputMode="numeric"
-          placeholder="TT.MM.JJJJ HH:MM"
-          lang="de-DE"
-          required
-          value={zustand.beginn}
-          onChange={(e) => zustand.beginnSetzen(e.target.value)}
-          className="w-full"
-          aria-invalid={Boolean(fehler.beginn)}
+        <OrtAuswahl
+          key={zustand.format}
+          orte={zustand.passendeOrte}
+          wert={zustand.ortId}
+          onChange={zustand.setOrtId}
+          ungueltig={Boolean(fehler.veranstaltungsortId)}
         />
       </Feld>
 
-      <Feld label="Ende" pflicht fehler={fehler.ende} hinweis="Format TT.MM.JJJJ HH:MM">
-        <Input
+      <Feld label="Beginn" pflicht fehler={fehler.beginn} hinweis="Im Kalender auswählen oder TT.MM.JJJJ HH:MM eingeben.">
+        <DatumZeitAuswahl
+          name="beginn"
+          label="Beginn"
+          wert={zustand.beginn}
+          onChange={zustand.beginnSetzen}
+          ungueltig={Boolean(fehler.beginn)}
+        />
+      </Feld>
+
+      <Feld label="Ende" pflicht fehler={fehler.ende} hinweis="Im Kalender auswählen oder TT.MM.JJJJ HH:MM eingeben.">
+        <DatumZeitAuswahl
           name="ende"
-          type="text"
-          inputMode="numeric"
-          placeholder="TT.MM.JJJJ HH:MM"
-          lang="de-DE"
-          required
-          value={zustand.ende}
-          onChange={(e) => zustand.setEnde(e.target.value)}
-          className="w-full"
-          aria-invalid={Boolean(fehler.ende)}
+          label="Ende"
+          wert={zustand.ende}
+          onChange={zustand.setEnde}
+          ungueltig={Boolean(fehler.ende)}
         />
       </Feld>
 

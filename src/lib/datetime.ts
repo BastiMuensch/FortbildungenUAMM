@@ -230,6 +230,21 @@ export function montagIndex(date: Date): number {
   return (new Date(`${berlinIsoDatum(date)}T12:00:00Z`).getUTCDay() + 6) % 7;
 }
 
+/** Monatsanfang/-wechsel für Kalender, als zeitzonenunabhängiger Mittagsanker. */
+export function kalenderMonat(date: Date, versatz = 0): Date {
+  const [jahr, monat] = berlinIsoDatum(date).split("-").map(Number);
+  return new Date(Date.UTC(jahr, monat - 1 + versatz, 1, 12));
+}
+
+/** Sechs volle Wochen, immer Montag zuerst; Datumsanker liegen mittags UTC. */
+export function kalenderTage(monat: Date): Date[] {
+  const anfang = kalenderMonat(monat);
+  const start = 1 - montagIndex(anfang);
+  return Array.from({ length: 42 }, (_, index) =>
+    new Date(Date.UTC(anfang.getUTCFullYear(), anfang.getUTCMonth(), start + index, 12)),
+  );
+}
+
 /** ISO-8601-Kalenderwoche nach Berliner Kalendertag. */
 export function isoKalenderwoche(date: Date): number {
   const donnerstag = new Date(`${berlinIsoDatum(date)}T12:00:00Z`);

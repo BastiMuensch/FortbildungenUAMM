@@ -8,16 +8,15 @@ import {
 } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { KompetenzBereichOption } from "./types";
+import { kompetenzAuswahlUmschalten } from "@/lib/formularauswahl";
 
 /**
  * DigCompEdu Bavaria: sechs Kompetenzbereiche als Akkordeon, darin die
  * Unterkompetenzen als Checkboxen.
  *
  * Ausgewählt werden können sowohl der Bereich selbst (z. B. "3") als auch
- * einzelne Unterkompetenzen ("3.2"). Der Bereich wird automatisch mitgesetzt,
- * sobald eine seiner Unterkompetenzen gewählt ist — sonst würde eine
- * Fortbildung im Frontend-Filter "Kompetenzbereich 3" nicht auftauchen,
- * obwohl sie inhaltlich dazugehört.
+ * einzelne Unterkompetenzen ("3.2"), unabhängig voneinander. Der öffentliche
+ * Bereichsfilter findet Unterkompetenzen bereits über ihren Code-Präfix.
  */
 export function DigCompAccordion({
   bereiche,
@@ -30,23 +29,8 @@ export function DigCompAccordion({
 }) {
   const gesetzt = new Set(ausgewaehlt);
 
-  function umschalten(code: string, aktiv: boolean, bereichCode: string) {
-    const naechste = new Set(gesetzt);
-
-    if (aktiv) {
-      naechste.add(code);
-      naechste.add(bereichCode);
-    } else {
-      naechste.delete(code);
-
-      // War das die letzte Unterkompetenz des Bereichs, fällt auch die
-      // Bereichsmarkierung weg — es sei denn, der Bereich war direkt gewählt.
-      const bereich = bereiche.find((b) => b.code === bereichCode);
-      const nochWelche = bereich?.children.some((k) => naechste.has(k.code));
-      if (!nochWelche && code !== bereichCode) naechste.delete(bereichCode);
-    }
-
-    onChange([...naechste].sort());
+  function umschalten(code: string, aktiv: boolean) {
+    onChange(kompetenzAuswahlUmschalten(ausgewaehlt, code, aktiv));
   }
 
   return (
@@ -88,13 +72,16 @@ export function DigCompAccordion({
                     <Checkbox
                       checked={bereichGesetzt}
                       onCheckedChange={(checked) =>
-                        umschalten(bereich.code, checked, bereich.code)
+                        umschalten(bereich.code, checked)
                       }
                     />
                     <span className="text-sm font-medium">
                       Gesamter Kompetenzbereich {bereich.code}
                     </span>
                   </label>
+                  <p className="px-2.5 text-xs text-muted-foreground">
+                    Einzelne Kompetenzen können Sie unten unabhängig vom gesamten Bereich auswählen.
+                  </p>
 
                   <div className="grid gap-1 sm:grid-cols-2">
                     {bereich.children.map((kompetenz) => (
@@ -106,7 +93,7 @@ export function DigCompAccordion({
                           className="mt-0.5"
                           checked={gesetzt.has(kompetenz.code)}
                           onCheckedChange={(checked) =>
-                            umschalten(kompetenz.code, checked, bereich.code)
+                            umschalten(kompetenz.code, checked)
                           }
                         />
                         <span className="text-sm">

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BarChart3,
   BookOpen,
   CalendarDays,
   CalendarRange,
@@ -40,6 +41,7 @@ const GRUPPEN: Array<{ titel: string; eintraege: Eintrag[] }> = [
       { href: "/admin", label: "Fortbildungen", icon: CalendarDays, rollen: ALLE },
       { href: "/admin/kalender", label: "Planungskalender", icon: CalendarRange, rollen: ALLE },
       { href: "/admin/katalog", label: "Fortbildungskatalog", icon: BookOpen, rollen: ALLE },
+      { href: "/admin/auswertung", label: "Auswertung", icon: BarChart3, rollen: ALLE },
     ],
   },
   {

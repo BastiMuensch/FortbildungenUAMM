@@ -188,6 +188,22 @@ Referent:innen sehen dort ausschließlich eigene oder zugeordnete SchiLf und
 können nur deren Teilnehmerzahl nachtragen. Redaktion hat auf diese
 Nachbereitungsaktionen keinen Zugriff.
 
+Unter `/admin/auswertung` steht eine Fortbildungsbilanz mit Schuljahres-,
+Zeitraum-, Referenten-, Format- und Organisationsformfilter bereit. Sie zeigt
+Veranstaltungen und Teilnahmen je Referent und Termin sowie Verteilungen nach
+Monat, Fortbildungsart, Format und DigCompEdu-Niveaustufe. Administration und
+Redaktion sehen alle Veranstaltungen, Referenten nur ihren bestehenden
+Zugriffsbereich. Derselbe Umfang gilt für den Excel-Auswertungsbogen; eine
+Druckansicht ermöglicht auch das Speichern als PDF über den Browser.
+
+Teilnahmen zählen nur beendete, veröffentlichte oder archivierte Termine mit
+gemeldeter Teilnehmerzahl. Fehlende Meldungen bleiben unbekannt, gemeldete
+Nullwerte zählen als Meldung. Auslastung und Durchschnitt verwenden nur
+Termine mit Meldung. Gemeinsame Veranstaltungen erscheinen bei jedem
+Referenten vollständig, in der Gesamtbilanz aber nur einmal. Deshalb sind
+Referentenzeilen nicht addierbar. Es werden keine individuellen Teilnehmer
+erfasst; eine Zahl unterschiedlicher Personen lässt sich daraus nicht ableiten.
+
 ## Technik
 
 | Baustein | Wahl |

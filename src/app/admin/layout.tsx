@@ -1,3 +1,4 @@
+import { ladeSchulamt } from "@/lib/schulamt";
 import { redirect } from "next/navigation";
 
 import { getSessionUser } from "@/lib/auth";
@@ -17,11 +18,13 @@ export default async function AdminLayout({
   const user = await getSessionUser();
   if (!user) redirect("/login?weiter=/admin");
 
+  const schulamt = await ladeSchulamt();
   return (
     <div className="flex min-h-full flex-col lg:flex-row">
       <Seitenleiste
         name={user.name ?? user.email}
         rolle={user.role}
+        schulamtName={schulamt.kurzname}
       />
 
       <main id="hauptinhalt" className="min-w-0 flex-1 px-4 py-7 sm:px-8 sm:py-10 lg:px-10">

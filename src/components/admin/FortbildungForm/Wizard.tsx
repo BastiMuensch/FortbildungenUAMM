@@ -19,7 +19,6 @@ import {
   organisationsformLabel,
   schulartLabel,
   statusLabel,
-  PFLICHT_SCHLAGWORTE,
 } from "@/constants/fortbildung";
 import { cn } from "@/lib/utils";
 
@@ -59,12 +58,14 @@ export function FortbildungWizard({
   kompetenzBereiche,
   referenten,
   schlagwortVorschlaege,
+  pflichtSchlagworte,
   darfVeroeffentlichen,
 }: {
   orte: OrtOption[];
   kompetenzBereiche: KompetenzBereichOption[];
   referenten: ReferentOption[];
   schlagwortVorschlaege: string[];
+  pflichtSchlagworte: string[];
   darfVeroeffentlichen: boolean;
 }) {
   const action = saveFortbildung.bind(null, null);
@@ -156,6 +157,7 @@ export function FortbildungWizard({
         <ZielgruppeFelder
           {...gemeinsam}
           schlagwortVorschlaege={schlagwortVorschlaege}
+          pflichtSchlagworte={pflichtSchlagworte}
         />
       </Abschnitt>
 
@@ -170,6 +172,7 @@ export function FortbildungWizard({
       <Abschnitt sichtbar={letzter}>
         <div className="space-y-6">
           <Zusammenfassung
+            pflichtSchlagworte={pflichtSchlagworte}
             zustand={zustand}
             orte={orte}
             referenten={referenten}
@@ -312,11 +315,13 @@ function Speichern({
 
 /** Letzter Schritt: alle Angaben auf einen Blick, mit Vollständigkeitsprüfung. */
 function Zusammenfassung({
+  pflichtSchlagworte,
   zustand,
   orte,
   referenten,
   kompetenzBereiche,
 }: {
+  pflichtSchlagworte: string[];
   zustand: ReturnType<typeof useFortbildungState>;
   orte: OrtOption[];
   referenten: ReferentOption[];
@@ -402,7 +407,7 @@ function Zusammenfassung({
         <Zeile
           className="sm:col-span-2"
           label="Schlagworte"
-          wert={[...PFLICHT_SCHLAGWORTE, ...zustand.schlagworte].join(", ")}
+          wert={[...new Set([...pflichtSchlagworte, ...zustand.schlagworte])].join(", ")}
         />
         <Zeile label="Status" wert={statusLabel(zustand.status)} />
       </dl>

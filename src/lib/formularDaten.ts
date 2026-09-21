@@ -1,5 +1,6 @@
 import "server-only";
 
+import { ladeSchulamt } from "@/lib/schulamt";
 import { prisma } from "@/lib/prisma";
 import type {
   KompetenzBereichOption,
@@ -17,8 +18,9 @@ export async function ladeFormularDaten(): Promise<{
   kompetenzBereiche: KompetenzBereichOption[];
   referenten: ReferentOption[];
   schlagwortVorschlaege: string[];
+  pflichtSchlagworte: string[];
 }> {
-  const [orte, bereiche, referenten, schlagworte] = await Promise.all([
+  const [orte, bereiche, referenten, schlagworte, schulamt] = await Promise.all([
     prisma.veranstaltungsort.findMany({
       where: { aktiv: true },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
@@ -51,6 +53,7 @@ export async function ladeFormularDaten(): Promise<{
       orderBy: { name: "asc" },
       select: { name: true },
     }),
+    ladeSchulamt(),
   ]);
 
   return {
@@ -58,5 +61,6 @@ export async function ladeFormularDaten(): Promise<{
     kompetenzBereiche: bereiche,
     referenten,
     schlagwortVorschlaege: schlagworte.map((s) => s.name),
+    pflichtSchlagworte: schulamt.pflichtSchlagworte,
   };
 }

@@ -37,7 +37,7 @@ export function basisUrl(): string {
 
 function userAgent(): string {
   const kontakt = process.env.FIBS_USER_AGENT_CONTACT ?? "kein-kontakt-hinterlegt";
-  return `FortbildungenUAMM/1.0 (Schulamt Memmingen-Unterallgaeu; ${kontakt})`;
+  return `Fortbildungsportal/1.0 (Schulamt; ${kontakt})`;
 }
 
 /** Wartet, damit zwischen zwei Abrufen mindestens PAUSE_MS liegen. */

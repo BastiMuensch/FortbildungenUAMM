@@ -4,7 +4,6 @@ import { useId, useMemo, useState } from "react";
 import { Lock, Plus, Tag, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
-import { PFLICHT_SCHLAGWORTE } from "@/constants/fortbildung";
 import { normalisiereSchlagwort, schlagwortSchluessel } from "@/lib/schlagwort";
 
 const MAX_SCHLAGWORTE = 30;
@@ -20,15 +19,16 @@ export function SchlagwortInput({
   werte,
   onChange,
   vorschlaege,
+  pflicht,
 }: {
   werte: string[];
   onChange: (werte: string[]) => void;
   vorschlaege: string[];
+  pflicht: string[];
 }) {
   const [eingabe, setEingabe] = useState("");
   const vorschlagsId = useId();
 
-  const pflicht = PFLICHT_SCHLAGWORTE as readonly string[];
 
   const offeneVorschlaege = useMemo(() => {
     const belegt = new Set(

@@ -1,3 +1,4 @@
+import { ladeSchulamt } from "@/lib/schulamt";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -19,6 +20,7 @@ export default async function LoginPage({
   if (await getSessionUser()) redirect("/admin");
 
   const { weiter } = await searchParams;
+  const schulamt = await ladeSchulamt();
 
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-16 sm:py-24">
@@ -32,7 +34,7 @@ export default async function LoginPage({
           </span>
           <h1 className="text-xl font-semibold tracking-tight">Redaktionsbereich</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Fortbildungen des Schulamts Memmingen-Unterallgäu
+            Fortbildungen · {schulamt.kurzname}
           </p>
         </div>
 

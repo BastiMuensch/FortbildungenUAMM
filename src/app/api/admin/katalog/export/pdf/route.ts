@@ -1,3 +1,4 @@
+import { ladeSchulamt } from "@/lib/schulamt";
 import { NextResponse, type NextRequest } from "next/server";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -13,6 +14,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const user = await getSessionUser();
+  const schulamt = await ladeSchulamt();
   if (!user) return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
 
   const params: SuchParameter = Object.fromEntries(request.nextUrl.searchParams.entries());
@@ -23,20 +25,24 @@ export async function GET(request: NextRequest) {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const breite = doc.internal.pageSize.getWidth();
   const rand = 12;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  const schulamtZeilen = doc.splitTextToSize(pdfText(schulamt.name), breite - 2 * rand - 65) as string[];
+  const kopfZusatz = (schulamtZeilen.length - 1) * 4;
   doc.setFillColor(29, 56, 105);
-  doc.rect(0, 0, breite, 31, "F");
+  doc.rect(0, 0, breite, 31 + kopfZusatz, "F");
   doc.setTextColor(255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(17);
   doc.text("Fortbildungskatalog", rand, 15);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text("Staatliches Schulamt im Landkreis Unterallgäu und in der Stadt Memmingen", rand, 22);
+  doc.text(schulamtZeilen, rand, 22);
   doc.text(`${eintraege.length} vergangene Fortbildungen`, breite - rand, 22, { align: "right" });
   doc.setTextColor(0);
 
   autoTable(doc, {
-    startY: 38,
+    startY: 38 + kopfZusatz,
     margin: { left: rand, right: rand },
     head: [["Datum", "Fortbildung und Inhalt", "Art", "Ort", "Schlagworte", "Referenten"]],
     body: eintraege.map((eintrag) =>

@@ -23,7 +23,7 @@ import { LeerZustand, type Ausweg } from "@/components/public/LeerZustand";
 export const metadata: Metadata = {
   title: "Alle Fortbildungen",
   description:
-    "Suche und Filter über alle Fortbildungen des Schulamts Memmingen-Unterallgäu.",
+    "Suche und Filter über die Fortbildungsangebote des Schulamts.",
 };
 
 export default async function FortbildungsListe({

@@ -1,3 +1,4 @@
+import { ladeSchulamt } from "@/lib/schulamt";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -17,6 +18,7 @@ import { FortbildungKarte } from "@/components/public/FortbildungKarte";
 export const dynamic = "force-dynamic";
 
 export default async function Startseite() {
+  const schulamt = await ladeSchulamt();
   const jetzt = new Date();
   const schuljahr = aktuellesSchuljahr(jetzt);
   const { start, ende } = schuljahrZeitraum(schuljahr);
@@ -46,15 +48,15 @@ export default async function Startseite() {
       <section className="rounded-2xl border border-border/80 bg-[linear-gradient(135deg,var(--card)_0%,var(--card)_62%,var(--secondary)_100%)] px-5 py-10 shadow-sm sm:px-10 sm:py-14">
         <div className="max-w-4xl">
           <p className="mb-4 text-sm font-medium text-primary">
-            Memmingen · Unterallgäu
+            {schulamt.region}
           </p>
 
           <h1 className="max-w-3xl text-4xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-6xl">
-            Impulse, die Unterricht bewegen.
+            {schulamt.startTitel}
           </h1>
 
           <p className="mt-3 max-w-2xl text-base text-muted-foreground">
-            Suche für das neue digitale Fortbildungspotential für Grund- und Mittelschulen in Memmingen und dem Unterallgäu
+            {schulamt.startText}
           </p>
 
           {/* Einfaches GET-Formular: funktioniert auch ohne JavaScript. */}

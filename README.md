@@ -1,9 +1,10 @@
-# Fortbildungen Schulamt Memmingen-Unterallgäu
+# Fortbildungsportal für bayerische Schulämter
 
-Web-Anwendung zur Erfassung, Bewerbung und Darstellung von Lehrerfortbildungen
-des Staatlichen Schulamts im Landkreis Unterallgäu und in der Stadt Memmingen.
-Ersetzt die bisherige Tabellenlösung und orientiert sich an der Feldlogik von
-FIBS sowie am Kompetenzrahmen DigCompEdu Bavaria.
+Web-Anwendung zur Erfassung, Bewerbung und Darstellung von Lehrerfortbildungen.
+Jedes Schulamt betreibt eine eigene Installation mit eigener Datenbank und
+eigenen Zugängen. Name, Region, Zielgruppe und Pflicht-Schlagworte werden im
+Installationsassistenten eingerichtet. Die Anwendung orientiert sich an der
+Feldlogik von FIBS sowie am Kompetenzrahmen DigCompEdu Bavaria.
 
 **Wichtig zum Zuschnitt:** Die Anwendung verwaltet das Fortbildungs*angebot*.
 Die verbindliche Anmeldung für RLFB und ALP läuft weiterhin über **FIBS**;
@@ -277,10 +278,79 @@ unter `/admin` (Anmeldung mit den Seed-Zugangsdaten — **Passwort danach
 3. **Schulferien** — siehe unten.
 4. **FIBS-Import** — siehe unten.
 
-Die **Veranstaltungsorte** entsprechen dem Schulverzeichnis des Schulamts
-(52 Grund- und Mittelschulen, Stand 31.07.2026, Quelle in
-`prisma/seed-data/orte.ts` dokumentiert) und sind unter `/admin/orte`
-pflegbar.
+Neue Installationen starten mit einem Online-Veranstaltungsort. Das eigene
+Schulverzeichnis wird im Installationsassistenten oder unter `/admin/orte`
+importiert. Optional enthält `SCHULAMT_STARTPROFIL=uamm` beim allerersten Seed
+die bisherige UAMM-Schulliste (Quelle und Stand in `prisma/seed-data/orte.ts`).
+
+## Erstinstallation für ein anderes Schulamt
+
+1. Eine eigene Installation mit eigener PostgreSQL-Datenbank bereitstellen.
+   `.env.example` nach `.env` kopieren, Datenbankzugang, `JWT_SECRET`,
+   öffentliche `APP_BASE_URL` und das erste Administrationskonto setzen.
+   `SCHULAMT_STARTPROFIL=neutral` beibehalten.
+2. `npm run db:deploy` und `npm run db:seed` ausführen, die Anwendung bauen
+   und starten. Der Assistent setzt eine erreichbare Datenbank und das
+   Administrationskonto voraus; er erfragt keine Betriebsgeheimnisse im Browser.
+3. Unter `/login` anmelden. Der erste Aufruf von `/admin` führt zum
+   Installationsassistenten unter `/admin/einrichtung`.
+4. **Schulamt:** amtliche Bezeichnung, Kurzname, Region, Überschrift und
+   Pflicht-Schlagworte speichern. Zielgruppe und Angebotsregion erzeugen
+   automatisch die Einleitung: „Suche für das neue Fortbildungsangebot für
+   [Zielgruppe] in [Angebotsregion].“ Namen erscheinen auch in Navigation,
+   Metadaten, Kalender und Exporten.
+5. **Schulen:** CSV-Vorlage und KI-Arbeitsauftrag herunterladen, mit einem
+   amtlichen Schulverzeichnis befüllen, Vorschau prüfen und übernehmen.
+   Der Import kann übersprungen und später nachgeholt werden.
+6. **Rechtstexte:** Impressum und Datenschutzerklärung durch die geprüften
+   Fassungen des Schulamts ersetzen und jeweils speichern.
+7. **Abschluss:** Angaben prüfen und die Einrichtung abschließen. Alle
+   Einstellungen bleiben später unter „Einrichtung“ bearbeitbar. Der
+   Assistent kann dort erneut geöffnet werden.
+
+Ein eigenes Logo für PDF-Aushänge kann als `public/logo.png` oder
+`public/logo.jpg` vor dem Image-Build hinterlegt werden. FIBS-Import und
+Kontaktadresse werden weiterhin über die dokumentierten Betriebsvariablen
+gesteuert. Pflicht-Schlagworte werden serverseitig ergänzt; neu als Pflicht
+markierte Begriffe werden für die FIBS-Suche aktiviert. Entfernte Pflichtbegriffe
+bleiben in historischen Veranstaltungen erhalten, verlieren aber ihre
+Pflicht- und FIBS-Suchmarkierung. Weitere Suchbegriffe sind unter „Schlagworte“
+pflegbar. Die Konfiguration liegt in `SystemSetting`; es ist keine neue
+Datenbankmigration erforderlich.
+
+**Bestehende UAMM-Installationen:** Ohne gespeichertes Schulamtsprofil gelten
+die bisherigen Angaben mit dem aktualisierten Startseitentext. Bestehende
+Installationen werden nicht in den Assistenten gezwungen. Wiederholtes Seeden
+überschreibt weder gespeicherte Profile noch gepflegte Schuladressen und
+fügt nachträglich keine UAMM-Schulen in andere Profile ein. Kalender-UIDs
+bleiben stabil, auch wenn der Schulamtsname geändert wird.
+
+### CSV-Schulimport
+
+Die Vorlage liegt unter `public/vorlagen/schulen.csv`, der KI-Arbeitsauftrag
+unter `public/vorlagen/schulen-ki-auftrag.md`. Die Vorlage enthält bewusst
+keine Beispielschule, die versehentlich importiert werden könnte.
+
+```csv
+schulnummer;name;strasse;ort
+```
+
+`name` und `ort` sind Pflichtfelder, `schulnummer` und `strasse` optional.
+`ort` enthält den Ortsnamen ohne Postleitzahl. Schulnummern sind Textwerte;
+führende Nullen bleiben erhalten. Unterstützt werden UTF-8 (auch mit BOM),
+Semikolon oder Komma, LF/CRLF und korrekt zitierte Feldinhalte. Grenze:
+500 Schulen und 128 KB je Datei. Unbekannte Spalten, doppelte Schulen,
+widersprüchliche Schulnummern und mehrdeutige Zuordnungen verhindern die
+gesamte Übernahme; es gibt keinen stillen Teilimport.
+
+Vorhandene Orte werden zuerst per Schulnummer, sonst über Name und Ort
+zugeordnet. Leere optionale Felder löschen keine Angaben. Stillgelegte Orte
+bleiben stillgelegt, fehlende CSV-Zeilen werden nicht gelöscht. Änderungen
+gelten auch für verknüpfte Veranstaltungen; deren Anzahl erscheint in der
+Vorschau. Die Übernahme prüft Datei und Bestand erneut und erfolgt in einer
+Transaktion. Administration und Redaktion können importieren; Referenten
+haben keinen Zugriff. Die Schulamtskonfiguration ist ausschließlich für
+Administratoren zugänglich.
 
 ## Bayerische Ferien und Feiertage
 

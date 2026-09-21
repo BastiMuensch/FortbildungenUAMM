@@ -228,12 +228,6 @@ export type Rolle = ValueOf<typeof ROLLEN>;
 
 // ---------------------------------------------------------------------------
 
-/**
- * Schlagworte, die an jeder Fortbildung dieses Schulamts hängen müssen.
- * Werden im Formular als nicht entfernbare Chips gezeigt UND serverseitig
- * erneut angehängt — die Anzeige allein wäre manipulierbar.
- */
-export const PFLICHT_SCHLAGWORTE = ["UAMM", "Medienteam-UAMM"] as const;
 
 /** Zeitraum, in dem vergangene Fortbildungen aktiv nachbereitet werden. */
 export const NACHBEREITUNG_RUECKBLICK_TAGE = 400;

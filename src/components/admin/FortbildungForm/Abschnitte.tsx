@@ -342,7 +342,8 @@ export function ZielgruppeFelder({
   zustand,
   fehler,
   schlagwortVorschlaege,
-}: GemeinsameProps & { schlagwortVorschlaege: string[] }) {
+  pflichtSchlagworte,
+}: GemeinsameProps & { schlagwortVorschlaege: string[]; pflichtSchlagworte: string[] }) {
   return (
     <div className="space-y-6">
       <Feld label="Schularten" pflicht fehler={fehler.schularten}>
@@ -388,9 +389,10 @@ export function ZielgruppeFelder({
       <Feld
         label="Schlagworte"
         fehler={fehler.schlagworte}
-        hinweis="UAMM und Medienteam-UAMM sind fest gesetzt und werden immer mitgespeichert."
+        hinweis={pflichtSchlagworte.length ? "Die Pflicht-Schlagworte des Schulamts werden immer mitgespeichert." : "Passende Begriffe erleichtern die Suche nach dieser Fortbildung."}
       >
         <SchlagwortInput
+          pflicht={pflichtSchlagworte}
           werte={zustand.schlagworte}
           onChange={zustand.setSchlagworte}
           vorschlaege={schlagwortVorschlaege}

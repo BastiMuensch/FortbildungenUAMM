@@ -1,3 +1,4 @@
+import { ladeSchulamt } from "@/lib/schulamt";
 import Link from "next/link";
 import { CalendarDays, ListFilter, LogIn } from "lucide-react";
 
@@ -7,11 +8,12 @@ const NAVIGATION = [
   { href: "/login", label: "Redaktion", icon: LogIn, hervorheben: true },
 ];
 
-export default function OeffentlichesLayout({
+export default async function OeffentlichesLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const schulamt = await ladeSchulamt();
   return (
     <div className="flex min-h-full flex-col overflow-x-clip">
       <a
@@ -26,7 +28,7 @@ export default function OeffentlichesLayout({
           <Link
             href="/"
             aria-label="Fortbildungen – Startseite"
-            className="flex shrink-0 items-center gap-2 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring sm:gap-3"
+            className="flex min-w-0 items-center gap-2 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring sm:gap-3"
           >
             <span
               aria-hidden
@@ -38,8 +40,8 @@ export default function OeffentlichesLayout({
               <span className="hidden text-sm font-semibold tracking-tight text-foreground min-[360px]:block">
                 Fortbildungen
               </span>
-              <span className="hidden text-xs text-muted-foreground min-[420px]:block">
-                Schulamt Memmingen-Unterallgäu
+              <span className="hidden max-w-56 truncate text-xs text-muted-foreground min-[420px]:block">
+                {schulamt.kurzname}
               </span>
             </span>
           </Link>
@@ -73,8 +75,7 @@ export default function OeffentlichesLayout({
       <footer className="mt-16 border-t border-border bg-card/60">
         <div className="mx-auto flex max-w-6xl flex-wrap items-start gap-x-8 gap-y-4 px-4 py-8 text-sm">
           <p className="text-muted-foreground">
-            Staatliches Schulamt im Landkreis Unterallgäu
-            <br className="hidden sm:block" /> und in der Stadt Memmingen
+            {schulamt.name}
           </p>
 
           <nav className="ml-auto flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">

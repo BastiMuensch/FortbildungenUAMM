@@ -6,6 +6,8 @@
  *
  *   npm run db:seed
  */
+import { randomUUID } from "node:crypto";
+import { BISHERIGES_SCHULAMT, NEUTRALES_SCHULAMT, SCHULAMT_PROFIL_SCHLUESSEL, SchulamtProfilSchema, type SchulamtProfil } from "../src/lib/schulamtProfil";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { DIGCOMP_BAUM, type KompetenzSeed } from "./seed-data/digcomp";
@@ -14,7 +16,19 @@ import { schlagwortSchluessel } from "../src/lib/schlagwort";
 
 const prisma = new PrismaClient();
 
-const PFLICHT_SCHLAGWORTE = ["UAMM", "Medienteam-UAMM"];
+async function seedProfil(): Promise<{ profil: SchulamtProfil; importiereUamm: boolean }> {
+  const gespeichert = await prisma.systemSetting.findUnique({ where: { id: SCHULAMT_PROFIL_SCHLUESSEL } });
+  if (gespeichert) return { profil: SchulamtProfilSchema.parse(JSON.parse(gespeichert.value)), importiereUamm: false };
+  const altbestand = (await prisma.user.count()) > 0 || (await prisma.veranstaltungsort.count()) > 0 || (await prisma.fortbildung.count()) > 0;
+  const importiereUamm = !altbestand && process.env.SCHULAMT_STARTPROFIL === "uamm";
+  const profil = altbestand || importiereUamm ? BISHERIGES_SCHULAMT : NEUTRALES_SCHULAMT;
+  await prisma.$transaction([
+    prisma.systemSetting.create({ data: { id: SCHULAMT_PROFIL_SCHLUESSEL, value: JSON.stringify(profil) } }),
+    prisma.systemSetting.upsert({ where: { id: "einrichtungStatus" }, update: {}, create: { id: "einrichtungStatus", value: altbestand ? "fertig" : "offen" } }),
+    prisma.systemSetting.upsert({ where: { id: "kalenderKennung" }, update: {}, create: { id: "kalenderKennung", value: altbestand ? "fortbildungen-uamm" : `fortbildungsportal-${randomUUID()}` } }),
+  ]);
+  return { profil, importiereUamm };
+}
 
 /** Weitere Schlagworte als Startbestand — im Admin frei erweiterbar. */
 const START_SCHLAGWORTE = [
@@ -65,42 +79,24 @@ async function seedDigComp() {
   console.log(`  DigCompEdu: ${angelegt} Einträge`);
 }
 
-async function seedOrte() {
-  for (const ort of ORTE_SEED) {
-    // `ort` ist Teil des zusammengesetzten Unique-Keys; Prisma braucht dafür
-    // einen konkreten Wert, null lässt sich nicht als Schlüssel abfragen.
+async function seedOrte(importiereUamm: boolean) {
+  const orte = importiereUamm ? ORTE_SEED : ORTE_SEED.filter((ort) => ort.istOnline);
+  for (const ort of orte) {
     const bestehend = await prisma.veranstaltungsort.findFirst({
-      where: { name: ort.name, ort: ort.ort ?? null },
-      select: { id: true, strasse: true },
+      where: ort.istOnline ? { istOnline: true } : { name: ort.name, ort: ort.ort ?? null },
+      select: { id: true },
     });
-
-    if (bestehend) {
-      await prisma.veranstaltungsort.update({
-        where: { id: bestehend.id },
-        data: {
-          strasse: ort.strasse ?? bestehend.strasse,
-          istOnline: ort.istOnline ?? false,
-          sortOrder: ort.sortOrder ?? 10,
-        },
-      });
-    } else {
-      await prisma.veranstaltungsort.create({
-        data: {
-          name: ort.name,
-          ort: ort.ort ?? null,
-          strasse: ort.strasse ?? null,
-          istOnline: ort.istOnline ?? false,
-          sortOrder: ort.sortOrder ?? 10,
-        },
-      });
-    }
+    // Wiederholtes Seeden überschreibt weder Importe noch manuell gepflegte Adressen.
+    if (!bestehend) await prisma.veranstaltungsort.create({ data: {
+      name: ort.name, ort: ort.ort ?? null, strasse: ort.strasse ?? null,
+      istOnline: ort.istOnline ?? false, sortOrder: ort.sortOrder ?? 10,
+    } });
   }
-
-  console.log(`  Veranstaltungsorte: ${ORTE_SEED.length} Einträge`);
+  console.log(`  Veranstaltungsorte: ${orte.length} Starteinträge geprüft`);
 }
 
-async function seedSchlagworte() {
-  for (const name of PFLICHT_SCHLAGWORTE) {
+async function seedSchlagworte(profil: SchulamtProfil) {
+  for (const name of profil.pflichtSchlagworte) {
     await prisma.schlagwort.upsert({
       where: { normalisiert: schlagwortSchluessel(name) },
       update: { istPflicht: true },
@@ -122,7 +118,7 @@ async function seedSchlagworte() {
   }
 
   console.log(
-    `  Schlagworte: ${PFLICHT_SCHLAGWORTE.length} Pflicht + ${START_SCHLAGWORTE.length} weitere`,
+    `  Schlagworte: ${profil.pflichtSchlagworte.length} Pflicht + ${START_SCHLAGWORTE.length} weitere`,
   );
 }
 
@@ -155,14 +151,14 @@ async function seedAdmin() {
   console.log(`  Admin: ${email}`);
 }
 
-async function seedTexte() {
+async function seedTexte(profil: SchulamtProfil) {
   const texte: Array<{ id: string; value: string }> = [
     {
       id: "impressum",
       value: [
         "## Impressum",
         "",
-        "**Staatliches Schulamt im Landkreis Unterallgäu und in der Stadt Memmingen**",
+        `**${profil.name}**`,
         "",
         "_Platzhalter — bitte im Admin-Bereich durch die amtlichen Angaben ersetzen_",
         "",
@@ -216,10 +212,11 @@ async function seedTexte() {
 
 async function main() {
   console.log("Seed läuft …");
+  const { profil, importiereUamm } = await seedProfil();
   await seedDigComp();
-  await seedOrte();
-  await seedSchlagworte();
-  await seedTexte();
+  await seedOrte(importiereUamm);
+  await seedSchlagworte(profil);
+  await seedTexte(profil);
   await seedAdmin();
   console.log("Seed fertig.");
 }

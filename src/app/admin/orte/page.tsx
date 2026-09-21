@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 import { setzeOrtAktiv } from "@/actions/stammdaten";
 import { OrtFormular } from "@/components/admin/OrtFormular";
+import { Schulimport } from "@/components/admin/Schulimport";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,12 +45,12 @@ export default async function OrtePage() {
           Stillgelegte Orte stehen im Formular nicht mehr zur Auswahl.
         </p>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-          Die Liste entspricht dem Schulverzeichnis des Schulamts (Stand
-          31.07.2026). Bei Umbenennungen, Zusammenlegungen oder Umzügen hier
-          nachpflegen.
+          Importieren Sie das Schulverzeichnis Ihres Schulamts oder legen Sie
+          zusätzliche Veranstaltungsorte einzeln an.
         </p>
       </div>
 
+      <Schulimport />
       <OrtFormular />
 
       <div className="overflow-x-auto border">

@@ -1,3 +1,4 @@
+import { ladeSchulamt } from "@/lib/schulamt";
 import { NextResponse, type NextRequest } from "next/server";
 import ExcelJS from "exceljs";
 
@@ -17,13 +18,14 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const user = await getSessionUser();
+  const schulamt = await ladeSchulamt();
   if (!user) return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
 
   const params: SuchParameter = Object.fromEntries(request.nextUrl.searchParams.entries());
   const eintraege = await ladeKatalog(user, leseFilter(params));
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "Fortbildungs-Tool Schulamt Memmingen-Unterallgäu";
+  workbook.creator = `Fortbildungsportal · ${schulamt.name}`;
   workbook.created = new Date();
 
   const blatt = workbook.addWorksheet("Fortbildungskatalog", {

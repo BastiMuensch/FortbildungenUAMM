@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { ladeSchulamt } from "@/lib/schulamt";
 import { prisma } from "@/lib/prisma";
 import { AuthError, ERFASSER, darfBearbeiten, requireRole } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
@@ -10,7 +11,6 @@ import { sanitizeBeschreibung, htmlZuText } from "@/lib/sanitize";
 import { bildeSlug } from "@/lib/queries";
 import { normalisiereSchlagwortListe, schlagwortSchluessel } from "@/lib/schlagwort";
 import {
-  PFLICHT_SCHLAGWORTE,
   STATUS_FUER_REFERENTEN,
   darfFreigeben,
   type Rolle,
@@ -415,8 +415,9 @@ async function bekannteKompetenzCodes(codes: string[]): Promise<Set<string>> {
  * FIBS-Suche nicht mehr auffindbar.
  */
 async function schlagworteAufloesen(namen: string[]): Promise<string[]> {
+  const { pflichtSchlagworte } = await ladeSchulamt();
   const eindeutig = normalisiereSchlagwortListe([
-    ...PFLICHT_SCHLAGWORTE,
+    ...pflichtSchlagworte,
     ...namen,
   ]);
 
@@ -430,7 +431,7 @@ async function schlagworteAufloesen(namen: string[]): Promise<string[]> {
       create: {
         name,
         normalisiert,
-        istPflicht: (PFLICHT_SCHLAGWORTE as readonly string[]).some(
+        istPflicht: pflichtSchlagworte.some(
           (pflicht) => schlagwortSchluessel(pflicht) === normalisiert,
         ),
       },

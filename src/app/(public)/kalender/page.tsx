@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 export const metadata: Metadata = {
   title: "Kalender",
   description:
-    "Monatsübersicht aller Fortbildungen des Schulamts Memmingen-Unterallgäu, inklusive bayerischer Ferien und Feiertage.",
+    "Monatsübersicht der Fortbildungen, inklusive bayerischer Ferien und Feiertage.",
 };
 
 export default async function KalenderSeite({

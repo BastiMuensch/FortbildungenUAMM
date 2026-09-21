@@ -5,7 +5,8 @@ import path from "node:path";
 
 import { prisma } from "@/lib/prisma";
 import { bildeSlug } from "@/lib/queries";
-import { PFLICHT_SCHLAGWORTE } from "@/constants/fortbildung";
+import { ladeSchulamt } from "@/lib/schulamt";
+import { schlagwortSchluessel } from "@/lib/schlagwort";
 
 import { basisUrl, holeSuchergebnis, importAktiv } from "./client";
 import { mapFibsLehrgang, type GemappteFortbildung } from "./mapper";
@@ -291,8 +292,9 @@ async function findeOrt(daten: GemappteFortbildung): Promise<string> {
 }
 
 async function pflichtSchlagwortIds(): Promise<string[]> {
+  const { pflichtSchlagworte } = await ladeSchulamt();
   const treffer = await prisma.schlagwort.findMany({
-    where: { name: { in: [...PFLICHT_SCHLAGWORTE] } },
+    where: { normalisiert: { in: pflichtSchlagworte.map(schlagwortSchluessel) } },
     select: { id: true },
   });
   return treffer.map((t) => t.id);

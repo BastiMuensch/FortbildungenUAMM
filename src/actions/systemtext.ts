@@ -42,6 +42,7 @@ export async function speichereSystemtext(
 
   revalidatePath(`/${id}`);
   revalidatePath("/admin/texte");
+  revalidatePath("/admin/einrichtung");
 
   return { erfolg: true, meldung: "Gespeichert." };
 }

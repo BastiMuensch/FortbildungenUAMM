@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  Settings,
   BookOpen,
   CalendarDays,
   CalendarRange,
@@ -56,12 +57,13 @@ const GRUPPEN: Array<{ titel: string; eintraege: Eintrag[] }> = [
     titel: "System",
     eintraege: [
       { href: "/admin/import", label: "FIBS-Import", icon: Download, rollen: REDAKTION },
+      { href: "/admin/einrichtung", label: "Einrichtung", icon: Settings, rollen: NUR_ADMIN },
       { href: "/admin/texte", label: "Rechtstexte", icon: FileText, rollen: NUR_ADMIN },
     ],
   },
 ];
 
-export function Seitenleiste({ name, rolle }: { name: string; rolle: Rolle }) {
+export function Seitenleiste({ name, rolle, schulamtName }: { name: string; rolle: Rolle; schulamtName: string }) {
   const [offen, setOffen] = useState(false);
   const [mobil, setMobil] = useState(false);
   const ausloeserRef = useRef<HTMLButtonElement>(null);
@@ -139,7 +141,7 @@ export function Seitenleiste({ name, rolle }: { name: string; rolle: Rolle }) {
         >
           <Menu className="size-4" aria-hidden />
         </button>
-        <Wortmarke />
+        <Wortmarke schulamtName={schulamtName} />
       </div>
 
       {offen ? (
@@ -163,7 +165,7 @@ export function Seitenleiste({ name, rolle }: { name: string; rolle: Rolle }) {
         )}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-5">
-          <Wortmarke onNavigate={() => setOffen(false)} />
+          <Wortmarke schulamtName={schulamtName} onNavigate={() => setOffen(false)} />
           <button
             ref={schliessenRef}
             type="button"
@@ -246,7 +248,7 @@ function Punkt({ eintrag, onNavigate }: { eintrag: Eintrag; onNavigate: () => vo
   );
 }
 
-function Wortmarke({ onNavigate }: { onNavigate?: () => void }) {
+function Wortmarke({ onNavigate, schulamtName }: { onNavigate?: () => void; schulamtName: string }) {
   return (
     <Link href="/admin" onClick={onNavigate} className="flex items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/35">
       <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary shadow-sm">
@@ -254,7 +256,7 @@ function Wortmarke({ onNavigate }: { onNavigate?: () => void }) {
       </span>
       <span className="leading-tight">
         <span className="block text-sm font-semibold tracking-[-0.01em] text-primary">Fortbildungen</span>
-        <span className="mt-0.5 block text-xs text-muted-foreground">Schulamt UAMM</span>
+        <span className="mt-0.5 block max-w-40 truncate text-xs text-muted-foreground" title={schulamtName}>{schulamtName}</span>
       </span>
     </Link>
   );

@@ -1,3 +1,4 @@
+import { ladeSchulamt } from "@/lib/schulamt";
 import { NextResponse, type NextRequest } from "next/server";
 import { jsPDF } from "jspdf";
 
@@ -20,7 +21,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * Wappenfarben als RGB — dieselben wie im Frontend, nur im Farbraum, den
- * jsPDF versteht. Tiefblau der bayerischen Rauten, Ziegelrot Memmingens.
+ * jsPDF versteht.
  */
 const BLAU: [number, number, number] = [29, 56, 105];
 const GRAU: [number, number, number] = [112, 116, 126];
@@ -37,6 +38,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const user = await getSessionUser();
+  const schulamt = await ladeSchulamt();
   if (!user || !ERFASSER.includes(user.role)) {
     return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
   }
@@ -96,12 +98,13 @@ export async function GET(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...GRAU);
-  doc.text("Fortbildung des Schulamts Memmingen-Unterallgäu", breite - rand, y, {
+  const schulamtZeilen = doc.splitTextToSize(schulamt.kurzname, inhalt / 2) as string[];
+  doc.text(schulamtZeilen, breite - rand, y, {
     align: "right",
   });
 
   // --- Titel --------------------------------------------------------------
-  y += 14;
+  y += 14 + (schulamtZeilen.length - 1) * 4;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(26);
   doc.setTextColor(20, 24, 32);

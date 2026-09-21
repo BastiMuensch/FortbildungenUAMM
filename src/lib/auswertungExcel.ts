@@ -6,9 +6,9 @@ import { formatLabel, organisationsformLabel, statusLabel } from "@/constants/fo
 type Auswertung = ReturnType<typeof erstelleAuswertung>;
 
 /** Gleiche Kennzahlen und Datenbasis wie auf der Auswertungsseite. */
-export function erstelleAuswertungsmappe(auswertung: Auswertung, filter: AuswertungsFilter) {
+export function erstelleAuswertungsmappe(auswertung: Auswertung, filter: AuswertungsFilter, schulamtName = "Schulamt") {
   const mappe = new ExcelJS.Workbook();
-  mappe.creator = "Fortbildungs-Tool Schulamt Memmingen-Unterallgäu";
+  mappe.creator = `Fortbildungsportal · ${schulamtName}`;
   mappe.created = auswertung.jetzt;
 
   const uebersicht = mappe.addWorksheet("Übersicht");

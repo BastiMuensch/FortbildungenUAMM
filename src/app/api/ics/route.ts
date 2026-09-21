@@ -1,3 +1,4 @@
+import { ladeKalenderKennung, ladeSchulamt } from "@/lib/schulamt";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { prisma } from "@/lib/prisma";
@@ -20,6 +21,8 @@ export const dynamic = "force-dynamic";
  * Webseite stehen — Referentennamen sind bewusst nicht enthalten.
  */
 export async function GET(request: NextRequest) {
+  const schulamt = await ladeSchulamt();
+  const kalenderKennung = await ladeKalenderKennung();
   const params: SuchParameter = Object.fromEntries(
     request.nextUrl.searchParams.entries(),
   );
@@ -59,10 +62,10 @@ export async function GET(request: NextRequest) {
   const zeilen: string[] = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Schulamt Memmingen-Unterallgaeu//Fortbildungen//DE",
+    "PRODID:-//Fortbildungsportal//Fortbildungen//DE",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
-    ...falte(`X-WR-CALNAME:Fortbildungen Schulamt Memmingen-Unterallgäu`),
+    ...falte(`X-WR-CALNAME:${maskiere(`Fortbildungen ${schulamt.kurzname}`)}`),
     "X-WR-TIMEZONE:Europe/Berlin",
   ];
 
@@ -92,7 +95,7 @@ export async function GET(request: NextRequest) {
 
     zeilen.push(
       "BEGIN:VEVENT",
-      `UID:${f.id}@fortbildungen-uamm`,
+      `UID:${f.id}@${kalenderKennung}`,
       `DTSTAMP:${zuIcsZeit(f.updatedAt)}`,
       `DTSTART:${zuIcsZeit(f.beginn)}`,
       `DTEND:${zuIcsZeit(f.ende)}`,
@@ -111,7 +114,7 @@ export async function GET(request: NextRequest) {
 
   zeilen.push("END:VCALENDAR");
 
-  const dateiname = slug ? `${slug}.ics` : "fortbildungen-uamm.ics";
+  const dateiname = slug ? `${slug}.ics` : "fortbildungen.ics";
 
   return new NextResponse(zeilen.join("\r\n"), {
     headers: {

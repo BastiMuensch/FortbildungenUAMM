@@ -48,6 +48,7 @@ export function FortbildungForm({
   kompetenzBereiche,
   referenten,
   schlagwortVorschlaege,
+  pflichtSchlagworte,
   darfVeroeffentlichen,
 }: {
   fortbildung?: FortbildungWerte;
@@ -55,6 +56,7 @@ export function FortbildungForm({
   kompetenzBereiche: KompetenzBereichOption[];
   referenten: ReferentOption[];
   schlagwortVorschlaege: string[];
+  pflichtSchlagworte: string[];
   darfVeroeffentlichen: boolean;
 }) {
   const action = saveFortbildung.bind(null, fortbildung?.id ?? null);
@@ -115,6 +117,7 @@ export function FortbildungForm({
           <ZielgruppeFelder
             {...gemeinsam}
             schlagwortVorschlaege={schlagwortVorschlaege}
+            pflichtSchlagworte={pflichtSchlagworte}
           />
         </TabsContent>
 

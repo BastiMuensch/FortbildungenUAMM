@@ -1,3 +1,4 @@
+import { ladeSchulamt } from "@/lib/schulamt";
 import type { Metadata } from "next";
 import { Archivo, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
@@ -26,15 +27,19 @@ const plexMono = IBM_Plex_Mono({
   weight: ["400", "500", "600"],
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "Fortbildungen — Schulamt Memmingen-Unterallgäu",
-    template: "%s — Fortbildungen Schulamt Memmingen-Unterallgäu",
-  },
-  description:
-    "Lehrerfortbildungen des Staatlichen Schulamts im Landkreis Unterallgäu und in der Stadt Memmingen: Termine, Kalender und Suche.",
-  robots: { index: true, follow: true },
-};
+export const dynamic = "force-dynamic";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const schulamt = await ladeSchulamt();
+  return {
+    title: {
+      default: `Fortbildungen — ${schulamt.kurzname}`,
+      template: `%s — ${schulamt.kurzname}`,
+    },
+    description: schulamt.startText,
+    robots: { index: true, follow: true },
+  };
+}
 
 export default function RootLayout({
   children,

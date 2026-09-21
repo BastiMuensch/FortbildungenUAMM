@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { istEinrichtungOffen } from "@/lib/schulamt";
 import {
   CalendarDays,
   CalendarPlus,
@@ -37,6 +39,7 @@ export default async function AdminDashboard({
   searchParams: Promise<SuchParameter>;
 }) {
   const user = await requireRole(...ERFASSER);
+  if (user.role === "ADMIN" && await istEinrichtungOffen()) redirect("/admin/einrichtung");
   const params = await searchParams;
   const filter = leseFilter(params);
   const scope = fortbildungScope(user);

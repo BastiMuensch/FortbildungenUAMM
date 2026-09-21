@@ -1,3 +1,4 @@
+import { ladeSchulamt } from "@/lib/schulamt";
 import { NextResponse, type NextRequest } from "next/server";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -43,6 +44,7 @@ const REITER_FILTER: Record<string, Record<string, string>> = {
  */
 export async function GET(request: NextRequest) {
   const user = await getSessionUser();
+  const schulamt = await ladeSchulamt();
   if (!user) {
     return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
   }
@@ -82,21 +84,19 @@ export async function GET(request: NextRequest) {
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text(
-    "Staatliches Schulamt im Landkreis Unterallgäu und in der Stadt Memmingen",
-    rand,
-    22,
-  );
+  const schulamtZeilen = doc.splitTextToSize(schulamt.name, breite - 2 * rand) as string[];
+  doc.text(schulamtZeilen, rand, 22);
+  const kopfZusatz = (schulamtZeilen.length - 1) * 4;
 
   const zeitraum = beschreibeZeitraum(fortbildungen);
   doc.setTextColor(110);
-  doc.text(zeitraum, rand, 27);
-  doc.text(`Erstellt am ${formatDatumZeit(jetzt)}`, breite - rand, 27, {
+  doc.text(zeitraum, rand, 27 + kopfZusatz);
+  doc.text(`Erstellt am ${formatDatumZeit(jetzt)}`, breite - rand, 27 + kopfZusatz, {
     align: "right",
   });
   doc.setTextColor(0);
 
-  let y = 34;
+  let y = 34 + kopfZusatz;
 
   // --- Je Ebene eine Tabelle ---------------------------------------------
   const gesamt = {
@@ -324,7 +324,7 @@ export async function GET(request: NextRequest) {
   });
 
   const puffer = Buffer.from(doc.output("arraybuffer"));
-  const dateiname = `fortbildungen-uamm-${berlinIsoDatum(new Date())}.pdf`;
+  const dateiname = `fortbildungen-${berlinIsoDatum(new Date())}.pdf`;
 
   return new NextResponse(puffer, {
     headers: {

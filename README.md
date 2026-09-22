@@ -1,4 +1,4 @@
-# Fortbildungsportal für bayerische Schulämter
+# Fortbildungsübersicht für bayerische Regionen
 
 Web-Anwendung zur Erfassung, Bewerbung und Darstellung von Lehrerfortbildungen.
 Jedes Schulamt betreibt eine eigene Installation mit eigener Datenbank und

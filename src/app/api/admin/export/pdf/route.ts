@@ -1,4 +1,4 @@
-import { ladeSchulamt } from "@/lib/schulamt";
+import { ladeBezirksUeberschrift } from "@/lib/bezirke";
 import { NextResponse, type NextRequest } from "next/server";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -44,7 +44,6 @@ const REITER_FILTER: Record<string, Record<string, string>> = {
  */
 export async function GET(request: NextRequest) {
   const user = await getSessionUser();
-  const schulamt = await ladeSchulamt();
   if (!user) {
     return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
   }
@@ -53,16 +52,19 @@ export async function GET(request: NextRequest) {
     request.nextUrl.searchParams.entries(),
   );
   const reiter = typeof params.reiter === "string" ? params.reiter : "";
+  const filter = leseFilter(params);
+  const bereich = await ladeBezirksUeberschrift(user, filter.bezirk);
 
   const fortbildungen = await prisma.fortbildung.findMany({
     where: {
       AND: [
         fortbildungScope(user),
-        filterZuWhere({ ...leseFilter(params), ...(REITER_FILTER[reiter] ?? {}) }),
+        filterZuWhere({ ...filter, ...(REITER_FILTER[reiter] ?? {}) }),
       ],
     },
-    orderBy: { beginn: "asc" },
+    orderBy: [{ bezirk: { name: "asc" } }, { beginn: "asc" }],
     include: {
+      bezirk: { select: { id: true, name: true } },
       veranstaltungsort: true,
       referenten: { include: { referent: true } },
     },
@@ -84,7 +86,7 @@ export async function GET(request: NextRequest) {
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  const schulamtZeilen = doc.splitTextToSize(schulamt.name, breite - 2 * rand) as string[];
+  const schulamtZeilen = doc.splitTextToSize(bereich, breite - 2 * rand) as string[];
   doc.text(schulamtZeilen, rand, 22);
   const kopfZusatz = (schulamtZeilen.length - 1) * 4;
 
@@ -108,170 +110,191 @@ export async function GET(request: NextRequest) {
     schilfNachtragOffen: 0,
   };
 
-  for (const ebene of ORGANISATIONSFORM_REIHENFOLGE) {
-    const gruppe = fortbildungen.filter((f) => f.organisationsform === ebene);
-    const info = ORGANISATIONSFORMEN.find((o) => o.value === ebene)!;
-
+  // Jedes Schulamt beginnt auf einer eigenen Seite; darin bleiben die Ebenen erhalten.
+  const bezirke = [...new Map(fortbildungen.map((f) => [f.bezirk.id, f.bezirk])).values()];
+  for (const [index, bezirk] of bezirke.entries()) {
+    if (index > 0) { doc.addPage(); y = 18; }
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.text(`${info.kurz}: ${info.beschreibung}`, rand, y);
-    y += 5;
+    doc.setFontSize(12);
+    const bezirksZeilen = doc.splitTextToSize(`Schulamtsbezirk: ${bezirk.name}`, breite - 2 * rand) as string[];
+    doc.text(bezirksZeilen, rand, y);
+    y += bezirksZeilen.length * 5 + 4;
 
-    if (gruppe.length === 0) {
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(9);
-      doc.setTextColor(130);
-      doc.text("Keine Veranstaltungen im gewählten Zeitraum.", rand, y);
-      doc.setTextColor(0);
-      y += 10;
-      continue;
-    }
+    for (const ebene of ORGANISATIONSFORM_REIHENFOLGE) {
+      const gruppe = fortbildungen.filter((f) => f.bezirk.id === bezirk.id && f.organisationsform === ebene);
+      const info = ORGANISATIONSFORMEN.find((o) => o.value === ebene)!;
 
-    const summe = gruppe.reduce(
-      (acc, f) => ({
-        plaetze: acc.plaetze + f.maxTn,
-        teilnehmer: acc.teilnehmer + (f.tnTatsaechlich ?? 0),
-        gemeldet: acc.gemeldet + (f.tnTatsaechlich === null ? 0 : 1),
-        inFibs: acc.inFibs + (f.inFibs ? 1 : 0),
-        nachtragOffen:
-          acc.nachtragOffen +
-          (f.organisationsform === "SCHILF" &&
+      if (y > doc.internal.pageSize.getHeight() - 40) {
+        doc.addPage();
+        y = 24;
+        doc.setFontSize(10);
+        doc.text(`Schulamtsbezirk: ${bezirk.name}`, rand, 14);
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text(`${info.kurz}: ${info.beschreibung}`, rand, y);
+      y += 5;
+
+      if (gruppe.length === 0) {
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(9);
+        doc.setTextColor(130);
+        doc.text("Keine Veranstaltungen im gewählten Zeitraum.", rand, y);
+        doc.setTextColor(0);
+        y += 10;
+        continue;
+      }
+
+      const summe = gruppe.reduce(
+        (acc, f) => ({
+          plaetze: acc.plaetze + f.maxTn,
+          teilnehmer: acc.teilnehmer + (f.tnTatsaechlich ?? 0),
+          gemeldet: acc.gemeldet + (f.tnTatsaechlich === null ? 0 : 1),
+          inFibs: acc.inFibs + (f.inFibs ? 1 : 0),
+          nachtragOffen:
+            acc.nachtragOffen +
+            (f.organisationsform === "SCHILF" &&
+            !f.inFibs &&
+            f.ende < jetzt &&
+            ["VEROEFFENTLICHT", "ARCHIVIERT"].includes(f.status)
+              ? 1
+              : 0),
+          nachtragNachTermin:
+            acc.nachtragNachTermin +
+            (f.organisationsform === "SCHILF" &&
+            !f.inFibs &&
+            f.ende >= jetzt &&
+            ["VEROEFFENTLICHT", "ARCHIVIERT"].includes(f.status)
+              ? 1
+              : 0),
+        }),
+        {
+          plaetze: 0,
+          teilnehmer: 0,
+          gemeldet: 0,
+          inFibs: 0,
+          nachtragOffen: 0,
+          nachtragNachTermin: 0,
+        },
+      );
+
+      gesamt.termine += gruppe.length;
+      gesamt.plaetze += summe.plaetze;
+      gesamt.teilnehmer += summe.teilnehmer;
+      gesamt.gemeldet += summe.gemeldet;
+      gesamt.fibsOffen += gruppe.filter(
+        (f) =>
+          f.organisationsform !== "SCHILF" &&
+          !f.inFibs &&
+          ["VEROEFFENTLICHT", "ARCHIVIERT"].includes(f.status),
+      ).length;
+      gesamt.schilfNachtragOffen += gruppe.filter(
+        (f) =>
+          f.organisationsform === "SCHILF" &&
           !f.inFibs &&
           f.ende < jetzt &&
-          ["VEROEFFENTLICHT", "ARCHIVIERT"].includes(f.status)
-            ? 1
-            : 0),
-        nachtragNachTermin:
-          acc.nachtragNachTermin +
-          (f.organisationsform === "SCHILF" &&
-          !f.inFibs &&
-          f.ende >= jetzt &&
-          ["VEROEFFENTLICHT", "ARCHIVIERT"].includes(f.status)
-            ? 1
-            : 0),
-      }),
-      {
-        plaetze: 0,
-        teilnehmer: 0,
-        gemeldet: 0,
-        inFibs: 0,
-        nachtragOffen: 0,
-        nachtragNachTermin: 0,
-      },
-    );
+          ["VEROEFFENTLICHT", "ARCHIVIERT"].includes(f.status),
+      ).length;
 
-    gesamt.termine += gruppe.length;
-    gesamt.plaetze += summe.plaetze;
-    gesamt.teilnehmer += summe.teilnehmer;
-    gesamt.gemeldet += summe.gemeldet;
-    gesamt.fibsOffen += gruppe.filter(
-      (f) =>
-        f.organisationsform !== "SCHILF" &&
-        !f.inFibs &&
-        ["VEROEFFENTLICHT", "ARCHIVIERT"].includes(f.status),
-    ).length;
-    gesamt.schilfNachtragOffen += gruppe.filter(
-      (f) =>
-        f.organisationsform === "SCHILF" &&
-        !f.inFibs &&
-        f.ende < jetzt &&
-        ["VEROEFFENTLICHT", "ARCHIVIERT"].includes(f.status),
-    ).length;
+      const fibsSumme =
+        ebene === "SCHILF"
+          ? [
+              `${summe.inFibs} nachgetragen`,
+              summe.nachtragOffen > 0 ? `${summe.nachtragOffen} offen` : "",
+              summe.nachtragNachTermin > 0
+                ? `${summe.nachtragNachTermin} nach Termin`
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" / ")
+          : `${summe.inFibs}/${gruppe.length} eingetragen`;
 
-    const fibsSumme =
-      ebene === "SCHILF"
-        ? [
-            `${summe.inFibs} nachgetragen`,
-            summe.nachtragOffen > 0 ? `${summe.nachtragOffen} offen` : "",
-            summe.nachtragNachTermin > 0
-              ? `${summe.nachtragNachTermin} nach Termin`
-              : "",
-          ]
-            .filter(Boolean)
-            .join(" / ")
-        : `${summe.inFibs}/${gruppe.length} eingetragen`;
-
-    autoTable(doc, {
-      startY: y,
-      margin: { left: rand, right: rand },
-      head: [
-        [
-          "Datum",
-          "Zeit",
-          "Titel",
-          "Ort",
-          "Format",
-          "Schularten",
-          "Niveau",
-          "Referenten",
-          "Plätze",
-          "TN",
-          "FIBS",
-          "Status",
+      autoTable(doc, {
+        startY: y,
+        margin: { top: 24, bottom: 16, left: rand, right: rand },
+        willDrawPage(daten) {
+          if (daten.pageNumber > 1) {
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(10);
+            doc.text(`Schulamtsbezirk: ${bezirk.name}`, rand, 14);
+          }
+        },
+        head: [
+          [
+            "Datum",
+            "Zeit",
+            "Titel",
+            "Ort",
+            "Format",
+            "Schularten",
+            "Niveau",
+            "Referenten",
+            "Plätze",
+            "TN",
+            "FIBS",
+            "Status",
+          ],
         ],
-      ],
-      body: gruppe.map((f) => [
-        formatDatum(f.beginn),
-        `${formatZeit(f.beginn)}-${formatZeit(f.ende)}`,
-        f.titel,
-        f.veranstaltungsort.name,
-        formatLabel(f.format),
-        f.schularten.map((s) => schulartLabel(s)).join(", "),
-        f.niveaustufe ? niveaustufeLabel(f.niveaustufe).replace("Niveaustufe ", "") : "-",
-        f.referenten
-          .map((r) => `${r.referent.vorname[0]}. ${r.referent.nachname}`)
-          .join(", ") || "-",
-        String(f.maxTn),
-        // Ein leeres Feld hieße "null Teilnehmende" — die offene Meldung wird
-        // deshalb ausdrücklich als solche gekennzeichnet.
-        f.tnTatsaechlich === null ? "offen" : String(f.tnTatsaechlich),
-        fibsStatusText({
-          organisationsform: f.organisationsform,
-          inFibs: f.inFibs,
-          ende: f.ende,
-          status: f.status,
-          jetzt,
-        }),
-        statusLabel(f.status),
-      ]),
-      foot: [
-        [
-          {
-            content: `${gruppe.length} ${gruppe.length === 1 ? "Veranstaltung" : "Veranstaltungen"}`,
-            colSpan: 8,
-          },
-          String(summe.plaetze),
-          `${summe.teilnehmer}${summe.gemeldet < gruppe.length ? ` (${gruppe.length - summe.gemeldet} offen)` : ""}`,
-          fibsSumme,
-          "",
+        body: gruppe.map((f) => [
+          formatDatum(f.beginn),
+          `${formatZeit(f.beginn)}-${formatZeit(f.ende)}`,
+          f.titel,
+          f.veranstaltungsort.name,
+          formatLabel(f.format),
+          f.schularten.map((s) => schulartLabel(s)).join(", "),
+          f.niveaustufe ? niveaustufeLabel(f.niveaustufe).replace("Niveaustufe ", "") : "-",
+          f.referenten
+            .map((r) => `${r.referent.vorname[0]}. ${r.referent.nachname}`)
+            .join(", ") || "-",
+          String(f.maxTn),
+          // Ein leeres Feld hieße "null Teilnehmende" — die offene Meldung wird
+          // deshalb ausdrücklich als solche gekennzeichnet.
+          f.tnTatsaechlich === null ? "offen" : String(f.tnTatsaechlich),
+          fibsStatusText({
+            organisationsform: f.organisationsform,
+            inFibs: f.inFibs,
+            ende: f.ende,
+            status: f.status,
+            jetzt,
+          }),
+          statusLabel(f.status),
+        ]),
+        foot: [
+          [
+            {
+              content: `${gruppe.length} ${gruppe.length === 1 ? "Veranstaltung" : "Veranstaltungen"}`,
+              colSpan: 8,
+            },
+            String(summe.plaetze),
+            `${summe.teilnehmer}${summe.gemeldet < gruppe.length ? ` (${gruppe.length - summe.gemeldet} offen)` : ""}`,
+            fibsSumme,
+            "",
+          ],
         ],
-      ],
-      styles: { fontSize: 7.5, cellPadding: 1.6, overflow: "linebreak" },
-      headStyles: { fillColor: [29, 56, 105], fontSize: 7.5 },
-      footStyles: { fillColor: [246, 244, 238], textColor: 20, fontStyle: "bold" },
-      columnStyles: {
-        0: { cellWidth: 18 },
-        1: { cellWidth: 17 },
-        2: { cellWidth: 49 },
-        3: { cellWidth: 36 },
-        4: { cellWidth: 15 },
-        5: { cellWidth: 30 },
-        6: { cellWidth: 12 },
-        7: { cellWidth: 30 },
-        8: { cellWidth: 12, halign: "right" },
-        9: { cellWidth: 13, halign: "right" },
-        10: { cellWidth: 18 },
-        11: { cellWidth: 24 },
-      },
-    });
+        styles: { fontSize: 7.5, cellPadding: 1.6, overflow: "linebreak" },
+        headStyles: { fillColor: [29, 56, 105], fontSize: 7.5 },
+        footStyles: { fillColor: [246, 244, 238], textColor: 20, fontStyle: "bold" },
+        columnStyles: {
+          0: { cellWidth: 18 },
+          1: { cellWidth: 17 },
+          2: { cellWidth: 48 },
+          3: { cellWidth: 36 },
+          4: { cellWidth: 15 },
+          5: { cellWidth: 30 },
+          6: { cellWidth: 12 },
+          7: { cellWidth: 30 },
+          8: { cellWidth: 12, halign: "right" },
+          9: { cellWidth: 13, halign: "right" },
+          10: { cellWidth: 18 },
+          11: { cellWidth: 24 },
+        },
+      });
 
-    // jspdf-autotable schreibt die Endposition der letzten Tabelle hierher.
-    y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable
-      .finalY + 10;
+      // jspdf-autotable schreibt die Endposition der letzten Tabelle hierher.
+      y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable
+        .finalY + 10;
 
-    if (y > doc.internal.pageSize.getHeight() - 30) {
-      doc.addPage();
-      y = 18;
     }
   }
 
@@ -286,8 +309,7 @@ export async function GET(request: NextRequest) {
   doc.text("Gesamt", rand, y);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text(
-    `${gesamt.termine} Veranstaltungen · ${gesamt.plaetze} geplante Plätze · ` +
+  const gesamtText = `${gesamt.termine} Veranstaltungen · ${gesamt.plaetze} geplante Plätze · ` +
       `${gesamt.teilnehmer} gemeldete Teilnehmende` +
       (gesamt.termine - gesamt.gemeldet > 0
         ? ` · ${gesamt.termine - gesamt.gemeldet} Meldungen noch offen`
@@ -297,10 +319,8 @@ export async function GET(request: NextRequest) {
         : "") +
       (gesamt.schilfNachtragOffen > 0
         ? ` · ${gesamt.schilfNachtragOffen} SchiLf-Nachträge offen`
-        : ""),
-    rand,
-    y + 5,
-  );
+        : "");
+  doc.text(doc.splitTextToSize(gesamtText, breite - 2 * rand), rand, y + 5);
 
   // --- Seitenzahlen -------------------------------------------------------
   const seiten = doc.getNumberOfPages();

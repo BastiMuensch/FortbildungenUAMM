@@ -2,9 +2,9 @@ import "server-only";
 
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
-import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { fortbildungScope } from "@/lib/berechtigungsScope";
 import type { Rolle } from "@/constants/fortbildung";
 import {
   liesSessionVersion,
@@ -34,13 +34,16 @@ export interface SessionUser {
   role: Rolle;
   /** Bei der Rolle REFERENT: der zugehörige Eintrag im Referentenverzeichnis. */
   referentId: string | null;
+  /** Bezirke, für die dieses Konto organisatorisch zuständig ist. */
+  bezirkIds: string[];
+  bezirke: Array<{ id: string; name: string }>;
 }
 
-/** Darf alles außer Systemverwaltung — also Redaktion und Administration. */
-export const REDAKTION: Rolle[] = ["ADMIN", "REDAKTEUR"];
+/** Redaktion und BdBs; ihre Abfragen bleiben auf die zugeordneten Bezirke begrenzt. */
+export const REDAKTION: Rolle[] = ["RVS", "ADMIN", "REDAKTEUR"];
 
 /** Alle, die überhaupt Fortbildungen erfassen dürfen. */
-export const ERFASSER: Rolle[] = ["ADMIN", "REDAKTEUR", "REFERENT"];
+export const ERFASSER: Rolle[] = ["RVS", "ADMIN", "REDAKTEUR", "REFERENT"];
 
 export async function signToken(
   userId: string,
@@ -119,7 +122,14 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       role: true,
       isActive: true,
       sessionVersion: true,
-      referent: { select: { id: true, aktiv: true } },
+      bezirke: { where: { aktiv: true }, select: { id: true, name: true }, orderBy: { name: "asc" } },
+      referent: {
+        select: {
+          id: true,
+          aktiv: true,
+          bezirke: { where: { aktiv: true }, select: { id: true, name: true }, orderBy: { name: "asc" } },
+        },
+      },
     },
   });
 
@@ -135,12 +145,18 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   // bliebe ein ausgeschiedener Referent weiter angemeldet.
   if (user.role === "REFERENT" && !user.referent?.aktiv) return null;
 
+  // Referentenzuständigkeiten werden am Referenteneintrag gepflegt. Für die
+  // Session verwenden wir sie verbindlich, damit ein BdB einem Referenten
+  // keinen Bezirk über ein separates Benutzerfeld unterschieben kann.
+  const bezirke = user.role === "REFERENT" ? (user.referent?.bezirke ?? []) : user.bezirke;
   return {
     id: user.id,
     email: user.email,
     name: user.name,
     role: user.role as Rolle,
     referentId: user.referent?.id ?? null,
+    bezirkIds: bezirke.map((bezirk) => bezirk.id),
+    bezirke,
   };
 }
 
@@ -169,31 +185,18 @@ export async function requireRole(...rollen: Rolle[]): Promise<SessionUser> {
 /**
  * Einschränkung, welche Fortbildungen eine Person sehen und bearbeiten darf.
  *
- * Redaktion und Administration sehen alles. Referentinnen und Referenten nur
- * das, was sie selbst angelegt haben oder wo sie als Leitung eingetragen sind.
+ * Die RvS sieht alles, BdBs und Redaktion nur ihre zugeordneten Bezirke.
+ * Referierende benötigen zusätzlich die eigene Veranstaltungszuordnung.
  * Diese eine Funktion wird überall verwendet, damit die Regel nicht an jeder
  * Abfrage neu formuliert — und irgendwann vergessen — wird.
  */
-export function fortbildungScope(user: SessionUser): Prisma.FortbildungWhereInput {
-  if (REDAKTION.includes(user.role)) return {};
-
-  return {
-    OR: [
-      { createdById: user.id },
-      ...(user.referentId
-        ? [{ referenten: { some: { referentId: user.referentId } } }]
-        : []),
-    ],
-  };
-}
+export { bezirkScope, fortbildungScope, referentScope } from "@/lib/berechtigungsScope";
 
 /** Prüft den Zugriff auf einen konkreten Datensatz. */
 export async function darfBearbeiten(
   user: SessionUser,
   fortbildungId: string,
 ): Promise<boolean> {
-  if (REDAKTION.includes(user.role)) return true;
-
   const treffer = await prisma.fortbildung.findFirst({
     where: { AND: [{ id: fortbildungId }, fortbildungScope(user)] },
     select: { id: true },

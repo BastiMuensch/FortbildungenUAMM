@@ -37,6 +37,7 @@ import { SCHRITTE } from "./schritte";
 import { FehlerUebersicht } from "./FehlerUebersicht";
 import { schrittFehler, useFortbildungState } from "./state";
 import type {
+  BezirkOption,
   KompetenzBereichOption,
   OrtOption,
   ReferentOption,
@@ -58,14 +59,14 @@ export function FortbildungWizard({
   kompetenzBereiche,
   referenten,
   schlagwortVorschlaege,
-  pflichtSchlagworte,
+  bezirke,
   darfVeroeffentlichen,
 }: {
   orte: OrtOption[];
   kompetenzBereiche: KompetenzBereichOption[];
   referenten: ReferentOption[];
   schlagwortVorschlaege: string[];
-  pflichtSchlagworte: string[];
+  bezirke: BezirkOption[];
   darfVeroeffentlichen: boolean;
 }) {
   const action = saveFortbildung.bind(null, null);
@@ -75,7 +76,9 @@ export function FortbildungWizard({
   const [lokaleFehler, setLokaleFehler] = useState<Record<string, string>>({});
   const formularRef = useRef<HTMLFormElement>(null);
 
-  const zustand = useFortbildungState(undefined, orte);
+  const zustand = useFortbildungState(undefined, orte, bezirke.length === 1 ? bezirke[0]!.id : "");
+  const pflichtSchlagworte = bezirke.find((b) => b.id === zustand.bezirkId)?.pflichtSchlagworte ?? [];
+  const passendeReferenten = referenten.filter((r) => r.bezirkIds.includes(zustand.bezirkId));
   const serverFehler = useMemo(() => state.fehler ?? {}, [state.fehler]);
   const fehler = { ...lokaleFehler, ...serverFehler };
 
@@ -146,7 +149,7 @@ export function FortbildungWizard({
         nicht besuchten Schritte beim Absenden. Nur der aktuelle ist sichtbar.
       */}
       <Abschnitt sichtbar={schritt.id === "eckdaten"}>
-        <EckdatenFelder {...gemeinsam} zeigeVeroeffentlichung={false} />
+        <EckdatenFelder {...gemeinsam} bezirke={bezirke} zeigeVeroeffentlichung={false} />
       </Abschnitt>
 
       <Abschnitt sichtbar={schritt.id === "beschreibung"}>
@@ -166,7 +169,7 @@ export function FortbildungWizard({
       </Abschnitt>
 
       <Abschnitt sichtbar={schritt.id === "referenten"}>
-        <ReferentenFelder {...gemeinsam} referenten={referenten} />
+        <ReferentenFelder {...gemeinsam} referenten={passendeReferenten} />
       </Abschnitt>
 
       <Abschnitt sichtbar={letzter}>

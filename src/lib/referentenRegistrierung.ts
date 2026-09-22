@@ -15,6 +15,7 @@ function hashe(token: string): string {
  */
 export async function erzeugeReferentenRegistrierungslink(
   erstelltVonId: string,
+  bezirkId: string,
   maxNutzungen: number,
 ): Promise<{ token: string; gueltigBis: Date }> {
   const token = randomBytes(32).toString("base64url");
@@ -22,25 +23,55 @@ export async function erzeugeReferentenRegistrierungslink(
     Date.now() + REGISTRIERUNG_GUELTIGKEIT_TAGE * 24 * 60 * 60 * 1000,
   );
 
-  // Es gibt immer nur einen aktiven allgemeinen Link. Beim Erzeugen eines
-  // neuen Links wird ein möglicherweise weitergeleiteter älterer Link sofort
-  // unwirksam, ohne den Vorgang bereits registrierter Personen zu berühren.
-  await prisma.$transaction([
-    prisma.referentenRegistrierungslink.updateMany({
-      where: { aktiv: true },
+  // Pro Bezirk gibt es nur einen aktiven Link. Ein BdB kann damit keinen Link
+  // eines anderen Bezirks entwerten.
+  await prisma.$transaction(async (tx) => {
+    // Der transaktionale PostgreSQL-Lock verhindert, dass zwei parallele
+    // BdB-Requests für denselben Bezirk beide einen gültigen Link hinterlassen.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${bezirkId}))`;
+    await tx.referentenRegistrierungslink.updateMany({
+      where: { aktiv: true, bezirkId },
       data: { aktiv: false },
-    }),
-    prisma.referentenRegistrierungslink.create({
+    });
+    await tx.referentenRegistrierungslink.create({
       data: {
         tokenHash: hashe(token),
         expiresAt: gueltigBis,
         maxNutzungen,
         erstelltVonId,
+        bezirkId,
       },
-    }),
-  ]);
+    });
+  });
 
   return { token, gueltigBis };
+}
+
+/** Minimaldaten für die öffentliche Registrierungsseite. */
+export async function ladeReferentenRegistrierungslink(
+  token: string,
+): Promise<{ bezirkId: string; bezirkName: string } | null> {
+  if (token.length < 40 || token.length > 200) return null;
+
+  const link = await prisma.referentenRegistrierungslink.findUnique({
+    where: { tokenHash: hashe(token) },
+    select: {
+      aktiv: true,
+      expiresAt: true,
+      nutzungen: true,
+      maxNutzungen: true,
+      bezirk: { select: { id: true, name: true, aktiv: true } },
+    },
+  });
+  if (
+    !link?.aktiv ||
+    !link.bezirk.aktiv ||
+    link.expiresAt <= new Date() ||
+    link.nutzungen >= link.maxNutzungen
+  ) {
+    return null;
+  }
+  return { bezirkId: link.bezirk.id, bezirkName: link.bezirk.name };
 }
 
 /** Prüft nur die Link-Gültigkeit; der Link bleibt dabei wiederverwendbar. */
@@ -51,11 +82,18 @@ export async function pruefeReferentenRegistrierungslink(
 
   const link = await prisma.referentenRegistrierungslink.findUnique({
     where: { tokenHash: hashe(token) },
-    select: { aktiv: true, expiresAt: true, nutzungen: true, maxNutzungen: true },
+    select: {
+      aktiv: true,
+      expiresAt: true,
+      nutzungen: true,
+      maxNutzungen: true,
+      bezirk: { select: { aktiv: true } },
+    },
   });
 
   return Boolean(
-    link?.aktiv &&
+      link?.aktiv &&
+      link.bezirk.aktiv &&
       link.expiresAt > new Date() &&
       link.nutzungen < link.maxNutzungen,
   );

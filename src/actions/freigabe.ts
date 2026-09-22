@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
-import { AuthError, requireRole } from "@/lib/auth";
+import { AuthError, fortbildungScope, requireRole } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 import { pruefeVeroeffentlichung } from "@/lib/validation/fortbildung";
 import type { FormularState } from "@/lib/validation/fortbildung";
@@ -14,7 +14,7 @@ import type { FormularState } from "@/lib/validation/fortbildung";
  *
  * Referentinnen und Referenten reichen ein (Status EINGEREICHT), die
  * Administration gibt frei oder weist mit Begründung zurück. Alle Aktionen
- * hier sind ausschließlich ADMINs vorbehalten — die Prüfung steht in jeder
+ * hier sind der RvS und den zuständigen BdBs vorbehalten — die Prüfung steht in jeder
  * Funktion, weil Server Actions eigene Endpunkte sind.
  */
 
@@ -26,10 +26,10 @@ function alleFrischMachen() {
 }
 
 export async function freigeben(id: string): Promise<void> {
-  const user = await requireRole("ADMIN");
+  const user = await requireRole("RVS", "ADMIN");
 
   const fortbildung = await prisma.fortbildung.findUnique({
-    where: { id },
+    where: { id, AND: [fortbildungScope(user)] },
     select: {
       titel: true,
       status: true,
@@ -56,7 +56,7 @@ export async function freigeben(id: string): Promise<void> {
     // Kein stiller Abbruch: Die Notiz erklärt der einreichenden Person, was
     // fehlt, und der Status fällt zurück auf Entwurf.
     await prisma.fortbildung.updateMany({
-      where: { id, status: "EINGEREICHT" },
+      where: { id, AND: [fortbildungScope(user)], status: "EINGEREICHT" },
       data: {
         status: "ENTWURF",
         freigabeNotiz: `Freigabe nicht möglich: ${Object.values(luecken).join(" ")}`,
@@ -67,7 +67,7 @@ export async function freigeben(id: string): Promise<void> {
   }
 
   const veroeffentlicht = await prisma.fortbildung.updateMany({
-    where: { id, status: "EINGEREICHT" },
+    where: { id, AND: [fortbildungScope(user)], status: "EINGEREICHT" },
     data: {
       status: "VEROEFFENTLICHT",
       freigegebenAm: new Date(),
@@ -102,7 +102,7 @@ export async function zurueckweisen(
 ): Promise<FormularState> {
   let user;
   try {
-    user = await requireRole("ADMIN");
+    user = await requireRole("RVS", "ADMIN");
   } catch (error) {
     if (error instanceof AuthError) return { fehler: { _: error.message } };
     throw error;
@@ -114,7 +114,7 @@ export async function zurueckweisen(
   }
 
   const zurueckgewiesen = await prisma.fortbildung.updateMany({
-    where: { id, status: "EINGEREICHT" },
+    where: { id, AND: [fortbildungScope(user)], status: "EINGEREICHT" },
     data: {
       status: "ENTWURF",
       freigabeNotiz: notiz.data,
@@ -145,11 +145,12 @@ export async function zurueckweisen(
  * Eine Nummer kann vorgemerkt sein, lange bevor der Eintrag in FIBS steht.
  */
 export async function fibsStatusSetzen(id: string, inFibs: boolean): Promise<void> {
-  const user = await requireRole("ADMIN");
+  const user = await requireRole("RVS", "ADMIN");
 
   const aktualisiert = await prisma.fortbildung.updateMany({
     where: {
       id,
+      AND: [fortbildungScope(user)],
       status: "VEROEFFENTLICHT",
       // Teilnahmebestätigungen dokumentieren einen bereits erfolgten
       // FIBS-Vorgang. Solange einer dieser Vermerke besteht, darf auch über

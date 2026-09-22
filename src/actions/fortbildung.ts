@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { ladeSchulamt } from "@/lib/schulamt";
+import { pruefeBezirk } from "@/lib/bezirke";
 import { prisma } from "@/lib/prisma";
-import { AuthError, ERFASSER, darfBearbeiten, requireRole } from "@/lib/auth";
+import { AuthError, ERFASSER, darfBearbeiten, fortbildungScope, requireRole } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 import { sanitizeBeschreibung, htmlZuText } from "@/lib/sanitize";
 import { bildeSlug } from "@/lib/queries";
@@ -56,6 +56,13 @@ export async function saveFortbildung(
   }
 
   const daten = geparst.data;
+  try {
+    await pruefeBezirk(user, daten.bezirkId);
+  } catch (error) {
+    if (error instanceof AuthError) return { fehler: { bezirkId: error.message } };
+    throw error;
+  }
+
 
   // --- Was diese Rolle mit dem Status tun darf ------------------------------
   if (!darfFreigeben(user.role)) {
@@ -72,7 +79,7 @@ export async function saveFortbildung(
     // umgeschrieben werden — sonst wäre die Freigabe wertlos.
     if (id) {
       const bisher = await prisma.fortbildung.findUnique({
-        where: { id },
+        where: { id, AND: [fortbildungScope(user)] },
         select: { status: true },
       });
       if (bisher && !STATUS_FUER_REFERENTEN.includes(bisher.status as never)) {
@@ -111,13 +118,13 @@ export async function saveFortbildung(
 
   // Erst gegen die Datenbank auflösen: Eine manipulierte, aber formal gültige
   // UUID darf die Veröffentlichungs-Pflicht nicht nur scheinbar erfüllen.
-  const referentIds = await pruefeReferenten(daten.referenten);
+  const referentIds = await pruefeReferenten(daten.referenten, daten.bezirkId);
   const fehlendeReferenten = fehlendeReferentIds(daten.referenten, referentIds);
   if (fehlendeReferenten.length > 0) {
     return {
       fehler: {
         referenten:
-          "Mindestens eine ausgewählte Referentin oder ein ausgewählter Referent existiert nicht mehr. Bitte die Seite neu laden.",
+          "Mindestens eine ausgewählte Referentin oder ein ausgewählter Referent ist nicht aktiv oder gehört nicht zum gewählten Bezirk. Bitte die Auswahl prüfen.",
       },
     };
   }
@@ -128,12 +135,13 @@ export async function saveFortbildung(
   });
   if (unvollstaendig) return { fehler: unvollstaendig };
 
-  const schlagwortIds = await schlagworteAufloesen(daten.schlagworte);
+  const schlagwortIds = await schlagworteAufloesen(daten.schlagworte, daten.bezirkId);
 
   const beschreibungHtml = sanitizeBeschreibung(daten.beschreibungHtml);
   const beschreibungText = htmlZuText(beschreibungHtml);
 
   const basisDaten = {
+    bezirkId: daten.bezirkId,
     titel: daten.titel,
     kurztitel: daten.kurztitel,
     beschreibungHtml,
@@ -168,7 +176,7 @@ export async function saveFortbildung(
 
   if (id) {
     const bestehend = await prisma.fortbildung.findUnique({
-      where: { id },
+      where: { id, AND: [fortbildungScope(user)] },
       select: { id: true, titel: true, beginn: true, slug: true, status: true },
     });
     if (!bestehend) return { fehler: { _: "Diese Fortbildung existiert nicht mehr." } };
@@ -180,7 +188,7 @@ export async function saveFortbildung(
       prisma.fortbildungKompetenz.deleteMany({ where: { fortbildungId: id } }),
       prisma.fortbildungReferent.deleteMany({ where: { fortbildungId: id } }),
       prisma.fortbildung.update({
-        where: { id },
+        where: { id, AND: [fortbildungScope(user)] },
         data: {
           ...basisDaten,
           ...statusMetadaten(bestehend.status, daten.status, user),
@@ -290,13 +298,16 @@ export async function duplizieren(id: string) {
   if (!(await darfBearbeiten(user, id))) return;
 
   const quelle = await prisma.fortbildung.findUnique({
-    where: { id },
+    where: { id, AND: [fortbildungScope(user)] },
     include: { schlagworte: true, kompetenzen: true, referenten: true },
   });
   if (!quelle) return;
+  await pruefeBezirk(user, quelle.bezirkId);
+  const referentIds = await pruefeReferenten(quelle.referenten.map((r) => r.referentId), quelle.bezirkId);
 
   const kopie = await prisma.fortbildung.create({
     data: {
+      bezirkId: quelle.bezirkId,
       titel: `${quelle.titel} (Kopie)`,
       kurztitel: quelle.kurztitel,
       beschreibungHtml: quelle.beschreibungHtml,
@@ -322,7 +333,7 @@ export async function duplizieren(id: string) {
         create: quelle.kompetenzen.map((k) => ({ kompetenzCode: k.kompetenzCode })),
       },
       referenten: {
-        create: quelle.referenten.map((r) => ({
+        create: quelle.referenten.filter((r) => referentIds.includes(r.referentId)).map((r) => ({
           referentId: r.referentId,
           rolle: r.rolle,
         })),
@@ -348,14 +359,15 @@ export async function duplizieren(id: string) {
 }
 
 export async function loeschen(id: string) {
-  const user = await requireRole("ADMIN");
+  const user = await requireRole("RVS", "ADMIN");
 
+  if (!(await darfBearbeiten(user, id))) throw new AuthError("Kein Zugriff auf diese Fortbildung.");
   const fortbildung = await prisma.fortbildung.findUnique({
-    where: { id },
+    where: { id, AND: [fortbildungScope(user)] },
     select: { titel: true },
   });
 
-  await prisma.fortbildung.delete({ where: { id } });
+  await prisma.fortbildung.delete({ where: { id, AND: [fortbildungScope(user)] } });
   await auditLog({
     userId: user.id,
     aktion: "DELETE",
@@ -414,8 +426,8 @@ async function bekannteKompetenzCodes(codes: string[]): Promise<Set<string>> {
  * käme ohne sie an — und genau dann wären die Einträge in der späteren
  * FIBS-Suche nicht mehr auffindbar.
  */
-async function schlagworteAufloesen(namen: string[]): Promise<string[]> {
-  const { pflichtSchlagworte } = await ladeSchulamt();
+async function schlagworteAufloesen(namen: string[], bezirkId: string): Promise<string[]> {
+  const { pflichtSchlagworte } = await prisma.bezirk.findUniqueOrThrow({ where: { id: bezirkId }, select: { pflichtSchlagworte: true } });
   const eindeutig = normalisiereSchlagwortListe([
     ...pflichtSchlagworte,
     ...namen,
@@ -443,11 +455,11 @@ async function schlagworteAufloesen(namen: string[]): Promise<string[]> {
   return ids;
 }
 
-async function pruefeReferenten(ids: string[]): Promise<string[]> {
+async function pruefeReferenten(ids: string[], bezirkId: string): Promise<string[]> {
   if (ids.length === 0) return [];
 
   const vorhanden = await prisma.referent.findMany({
-    where: { id: { in: ids } },
+    where: { id: { in: ids }, aktiv: true, bezirke: { some: { id: bezirkId, aktiv: true } } },
     select: { id: true },
   });
   return vorhanden.map((r) => r.id);

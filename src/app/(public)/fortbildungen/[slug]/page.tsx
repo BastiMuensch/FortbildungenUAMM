@@ -163,6 +163,10 @@ export default async function FortbildungDetail({
           <span className="zahl">maximal {fortbildung.maxTn}</span> Teilnehmende
         </Angabe>
 
+        <Angabe label="Schulamtsbezirk">
+          {fortbildung.bezirk.name}
+        </Angabe>
+
         <Angabe label="Zielgruppe">
           {fortbildung.schularten.map(schulartLabel).join(", ")}
           {fortbildung.fach ? (

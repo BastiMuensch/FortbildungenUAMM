@@ -5,6 +5,7 @@ import { formatLabel, niveaustufeLabel, organisationsformLabel } from "@/constan
 
 export interface AuswertungsFilter extends FortbildungFilter {
   referent?: string;
+  bezirk?: string;
 }
 
 /** Nur die im Auswertungsformular angebotenen Filter übernehmen. */
@@ -30,6 +31,7 @@ export function leseAuswertungsFilter(params: SuchParameter, jetzt = new Date())
   return {
     ...leseFilter({ schuljahr: schuljahr === "alle" ? undefined : schuljahr, von: wert("von"), bis: wert("bis"), organisationsform: wert("organisationsform"), format: wert("format") }),
     referent: wert("referent"),
+    bezirk: wert("bezirk"),
   };
 }
 
@@ -38,12 +40,13 @@ export const auswertungsAuswahl = {
   organisationsform: true, format: true, niveaustufe: true,
   maxTn: true, tnTatsaechlich: true,
   veranstaltungsort: { select: { name: true } },
+  bezirk: { select: { id: true, name: true } },
   referenten: { select: { referent: { select: { id: true, vorname: true, nachname: true } } } },
 } satisfies Prisma.FortbildungSelect;
 
 /** Tagesgrenzen schließen auch die Sekunden der letzten Minute ein. */
 export function auswertungsFilterZuWhere(filter: AuswertungsFilter): Prisma.FortbildungWhereInput {
-  const { von, bis, schuljahr, referent, ...merkmale } = filter;
+  const { von, bis, schuljahr, referent, bezirk, ...merkmale } = filter;
   const und: Prisma.FortbildungWhereInput[] = [filterZuWhere(merkmale)];
   if (von) und.push({ ende: { gte: fromDatetimeLocalValue(`${von}T00:00`)! } });
   if (bis) und.push({ beginn: { lte: new Date(fromDatetimeLocalValue(`${bis}T23:59`)!.getTime() + 59_999) } });
@@ -52,6 +55,7 @@ export function auswertungsFilterZuWhere(filter: AuswertungsFilter): Prisma.Fort
     und.push({ beginn: { gte: start, lte: new Date(ende.getTime() + 59_999) } });
   }
   if (referent) und.push({ referenten: { some: { referentId: referent } } });
+  if (bezirk) und.push({ bezirkId: bezirk });
   return { AND: und };
 }
 
@@ -104,6 +108,8 @@ export function erstelleAuswertung(termine: AuswertungsTermin[], jetzt = new Dat
     referenten: gruppiere((termin) => termin.referenten.length
       ? termin.referenten.map(({ referent }) => ({ id: referent.id, name: `${referent.vorname} ${referent.nachname}` }))
       : [{ id: "ohne-referent", name: "Ohne Referentenzuordnung" }])
+      .sort((a, b) => b.veranstaltungen - a.veranstaltungen || a.name.localeCompare(b.name, "de")),
+    bezirke: gruppiere((termin) => [{ id: termin.bezirk.id, name: termin.bezirk.name }])
       .sort((a, b) => b.veranstaltungen - a.veranstaltungen || a.name.localeCompare(b.name, "de")),
     monate: gruppiere((termin) => [{ id: berlinIsoDatum(termin.beginn).slice(0, 7), name: formatMonatJahr(termin.beginn) }]).sort((a, b) => a.id.localeCompare(b.id)),
     arten: gruppiere((termin) => [{ id: termin.organisationsform, name: organisationsformLabel(termin.organisationsform) }]),

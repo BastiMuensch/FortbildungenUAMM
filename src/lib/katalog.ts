@@ -45,6 +45,7 @@ export const katalogAuswahl = {
   niveaustufe: true,
   status: true,
   tnTatsaechlich: true,
+  bezirk: { select: { name: true } },
   veranstaltungsort: { select: { name: true, ort: true, istOnline: true } },
   schlagworte: {
     select: { schlagwort: { select: { name: true } } },

@@ -20,7 +20,14 @@ export interface KompetenzBereichOption {
   children: KompetenzOption[];
 }
 
+export interface BezirkOption {
+  id: string;
+  name: string;
+  pflichtSchlagworte: string[];
+}
+
 export interface ReferentOption {
+  bezirkIds: string[];
   id: string;
   vorname: string;
   nachname: string;
@@ -29,6 +36,7 @@ export interface ReferentOption {
 
 /** Vorbelegung beim Bearbeiten. */
 export interface FortbildungWerte {
+  bezirkId: string;
   id: string;
   titel: string;
   kurztitel: string | null;

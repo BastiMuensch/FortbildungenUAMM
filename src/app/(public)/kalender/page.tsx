@@ -5,8 +5,10 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { fortbildungKachelSelect, oeffentlicheFortbildungWhere } from "@/lib/queries";
 import { berlinIsoDatum, formatMonatJahr } from "@/lib/datetime";
+import { baueUrl, filterZuWhere, leseFilter, type SuchParameter } from "@/lib/filter";
 import { FERIEN_GEPFLEGT_BIS } from "@/lib/ferien";
 import { Monatskalender } from "@/components/public/Monatskalender";
+import { OeffentlicheFilterLeiste } from "@/components/public/OeffentlicheFilterLeiste";
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
@@ -18,9 +20,11 @@ export const metadata: Metadata = {
 export default async function KalenderSeite({
   searchParams,
 }: {
-  searchParams: Promise<{ monat?: string }>;
+  searchParams: Promise<SuchParameter>;
 }) {
-  const { monat } = await searchParams;
+  const params = await searchParams;
+  const monat = typeof params.monat === "string" ? params.monat : undefined;
+  const filter = leseFilter(params);
   const { jahr, monatsIndex } = leseMonat(monat);
 
   // Ein Monatsraster zeigt auch Tage der Nachbarmonate — die Abfrage muss
@@ -32,6 +36,7 @@ export default async function KalenderSeite({
     where: {
       AND: [
         oeffentlicheFortbildungWhere(),
+        filterZuWhere(filter),
         { beginn: { lte: bis } },
         { ende: { gte: von } },
       ],
@@ -41,6 +46,11 @@ export default async function KalenderSeite({
   });
 
   const anker = new Date(Date.UTC(jahr, monatsIndex, 15));
+  const bezirke = await prisma.bezirk.findMany({
+      where: { aktiv: true },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    });
   const vorheriger = monatsSchluessel(jahr, monatsIndex - 1);
   const naechster = monatsSchluessel(jahr, monatsIndex + 1);
 
@@ -61,7 +71,7 @@ export default async function KalenderSeite({
           <Button nativeButton={false}
             variant="outline"
             size="sm"
-            render={<Link href={`/kalender?monat=${vorheriger}`} aria-label="Vorheriger Monat">
+            render={<Link href={baueUrl("/kalender", params, { monat: vorheriger })} aria-label="Vorheriger Monat">
                 <ChevronLeft className="size-4" aria-hidden />
                 Zurück
               </Link>
@@ -70,12 +80,12 @@ export default async function KalenderSeite({
           <Button nativeButton={false}
             variant="outline"
             size="sm"
-            render={<Link href="/kalender">Heute</Link>}
+            render={<Link href={baueUrl("/kalender", params, { monat: undefined })}>Heute</Link>}
           />
           <Button nativeButton={false}
             variant="outline"
             size="sm"
-            render={<Link href={`/kalender?monat=${naechster}`} aria-label="Nächster Monat">
+            render={<Link href={baueUrl("/kalender", params, { monat: naechster })} aria-label="Nächster Monat">
                 Weiter
                 <ChevronRight className="size-4" aria-hidden />
               </Link>
@@ -83,6 +93,14 @@ export default async function KalenderSeite({
           />
         </div>
       </div>
+
+      <OeffentlicheFilterLeiste
+        nurBezirk
+        params={params}
+        schlagworte={[]}
+        kompetenzbereiche={[]}
+        bezirke={bezirke}
+      />
 
       <Monatskalender
         jahr={jahr}

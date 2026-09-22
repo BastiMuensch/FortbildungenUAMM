@@ -5,7 +5,6 @@ import path from "node:path";
 
 import { prisma } from "@/lib/prisma";
 import { bildeSlug } from "@/lib/queries";
-import { ladeSchulamt } from "@/lib/schulamt";
 import { schlagwortSchluessel } from "@/lib/schlagwort";
 
 import { basisUrl, holeSuchergebnis, importAktiv } from "./client";
@@ -35,8 +34,10 @@ const MAX_TREFFER = 100;
  *   - Importierte Einträge landen als ENTWURF, nicht direkt im Frontend.
  */
 export async function runFibsImport(
-  optionen: FibsImportOptionen = {},
+  optionen: FibsImportOptionen,
 ): Promise<FibsImportErgebnis> {
+  const bezirk = await prisma.bezirk.findFirst({ where: { id: optionen.bezirkId, aktiv: true }, select: { id: true } });
+  if (!bezirk) throw new Error("Bitte einen aktiven Zielbezirk wählen.");
   const dryRun = optionen.dryRun ?? true;
   const maxTreffer = Math.min(optionen.maxTreffer ?? MAX_TREFFER, MAX_TREFFER);
 
@@ -96,23 +97,23 @@ export async function runFibsImport(
             { fibsLehrgangsnummer: gemappt.daten.fibsLehrgangsnummer },
           ],
         },
-        select: { id: true, quelle: true },
+        select: { id: true, quelle: true, bezirkId: true },
       });
 
-      if (bestehend && bestehend.quelle === "MANUELL") {
+      if (bestehend && (bestehend.quelle === "MANUELL" || bestehend.bezirkId !== bezirk.id)) {
         uebersprungen += 1;
         zeilen.push(
           vorschau(
             gemappt.daten,
             "uebersprungen",
-            "Von Hand gepflegt — bleibt unverändert",
+            bestehend.bezirkId !== bezirk.id ? "Gehört zu einem anderen Bezirk — bleibt unverändert" : "Von Hand gepflegt — bleibt unverändert",
           ),
         );
         continue;
       }
 
       if (!dryRun) {
-        await schreibe(gemappt.daten, bestehend?.id ?? null);
+        await schreibe(gemappt.daten, bestehend?.id ?? null, bezirk.id);
       }
 
       if (bestehend) {
@@ -208,10 +209,11 @@ async function beispielSeite(): Promise<string> {
 }
 
 /** Legt an oder aktualisiert — ohne die redaktionellen Felder anzutasten. */
-async function schreibe(daten: GemappteFortbildung, id: string | null): Promise<void> {
+async function schreibe(daten: GemappteFortbildung, id: string | null, bezirkId: string): Promise<void> {
   const ortId = await findeOrt(daten);
 
   const basis = {
+    bezirkId,
     titel: daten.titel,
     beschreibungHtml: daten.beschreibungHtml,
     beschreibungText: daten.beschreibungText,
@@ -241,7 +243,7 @@ async function schreibe(daten: GemappteFortbildung, id: string | null): Promise<
       status: "ENTWURF",
       slug: `fibs-${crypto.randomUUID()}`,
       schlagworte: {
-        create: (await pflichtSchlagwortIds()).map((schlagwortId) => ({ schlagwortId })),
+        create: (await pflichtSchlagwortIds(bezirkId)).map((schlagwortId) => ({ schlagwortId })),
       },
     },
     select: { id: true },
@@ -291,12 +293,14 @@ async function findeOrt(daten: GemappteFortbildung): Promise<string> {
   );
 }
 
-async function pflichtSchlagwortIds(): Promise<string[]> {
-  const { pflichtSchlagworte } = await ladeSchulamt();
-  const treffer = await prisma.schlagwort.findMany({
-    where: { normalisiert: { in: pflichtSchlagworte.map(schlagwortSchluessel) } },
+async function pflichtSchlagwortIds(bezirkId: string): Promise<string[]> {
+  const { pflichtSchlagworte } = await prisma.bezirk.findUniqueOrThrow({ where: { id: bezirkId }, select: { pflichtSchlagworte: true } });
+  const treffer = await Promise.all(pflichtSchlagworte.map((name) => prisma.schlagwort.upsert({
+    where: { normalisiert: schlagwortSchluessel(name) },
+    update: {},
+    create: { name, normalisiert: schlagwortSchluessel(name), istPflicht: true },
     select: { id: true },
-  });
+  })));
   return treffer.map((t) => t.id);
 }
 

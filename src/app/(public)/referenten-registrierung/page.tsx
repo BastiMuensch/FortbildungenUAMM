@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertCircle } from "lucide-react";
 
+import { BestehendesKontoFormular } from "@/components/registrierung/BestehendesKontoFormular";
 import { ReferentenRegistrierungsFormular } from "@/components/registrierung/ReferentenRegistrierungsFormular";
-import { pruefeReferentenRegistrierungslink } from "@/lib/referentenRegistrierung";
+import { getSessionUser } from "@/lib/auth";
+import { ladeReferentenRegistrierungslink } from "@/lib/referentenRegistrierung";
 
 export const metadata: Metadata = {
   title: "Als Referent:in registrieren",
@@ -18,22 +20,49 @@ export default async function ReferentenRegistrierungSeite({
   searchParams: Promise<{ token?: string }>;
 }) {
   const { token } = await searchParams;
-  const gueltig = token ? await pruefeReferentenRegistrierungslink(token) : false;
+  const registrierungslink = token
+    ? await ladeReferentenRegistrierungslink(token)
+    : null;
+  const angemeldetePerson = await getSessionUser();
+  const weiter = token
+    ? `/referenten-registrierung?token=${encodeURIComponent(token)}`
+    : "/referenten-registrierung";
 
   return (
     <div className="flex flex-1 items-center justify-center py-6">
       <div className="w-full max-w-md">
-        {gueltig ? (
+        {registrierungslink ? (
           <>
             <div className="mb-8 text-center">
               <h1 className="text-xl font-semibold tracking-tight">Als Referent:in registrieren</h1>
               <p className="mt-1.5 text-sm text-muted-foreground text-pretty">
-                Bitte legen Sie Ihren Zugang zum Fortbildungsportal des Schulamts an.
-                Nach der Registrierung können Sie eigene Fortbildungen einreichen und
-                den Planungskalender nutzen.
+                {angemeldetePerson
+                  ? "Lösen Sie den Einladungslink für Ihr bestehendes Konto ein."
+                  : "Bitte legen Sie Ihren Zugang zum Fortbildungsportal des Schulamts an. Nach der Registrierung können Sie eigene Fortbildungen einreichen und den Planungskalender nutzen."}
               </p>
             </div>
-            <ReferentenRegistrierungsFormular token={token!} />
+            {angemeldetePerson ? (
+              <BestehendesKontoFormular
+                token={token!}
+                bezirkName={registrierungslink.bezirkName}
+              />
+            ) : (
+              <>
+                <ReferentenRegistrierungsFormular
+                  token={token!}
+                  bezirkName={registrierungslink.bezirkName}
+                />
+                <p className="mt-6 text-center text-sm text-muted-foreground">
+                  Sie haben bereits ein Konto?{" "}
+                  <Link
+                    href={`/login?weiter=${encodeURIComponent(weiter)}`}
+                    className="underline underline-offset-4 hover:text-foreground"
+                  >
+                    Anmelden und Bezirk hinzufügen
+                  </Link>
+                </p>
+              </>
+            )}
           </>
         ) : (
           <div className="text-center">

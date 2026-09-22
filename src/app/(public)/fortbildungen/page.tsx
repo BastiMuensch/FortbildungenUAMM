@@ -39,7 +39,7 @@ export default async function FortbildungsListe({
   const zeigeVergangene = params.vergangene === "1";
   const nurKuenftige = { ende: { gte: new Date() } };
 
-  const [fortbildungen, schlagworte, bereiche] = await Promise.all([
+  const [fortbildungen, schlagworte, bereiche, bezirke] = await Promise.all([
     prisma.fortbildung.findMany({
       where: {
         AND: [
@@ -64,10 +64,16 @@ export default async function FortbildungsListe({
       orderBy: { sortOrder: "asc" },
       select: { code: true, titel: true },
     }),
+
+    prisma.bezirk.findMany({
+      where: { aktiv: true },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
   ]);
 
   const gefiltert = anzahlAktiverFilter(filter) > 0 || zeigeVergangene;
-  const aktiveFilter = beschreibeFilter(params, bereiche);
+  const aktiveFilter = beschreibeFilter(params, bereiche, bezirke);
 
   // --- Schnellzugriffe ----------------------------------------------------
   // Die Datumsgrenzen werden hier auf dem Server gebildet: Im Browser
@@ -172,6 +178,7 @@ export default async function FortbildungsListe({
         params={params}
         schlagworte={schlagworte.map((s) => s.name)}
         kompetenzbereiche={bereiche}
+        bezirke={bezirke}
       />
 
       {fortbildungen.length === 0 ? (

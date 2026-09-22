@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { FileSpreadsheet, FileText, SearchX } from "lucide-react";
 
 import { ERFASSER, requireRole } from "@/lib/auth";
+import { ladeBezirke, ladeBezirksUeberschrift } from "@/lib/bezirke";
 import { ladeKatalog } from "@/lib/katalog";
 import { baueUrl, leseFilter, type SuchParameter } from "@/lib/filter";
 import { prisma } from "@/lib/prisma";
@@ -21,12 +22,14 @@ export default async function KatalogSeite({
   const params = await searchParams;
   const filter = leseFilter(params);
 
-  const [eintraege, schlagworte] = await Promise.all([
+  const [eintraege, schlagworte, bezirke, bereich] = await Promise.all([
     ladeKatalog(user, filter),
     prisma.schlagwort.findMany({
       orderBy: { name: "asc" },
       select: { name: true },
     }),
+    ladeBezirke(user),
+    ladeBezirksUeberschrift(user, filter.bezirk),
   ]);
 
   const excel = baueUrl("/api/admin/katalog/export", params, {});
@@ -39,7 +42,7 @@ export default async function KatalogSeite({
           <p className="etikett text-primary">Wissen sichern</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">Fortbildungskatalog</h1>
           <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-            Durchsuchbare Sammlung aller gehaltenen Fortbildungen.
+            {bereich}. Durchsuchbare Sammlung aller gehaltenen Fortbildungen.
             {user.role === "REFERENT" ? " Sie sehen Ihre eigenen Einträge." : ""}
           </p>
         </div>
@@ -52,6 +55,7 @@ export default async function KatalogSeite({
       <AdminFilterLeiste
         params={params}
         schlagworte={schlagworte.map((schlagwort) => schlagwort.name)}
+        bezirke={bezirke}
         ohne={["status", "fibs"]}
       />
 

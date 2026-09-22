@@ -8,7 +8,7 @@ export const metadata = { title: "Rechtstexte" };
 export const dynamic = "force-dynamic";
 
 export default async function TextePage() {
-  await requireRole("ADMIN");
+  await requireRole("RVS");
 
   const [texte, letzteBereinigung] = await Promise.all([
     prisma.systemSetting.findMany({

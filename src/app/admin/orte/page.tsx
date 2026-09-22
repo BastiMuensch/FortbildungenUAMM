@@ -1,7 +1,7 @@
 import { Globe, Power } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { requireRole, fortbildungScope } from "@/lib/auth";
 import { setzeOrtAktiv } from "@/actions/stammdaten";
 import { OrtFormular } from "@/components/admin/OrtFormular";
 import { Schulimport } from "@/components/admin/Schulimport";
@@ -19,7 +19,7 @@ import {
 export const metadata = { title: "Veranstaltungsorte" };
 
 export default async function OrtePage() {
-  await requireRole("ADMIN", "REDAKTEUR");
+  const user = await requireRole("RVS", "ADMIN", "REDAKTEUR");
 
   const orte = await prisma.veranstaltungsort.findMany({
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
@@ -31,7 +31,7 @@ export default async function OrtePage() {
       schulnummer: true,
       istOnline: true,
       aktiv: true,
-      _count: { select: { fortbildungen: true } },
+      _count: { select: { fortbildungen: { where: fortbildungScope(user) } } },
     },
   });
 

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CheckCircle2, Clock, Globe, MapPin } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { requireRole, fortbildungScope } from "@/lib/auth";
 import { formatDatumZeit, formatZeitraum } from "@/lib/datetime";
 import {
   formatLabel,
@@ -25,10 +25,10 @@ export async function FreigabenBereich({
 }: {
   eingebettet?: boolean;
 }) {
-  await requireRole("ADMIN");
+  const user = await requireRole("RVS", "ADMIN");
 
   const eingereicht = await prisma.fortbildung.findMany({
-    where: { status: "EINGEREICHT" },
+    where: { status: "EINGEREICHT", AND: [fortbildungScope(user)] },
     // Am längsten wartende zuerst — niemand soll übersehen werden.
     orderBy: [{ eingereichtAm: "asc" }, { beginn: "asc" }],
     select: {

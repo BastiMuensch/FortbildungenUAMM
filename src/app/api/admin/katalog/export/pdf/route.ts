@@ -1,10 +1,10 @@
-import { ladeSchulamt } from "@/lib/schulamt";
 import { NextResponse, type NextRequest } from "next/server";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
 import { getSessionUser } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
+import { ladeBezirksUeberschrift } from "@/lib/bezirke";
 import { berlinIsoDatum, formatDatum, formatDatumZeit, formatZeit } from "@/lib/datetime";
 import { leseFilter, type SuchParameter } from "@/lib/filter";
 import { katalogKurzbeschreibung, ladeKatalog } from "@/lib/katalog";
@@ -14,11 +14,14 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const user = await getSessionUser();
-  const schulamt = await ladeSchulamt();
   if (!user) return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
 
   const params: SuchParameter = Object.fromEntries(request.nextUrl.searchParams.entries());
-  const eintraege = await ladeKatalog(user, leseFilter(params));
+  const filter = leseFilter(params);
+  const [eintraege, bereich] = await Promise.all([
+    ladeKatalog(user, filter),
+    ladeBezirksUeberschrift(user, filter.bezirk),
+  ]);
 
   // Die eingebauten jsPDF-Schriften sind WinAnsi-kodiert. Deshalb nur
   // Bindestriche verwenden, damit in allen PDFs die Inhalte vollständig lesbar bleiben.
@@ -27,7 +30,7 @@ export async function GET(request: NextRequest) {
   const rand = 12;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  const schulamtZeilen = doc.splitTextToSize(pdfText(schulamt.name), breite - 2 * rand - 65) as string[];
+  const schulamtZeilen = doc.splitTextToSize(pdfText(bereich), breite - 2 * rand - 65) as string[];
   const kopfZusatz = (schulamtZeilen.length - 1) * 4;
   doc.setFillColor(29, 56, 105);
   doc.rect(0, 0, breite, 31 + kopfZusatz, "F");
@@ -44,10 +47,11 @@ export async function GET(request: NextRequest) {
   autoTable(doc, {
     startY: 38 + kopfZusatz,
     margin: { left: rand, right: rand },
-    head: [["Datum", "Fortbildung und Inhalt", "Art", "Ort", "Schlagworte", "Referenten"]],
+    head: [["Datum", "Schulamt", "Fortbildung und Inhalt", "Art", "Ort", "Schlagworte", "Referenten"]],
     body: eintraege.map((eintrag) =>
       [
         `${formatDatum(eintrag.beginn)}\n${formatZeit(eintrag.beginn)}-${formatZeit(eintrag.ende)} Uhr`,
+        eintrag.bezirk.name,
         [
           eintrag.titel,
           katalogKurzbeschreibung(eintrag.beschreibungText, 430) ||
@@ -71,15 +75,16 @@ export async function GET(request: NextRequest) {
     headStyles: { fillColor: [47, 94, 157], textColor: [255, 255, 255], fontSize: 7.5 },
     alternateRowStyles: { fillColor: [245, 248, 252] },
     columnStyles: {
-      0: { cellWidth: 24 },
-      1: { cellWidth: 78 },
-      2: { cellWidth: 22 },
-      3: { cellWidth: 39 },
-      4: { cellWidth: 54 },
-      5: { cellWidth: 42 },
+      0: { cellWidth: 22 },
+      1: { cellWidth: 27 },
+      2: { cellWidth: 91 },
+      3: { cellWidth: 20 },
+      4: { cellWidth: 31 },
+      5: { cellWidth: 47 },
+      6: { cellWidth: 35 },
     },
     didParseCell(data) {
-      if (data.section === "body" && data.column.index === 1) {
+      if (data.section === "body" && data.column.index === 2) {
         data.cell.styles.fontStyle = "normal";
       }
     },

@@ -6,11 +6,13 @@ import { erstelleAuswertungsmappe } from "../src/lib/auswertungExcel";
 const jetzt = new Date("2026-09-21T12:00:00Z");
 const anna = { id: "anna", vorname: "Anna", nachname: "Muster" };
 const ben = { id: "ben", vorname: "Ben", nachname: "Beispiel" };
+const bezirkA = { id: "bezirk-a", name: "Schulamt A" };
+const bezirkB = { id: "bezirk-b", name: "Schulamt B" };
 function termin(id: string, aenderungen: Partial<AuswertungsTermin> = {}): AuswertungsTermin {
   return {
     id, titel: `Termin ${id}`, beginn: new Date("2026-09-10T10:00:00Z"), ende: new Date("2026-09-10T12:00:00Z"),
     status: "VEROEFFENTLICHT", organisationsform: "SCHILF", format: "PRAESENZ", niveaustufe: null,
-    maxTn: 20, tnTatsaechlich: 10, veranstaltungsort: { name: "Schule" }, referenten: [{ referent: anna }],
+    maxTn: 20, tnTatsaechlich: 10, veranstaltungsort: { name: "Schule" }, bezirk: bezirkA, referenten: [{ referent: anna }],
     ...aenderungen,
   };
 }
@@ -41,6 +43,8 @@ async function pruefeAuswertung() {
   assert.equal(ohneZuordnung.referenten[0].teilnahmen, 10);
   const namensgleich = erstelleAuswertung([termin("namen", { referenten: [{ referent: anna }, { referent: { ...anna, id: "andere-anna" } }] })], jetzt);
   assert.equal(namensgleich.referenten.length, 2);
+  const mehrereSchulaemter = erstelleAuswertung([termin("a"), termin("b", { bezirk: bezirkB })], jetzt);
+  assert.deepEqual(mehrereSchulaemter.bezirke.map((zeile) => zeile.name), ["Schulamt A", "Schulamt B"]);
   const monatswechsel = erstelleAuswertung([termin("berlin", { beginn: new Date("2026-08-31T22:30:00Z") })], jetzt);
   assert.equal(monatswechsel.monate[0].id, "2026-09");
 
@@ -59,6 +63,7 @@ async function pruefeAuswertung() {
   assert.deepEqual(auswertungsFilterZuWhere({ schuljahr: "2026/2027", referent: "anna" }), {
     AND: [{}, { beginn: { gte: new Date("2026-07-31T22:00:00Z"), lte: new Date("2027-07-31T21:59:59.999Z") } }, { referenten: { some: { referentId: "anna" } } }],
   });
+  assert.deepEqual(auswertungsFilterZuWhere({ bezirk: "bezirk-a" }), { AND: [{}, { bezirkId: "bezirk-a" }] });
 
   const mappe = erstelleAuswertungsmappe(auswertung, { schuljahr: "2026/2027" });
   const geladen = new ExcelJS.Workbook();
@@ -66,14 +71,16 @@ async function pruefeAuswertung() {
   assert.equal(geladen.worksheets.length, 7);
   const blatt = geladen.getWorksheet("Veranstaltungen")!;
   assert.equal(blatt.rowCount, termine.length + 1);
-  assert.equal(blatt.getCell("J2").value, 30);
-  assert.equal(blatt.getCell("J3").value, 0);
-  assert.equal(blatt.getCell("J4").value, null);
-  assert.equal(blatt.getCell("K4").value, "Offen");
-  assert.equal(blatt.getCell("J5").value, null);
-  assert.equal(blatt.getCell("K5").value, "Nicht auswertbar");
-  assert.equal(blatt.getCell("L2").value, 1.5);
-  assert.equal(blatt.getCell("L2").numFmt, "0.0%");
+  assert.equal(blatt.getCell("K2").value, 30);
+  assert.equal(blatt.getCell("K3").value, 0);
+  assert.equal(blatt.getCell("K4").value, null);
+  assert.equal(blatt.getCell("L4").value, "Offen");
+  assert.equal(blatt.getCell("K5").value, null);
+  assert.equal(blatt.getCell("L5").value, "Nicht auswertbar");
+  assert.equal(blatt.getCell("M2").value, 1.5);
+  assert.equal(blatt.getCell("M2").numFmt, "0.0%");
+  const mehrereMappe = erstelleAuswertungsmappe(mehrereSchulaemter, {});
+  assert.ok(mehrereMappe.getWorksheet("Schulämter"));
   const gefaehrlicherTitel = erstelleAuswertungsmappe(erstelleAuswertung([termin("formel", { titel: '=HYPERLINK("beispiel")' })], jetzt), {});
   assert.equal(gefaehrlicherTitel.getWorksheet("Veranstaltungen")!.getCell("C2").value, '\'=HYPERLINK("beispiel")');
   console.log("Auswertung: Kennzahlen, Mehrfachzuordnung, Nullwerte, Status, Berliner Monatsgrenze, Filter und Excel-Rundlauf bestanden.");

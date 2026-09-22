@@ -13,7 +13,7 @@ export const metadata = { title: "Einrichtung" };
 const SCHRITTE = ["Schulamt", "Schulen", "Rechtstexte", "Abschluss"];
 
 export default async function EinrichtungsSeite({ searchParams }: { searchParams: Promise<SuchParameter> }) {
-  await requireRole("ADMIN");
+  await requireRole("RVS");
   const params = await searchParams;
   const [profil, offen] = await Promise.all([ladeSchulamt(), istEinrichtungOffen()]);
   const schrittWert = Array.isArray(params.schritt) ? params.schritt[0] : params.schritt;

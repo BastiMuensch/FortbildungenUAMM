@@ -16,6 +16,21 @@ import { schlagwortSchluessel } from "../src/lib/schlagwort";
 
 const prisma = new PrismaClient();
 
+/** Feste Kennung aus der Bezirksmigration für den bisherigen Datenbestand. */
+const UAMM_BEZIRK_ID = "00000000-0000-4000-8000-000000000001";
+
+async function seedBezirk() {
+  await prisma.bezirk.upsert({
+    where: { id: UAMM_BEZIRK_ID },
+    update: {},
+    create: {
+      id: UAMM_BEZIRK_ID,
+      name: "Memmingen-Unterallgäu",
+      pflichtSchlagworte: ["UAMM", "Medienteam-UAMM"],
+    },
+  });
+}
+
 async function seedProfil(): Promise<{ profil: SchulamtProfil; importiereUamm: boolean }> {
   const gespeichert = await prisma.systemSetting.findUnique({ where: { id: SCHULAMT_PROFIL_SCHLUESSEL } });
   if (gespeichert) return { profil: SchulamtProfilSchema.parse(JSON.parse(gespeichert.value)), importiereUamm: false };
@@ -139,12 +154,13 @@ async function seedAdmin() {
   // Seed-Lauf ein in der App geändertes Passwort zurücksetzen.
   await prisma.user.upsert({
     where: { email },
-    update: { role: "ADMIN", isActive: true },
+    // Bestehende Zuständigkeiten und entzogene Zugänge bleiben unverändert.
+    update: {},
     create: {
       email,
       passwordHash,
       name: process.env.SEED_ADMIN_NAME ?? "Administration",
-      role: "ADMIN",
+      role: "RVS",
     },
   });
 
@@ -213,6 +229,7 @@ async function seedTexte(profil: SchulamtProfil) {
 async function main() {
   console.log("Seed läuft …");
   const { profil, importiereUamm } = await seedProfil();
+  await seedBezirk();
   await seedDigComp();
   await seedOrte(importiereUamm);
   await seedSchlagworte(profil);

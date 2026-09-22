@@ -36,6 +36,7 @@ interface Zeile {
   inFibs: boolean;
   fibsLehrgangsnummer: string | null;
   quelle: string;
+  bezirk: { name: string };
   veranstaltungsort: { name: string; ort: string | null; istOnline: boolean };
   referenten: Array<{ referent: { vorname: string; nachname: string } }>;
 }
@@ -88,6 +89,7 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
               </div>
 
               <div className="mt-3 space-y-1.5 text-sm text-muted-foreground">
+                <p>{f.bezirk.name}</p>
                 <p className="flex items-start gap-1.5">
                   {f.veranstaltungsort.istOnline ? (
                     <Globe className="mt-0.5 size-3.5 shrink-0" aria-hidden />
@@ -168,6 +170,7 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
                   {f.quelle === "FIBS_IMPORT" ? (
                     <Badge variant="outline">aus FIBS</Badge>
                   ) : null}
+                  <span className="text-xs text-muted-foreground">{f.bezirk.name}</span>
                 </div>
               </TableCell>
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, Globe, MapPin, Users } from "lucide-react";
+import { BookOpen, Building2, Globe, MapPin, Users } from "lucide-react";
 
 import type { KatalogEintrag } from "@/lib/katalog";
 import { katalogKurzbeschreibung } from "@/lib/katalog";
@@ -57,6 +57,10 @@ export function KatalogTabelle({ eintraege }: { eintraege: KatalogEintrag[] }) {
                   {eintrag.veranstaltungsort.istOnline ? <Globe className="size-3.5 shrink-0" aria-hidden /> : <MapPin className="size-3.5 shrink-0" aria-hidden />}
                   {eintrag.veranstaltungsort.name}
                   {eintrag.veranstaltungsort.ort ? `, ${eintrag.veranstaltungsort.ort}` : ""}
+                </span>
+                <span className="flex items-center gap-1.5 sm:justify-end">
+                  <Building2 className="size-3.5 shrink-0" aria-hidden />
+                  Schulamt {eintrag.bezirk.name}
                 </span>
                 <span className="flex items-center gap-1.5 sm:justify-end">
                   <BookOpen className="size-3.5 shrink-0" aria-hidden />

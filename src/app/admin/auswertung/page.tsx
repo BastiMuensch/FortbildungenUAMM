@@ -3,6 +3,7 @@ import { BarChart3, FileSpreadsheet } from "lucide-react";
 import { ERFASSER, requireRole } from "@/lib/auth";
 import { AUSWERTUNGS_HINWEISE, auswertungsProzent, auswertungsZahl, istAuswertbar, leseAuswertungsFilter } from "@/lib/auswertung";
 import { ladeAuswertung, ladeAuswertungsAuswahl } from "@/lib/auswertungDaten";
+import { ladeBezirke, ladeBezirksUeberschrift } from "@/lib/bezirke";
 import { aktuellesSchuljahr, formatDatum, formatDatumZeit } from "@/lib/datetime";
 import { baueUrl, type SuchParameter } from "@/lib/filter";
 import { ORGANISATIONSFORMEN, VERANSTALTUNGSFORMATE, formatLabel, organisationsformKurz, statusLabel } from "@/constants/fortbildung";
@@ -22,7 +23,7 @@ export default async function AuswertungsSeite({ searchParams }: { searchParams:
   } catch (fehler) {
     return <div className="space-y-4"><h1 className="text-3xl font-semibold">Auswertung</h1><p role="alert">{(fehler as Error).message}</p><Link className="underline" href="/admin/auswertung">Filter zurücksetzen</Link></div>;
   }
-  const [auswertung, auswahl] = await Promise.all([ladeAuswertung(user, filter), ladeAuswertungsAuswahl(user)]);
+  const [auswertung, auswahl, bezirke, ueberschrift] = await Promise.all([ladeAuswertung(user, filter), ladeAuswertungsAuswahl(user), ladeBezirke(user), ladeBezirksUeberschrift(user, filter.bezirk)]);
   const { gesamt } = auswertung;
   const aktuell = aktuellesSchuljahr();
   const jahre = new Set([aktuell, ...(filter.schuljahr ? [filter.schuljahr] : [])]);
@@ -31,14 +32,14 @@ export default async function AuswertungsSeite({ searchParams }: { searchParams:
     const bis = Number(aktuellesSchuljahr(auswahl.letzter.beginn).slice(0, 4));
     for (let jahr = von; jahr <= bis; jahr++) jahre.add(`${jahr}/${jahr + 1}`);
   }
-  const exportParams: SuchParameter = { schuljahr: filter.schuljahr ?? "alle", von: filter.von, bis: filter.bis, organisationsform: filter.organisationsform, format: filter.format, referent: filter.referent };
+  const exportParams: SuchParameter = { schuljahr: filter.schuljahr ?? "alle", von: filter.von, bis: filter.bis, organisationsform: filter.organisationsform, format: filter.format, referent: filter.referent, bezirk: filter.bezirk };
   const referentName = auswahl.referenten.find((referent) => referent.id === filter.referent);
   const eingabeKlasse = "mt-1 block h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
   return <div className="auswertung space-y-8">
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <p className="etikett text-primary">Fortbildungsbilanz · {filter.schuljahr ?? "Alle Schuljahre"}</p>
+        <p className="etikett text-primary">{ueberschrift} · {filter.schuljahr ?? "Alle Schuljahre"}</p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">{user.role === "REFERENT" ? "Meine Auswertung" : "Auswertung"}</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Veranstaltungen, Teilnahmen und Auslastung auf einen Blick. Stand: {formatDatumZeit(auswertung.jetzt)} Uhr.</p>
         {user.role === "REFERENT" ? <p className="mt-1 text-sm text-muted-foreground">Berücksichtigt werden nur Veranstaltungen, auf die Sie Zugriff haben.</p> : null}
@@ -57,6 +58,7 @@ export default async function AuswertungsSeite({ searchParams }: { searchParams:
         <label className="text-sm font-medium">Fortbildungsart<select name="organisationsform" defaultValue={filter.organisationsform ?? ""} className={eingabeKlasse}><option value="">Alle Arten</option>{ORGANISATIONSFORMEN.map((art) => <option key={art.value} value={art.value}>{art.label}</option>)}</select></label>
         <label className="text-sm font-medium">Format<select name="format" defaultValue={filter.format ?? ""} className={eingabeKlasse}><option value="">Alle Formate</option>{VERANSTALTUNGSFORMATE.map((format) => <option key={format.value} value={format.value}>{format.label}</option>)}</select></label>
         <label className="text-sm font-medium">Referent/in<select name="referent" defaultValue={filter.referent ?? ""} className={eingabeKlasse}><option value="">Alle zugeordneten Referenten</option>{filter.referent && !referentName ? <option value={filter.referent}>Nicht verfügbar</option> : null}{auswahl.referenten.map((referent) => <option key={referent.id} value={referent.id}>{referent.nachname}, {referent.vorname}</option>)}</select></label>
+        <label className="text-sm font-medium">Schulamt<select name="bezirk" defaultValue={filter.bezirk ?? ""} className={eingabeKlasse}><option value="">Alle sichtbaren Schulämter</option>{bezirke.map((bezirk) => <option key={bezirk.id} value={bezirk.id}>{bezirk.name}</option>)}</select></label>
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-3"><Button type="submit">Auswerten</Button><Link className="text-sm underline underline-offset-4" href="/admin/auswertung">Zurücksetzen</Link><p className="text-xs text-muted-foreground">Von/bis grenzt das gewählte Schuljahr zusätzlich ein.</p></div>
     </form>
@@ -75,6 +77,7 @@ export default async function AuswertungsSeite({ searchParams }: { searchParams:
       <nav aria-label="Auswertungsbereiche" className="flex flex-wrap gap-4 text-sm print:hidden"><a href="#referenten" className="underline underline-offset-4">Referenten</a><a href="#verteilung" className="underline underline-offset-4">Verteilungen</a><a href="#veranstaltungen" className="underline underline-offset-4">Veranstaltungen</a></nav>
       <div id="referenten" className="scroll-mt-6"><AuswertungsTabelle titel="Referenten" zeilen={auswertung.referenten} beschreibung="Referenten mit zugeordneten Veranstaltungen in der Auswahl. Bei gemeinsamen Veranstaltungen erhält jede Person die volle Teilnehmerzahl; diese Zeilen sind daher nicht addierbar." /></div>
       <div id="verteilung" className="scroll-mt-6 space-y-8">
+        {auswertung.bezirke.length > 1 ? <AuswertungsTabelle titel="Schulämter" zeilen={auswertung.bezirke} beschreibung="Jede Veranstaltung zählt zu ihrem Ausschreibungsbezirk." /> : null}
         <AuswertungsTabelle titel="Monatsverlauf" zeilen={auswertung.monate} beschreibung="Zuordnung nach Veranstaltungsbeginn, auch bei mehrtägigen Terminen." />
         <AuswertungsTabelle titel="Fortbildungsarten" zeilen={auswertung.arten} />
         <AuswertungsTabelle titel="Veranstaltungsformate" zeilen={auswertung.formate} />
@@ -89,7 +92,7 @@ export default async function AuswertungsSeite({ searchParams }: { searchParams:
             const auswertbar = istAuswertbar(termin, auswertung.jetzt);
             const tn = auswertbar ? termin.tnTatsaechlich : null;
             return <tr key={termin.id}>
-              <th scope="row" className="min-w-64 text-left font-normal"><Link href={`/admin/fortbildungen/${termin.id}`} className="font-medium underline decoration-border underline-offset-4 hover:decoration-primary">{termin.titel}</Link><span className="mt-1 block text-xs text-muted-foreground">{formatDatum(termin.beginn)} · {organisationsformKurz(termin.organisationsform)} · {formatLabel(termin.format)} · {statusLabel(termin.status)}</span><span className="block text-xs text-muted-foreground">{termin.veranstaltungsort.name}</span></th>
+              <th scope="row" className="min-w-64 text-left font-normal"><Link href={`/admin/fortbildungen/${termin.id}`} className="font-medium underline decoration-border underline-offset-4 hover:decoration-primary">{termin.titel}</Link><span className="mt-1 block text-xs text-muted-foreground">{formatDatum(termin.beginn)} · {organisationsformKurz(termin.organisationsform)} · {formatLabel(termin.format)} · {statusLabel(termin.status)}</span><span className="block text-xs text-muted-foreground">{termin.bezirk.name} · {termin.veranstaltungsort.name}</span></th>
               <td className="text-left">{termin.referenten.map(({ referent }) => `${referent.vorname} ${referent.nachname}`).join(", ") || "Ohne Zuordnung"}</td>
               <td>{auswertungsZahl(termin.maxTn)}</td><td>{tn !== null ? auswertungsZahl(tn) : auswertbar ? <span className="font-semibold text-amber-800">Offen</span> : <span title="Noch nicht beendet oder nicht auswertbarer Status">–</span>}</td><td>{auswertungsProzent(tn !== null && termin.maxTn > 0 ? tn / termin.maxTn : null)}</td>
             </tr>;

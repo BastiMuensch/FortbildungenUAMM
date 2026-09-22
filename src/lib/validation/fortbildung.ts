@@ -37,6 +37,7 @@ const datumFeld = (feldname: string) =>
 
 export const FortbildungSchema = z
   .object({
+    bezirkId: z.string().min(1, "Bitte einen Schulamtsbezirk wählen."),
     titel: z
       .string()
       .trim()
@@ -254,6 +255,7 @@ export function formDataZuEingabe(formData: FormData) {
     formData.getAll(name).map((wert) => wert.toString()).filter(Boolean);
 
   return {
+    bezirkId: text("bezirkId"),
     titel: text("titel"),
     kurztitel: text("kurztitel"),
     beschreibungHtml: text("beschreibungHtml"),
@@ -281,6 +283,7 @@ export function formDataZuEingabe(formData: FormData) {
  * unsichtbar und das Formular ließe sich scheinbar grundlos nicht speichern.
  */
 export const FELD_ZU_TAB: Record<string, string> = {
+  bezirkId: "eckdaten",
   titel: "eckdaten",
   kurztitel: "eckdaten",
   organisationsform: "eckdaten",

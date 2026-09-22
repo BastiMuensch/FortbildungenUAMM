@@ -58,6 +58,7 @@ export function FortbildungKarte({
               )}
               {formatLabel(fortbildung.format)}
             </span>
+            <span className="text-xs text-muted-foreground">{fortbildung.bezirk.name}</span>
 
             {abgesagt ? (
               <span className="rounded-md bg-destructive px-2 py-1 text-xs font-semibold text-white">

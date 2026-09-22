@@ -21,6 +21,7 @@ import {
 import { useFortbildungState } from "./state";
 import type {
   FortbildungWerte,
+  BezirkOption,
   KompetenzBereichOption,
   OrtOption,
   ReferentOption,
@@ -48,7 +49,7 @@ export function FortbildungForm({
   kompetenzBereiche,
   referenten,
   schlagwortVorschlaege,
-  pflichtSchlagworte,
+  bezirke,
   darfVeroeffentlichen,
 }: {
   fortbildung?: FortbildungWerte;
@@ -56,14 +57,16 @@ export function FortbildungForm({
   kompetenzBereiche: KompetenzBereichOption[];
   referenten: ReferentOption[];
   schlagwortVorschlaege: string[];
-  pflichtSchlagworte: string[];
+  bezirke: BezirkOption[];
   darfVeroeffentlichen: boolean;
 }) {
   const action = saveFortbildung.bind(null, fortbildung?.id ?? null);
   const [state, formAction] = useActionState<FormularState, FormData>(action, {});
   const [tab, setTab] = useState<string>("eckdaten");
 
-  const zustand = useFortbildungState(fortbildung, orte);
+  const zustand = useFortbildungState(fortbildung, orte, bezirke.length === 1 ? bezirke[0]!.id : "");
+  const pflichtSchlagworte = bezirke.find((b) => b.id === zustand.bezirkId)?.pflichtSchlagworte ?? [];
+  const passendeReferenten = referenten.filter((r) => r.bezirkIds.includes(zustand.bezirkId));
 
   // Eigenes useMemo, damit das leere Objekt nicht bei jedem Rendern neu
   // entsteht und die abhängigen Memos ständig neu rechnen lässt.
@@ -106,7 +109,7 @@ export function FortbildungForm({
         </TabsList>
 
         <TabsContent value="eckdaten" keepMounted className="pt-6">
-          <EckdatenFelder {...gemeinsam} />
+          <EckdatenFelder {...gemeinsam} bezirke={bezirke} />
         </TabsContent>
 
         <TabsContent value="beschreibung" keepMounted className="pt-6">
@@ -126,7 +129,7 @@ export function FortbildungForm({
         </TabsContent>
 
         <TabsContent value="referenten" keepMounted className="pt-6">
-          <ReferentenFelder {...gemeinsam} referenten={referenten} />
+          <ReferentenFelder {...gemeinsam} referenten={passendeReferenten} />
         </TabsContent>
       </Tabs>
 

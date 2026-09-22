@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { ladeTerminumfeld } from "@/actions/terminumfeld";
-import { ERFASSER, REDAKTION, requireRole } from "@/lib/auth";
+import { ERFASSER, requireRole } from "@/lib/auth";
 import { berlinIsoDatum, formatMonatJahr } from "@/lib/datetime";
 import { Planungskalender } from "@/components/admin/Planungskalender";
 import { Button } from "@/components/ui/button";
@@ -89,7 +89,7 @@ export default async function PlanungskalenderSeite({
         jahr={jahr}
         monatsIndex={monatsIndex}
         termine={termine}
-        darfAlleOeffnen={REDAKTION.includes(user.role)}
+        darfAlleOeffnen={user.role === "RVS"}
       />
     </div>
   );

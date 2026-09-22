@@ -1,7 +1,7 @@
 import { CheckSquare, Lock, Square, Trash2 } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { requireRole, fortbildungScope } from "@/lib/auth";
 import { entferneSchlagwort, setzeFibsSuche } from "@/actions/stammdaten";
 import { SchlagwortFormular } from "@/components/admin/SchlagwortFormular";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,7 @@ import {
 export const metadata = { title: "Schlagworte" };
 
 export default async function SchlagwortePage() {
-  const user = await requireRole("ADMIN", "REDAKTEUR");
+  const user = await requireRole("RVS", "ADMIN", "REDAKTEUR");
 
   const schlagworte = await prisma.schlagwort.findMany({
     orderBy: [{ istPflicht: "desc" }, { name: "asc" }],
@@ -27,7 +27,7 @@ export default async function SchlagwortePage() {
       name: true,
       istPflicht: true,
       fuerFibsImport: true,
-      _count: { select: { fortbildungen: true } },
+      _count: { select: { fortbildungen: { where: { fortbildung: fortbildungScope(user) } } } },
     },
   });
 
@@ -36,8 +36,7 @@ export default async function SchlagwortePage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Schlagworte</h1>
         <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-          Pflicht-Schlagworte werden an jede Fortbildung automatisch angehängt
-          und lassen sich weder abwählen noch löschen. Die Häkchen in der Spalte
+          Pflicht-Schlagworte werden pro Bezirk festgelegt und dessen Fortbildungen automatisch angehängt. Die Häkchen in der Spalte
           „FIBS-Suche“ bestimmen, mit welchen Begriffen der FIBS-Import nach
           Lehrgängen sucht.
         </p>
@@ -75,6 +74,7 @@ export default async function SchlagwortePage() {
                   <form action={setzeFibsSuche.bind(null, s.id, !s.fuerFibsImport)}>
                     <button
                       type="submit"
+                      disabled={user.role !== "RVS"}
                       aria-pressed={s.fuerFibsImport}
                       className="flex items-center gap-2 px-1.5 py-1 text-sm transition-colors hover:bg-accent"
                     >
@@ -100,7 +100,7 @@ export default async function SchlagwortePage() {
                 </TableCell>
 
                 <TableCell>
-                  {user.role === "ADMIN" && !s.istPflicht ? (
+                  {user.role === "RVS" && !s.istPflicht ? (
                     <form action={entferneSchlagwort.bind(null, s.id)}>
                       <Button
                         type="submit"

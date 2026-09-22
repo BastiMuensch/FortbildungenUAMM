@@ -10,7 +10,7 @@ export const metadata = { title: "Neue Fortbildung" };
 
 export default async function NeueFortbildungPage() {
   const user = await requireRole(...ERFASSER);
-  const daten = await ladeFormularDaten();
+  const daten = await ladeFormularDaten(user);
   const freigabeberechtigt = darfFreigeben(user.role);
 
   return (

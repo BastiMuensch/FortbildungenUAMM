@@ -24,6 +24,8 @@ export interface FibsRohLehrgang {
 }
 
 export interface FibsImportOptionen {
+  /** Zielbezirk; muss vom aufrufenden Zugang geprüft worden sein. */
+  bezirkId: string;
   /** true = nur anzeigen, nichts schreiben. Voreinstellung. */
   dryRun?: boolean;
   /** Überschreibt die Suchbegriffe aus den Schlagworten. */

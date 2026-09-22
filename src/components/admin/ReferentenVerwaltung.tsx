@@ -65,15 +65,18 @@ export interface ReferentZeile {
     rolle: string;
   } | null;
   _count: { fortbildungen: number };
+  bezirke: Array<{ id: string; name: string }>;
 }
 
 export function ReferentenVerwaltung({
   referenten,
+  bezirke,
   darfLoeschen,
   darfZugangVerwalten,
   darfZuAdministrationHochstufen,
 }: {
   referenten: ReferentZeile[];
+  bezirke: Array<{ id: string; name: string }>;
   darfLoeschen: boolean;
   darfZugangVerwalten: boolean;
   darfZuAdministrationHochstufen: boolean;
@@ -114,6 +117,7 @@ export function ReferentenVerwaltung({
                 <TableRow key={r.id} className={r.aktiv ? undefined : "opacity-50"}>
                   <TableCell className="font-medium">
                     {r.nachname}, {r.vorname}
+                    <span className="block text-xs font-normal text-muted-foreground">{r.bezirke.map((b) => b.name).join(", ")}</span>
                     {!r.aktiv ? (
                       <Badge variant="outline" className="ml-2">
                         stillgelegt
@@ -170,8 +174,8 @@ export function ReferentenVerwaltung({
                         <Button
                           variant="ghost"
                           size="icon-xs"
-                          aria-label={`${r.vorname} ${r.nachname} zur Administration hochstufen`}
-                          title="Zur Administration hochstufen"
+                          aria-label={`${r.vorname} ${r.nachname} zum BdB hochstufen`}
+                          title="Zum BdB hochstufen"
                           onClick={() => setHochzustufen(r)}
                         >
                           <ShieldCheck className="size-3.5" />
@@ -193,7 +197,7 @@ export function ReferentenVerwaltung({
                             size="icon-xs"
                             aria-label={`${r.vorname} ${r.nachname} entfernen`}
                             title={
-                              r._count.fortbildungen > 0
+                              !darfZugangVerwalten ? "Aus meinen Bezirken entfernen" : r._count.fortbildungen > 0
                                 ? "Wird stillgelegt, weil Termine daran hängen"
                                 : "Wird gelöscht"
                             }
@@ -218,12 +222,14 @@ export function ReferentenVerwaltung({
         offen={neuOffen}
         onOpenChange={setNeuOffen}
         referent={null}
+        bezirke={bezirke}
       />
       <ReferentDialog
         key={bearbeitet?.id ?? "bearbeiten"}
         offen={bearbeitet !== null}
         onOpenChange={(offen) => !offen && setBearbeitet(null)}
         referent={bearbeitet}
+        bezirke={bezirke}
       />
       <ZugangDialog
         key={`zugang-${zugangFuer?.id ?? "leer"}`}
@@ -291,10 +297,10 @@ function AdministrationDialog({
       <DialogContent>
         <form action={formAction}>
           <DialogHeader>
-            <DialogTitle>Zur Administration hochstufen</DialogTitle>
+            <DialogTitle>Zum BdB hochstufen</DialogTitle>
             <DialogDescription>
               {referent
-                ? `${referent.vorname} ${referent.nachname} erhält alle administrativen Rechte, einschließlich Benutzerverwaltung und Systemtexten.`
+                ? `${referent.vorname} ${referent.nachname} wird BdB für die bisher zugeordneten Bezirke. Die übergeordnete RvS-Verwaltung bleibt ausgeschlossen.`
                 : ""}
             </DialogDescription>
           </DialogHeader>
@@ -471,10 +477,12 @@ function ReferentDialog({
   offen,
   onOpenChange,
   referent,
+  bezirke,
 }: {
   offen: boolean;
   onOpenChange: (offen: boolean) => void;
   referent: ReferentZeile | null;
+  bezirke: Array<{id: string; name: string}>;
 }) {
   const action = speichereReferent.bind(null, referent?.id ?? null);
   const [state, formAction] = useActionState<FormularState, FormData>(action, {});
@@ -555,6 +563,15 @@ function ReferentDialog({
                 </span>
               </span>
             </label>
+            <fieldset className="space-y-2 sm:col-span-2">
+              <legend className="text-sm font-medium">Zugeordnete Bezirke</legend>
+              {bezirke.map((bezirk) => (
+                <label key={bezirk.id} className="flex items-center gap-2 text-sm">
+                  <Checkbox name="bezirkId" value={bezirk.id} defaultChecked={referent ? referent.bezirke.some((b) => b.id === bezirk.id) : bezirke.length === 1} />
+                  {bezirk.name}
+                </label>
+              ))}
+            </fieldset>
           </div>
 
           {fehler._ ? (

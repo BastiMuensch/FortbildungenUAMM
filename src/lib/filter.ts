@@ -43,6 +43,8 @@ export interface FortbildungFilter {
   fibs?: string;
   /** Schuljahr in der Form "2026/2027". Leer bedeutet alle Jahrgänge. */
   schuljahr?: string;
+  /** Schulamtsbezirk. Die zulässigen Werte stellt die jeweilige Ansicht bereit. */
+  bezirk?: string;
 }
 
 export type SuchParameter = Record<string, string | string[] | undefined>;
@@ -74,6 +76,7 @@ export function leseFilter(params: SuchParameter): FortbildungFilter {
     schuljahr: /^\d{4}\/\d{4}$/.test(einzeln("schuljahr") ?? "")
       ? einzeln("schuljahr")
       : undefined,
+    bezirk: einzeln("bezirk"),
   };
 }
 
@@ -121,6 +124,7 @@ export function filterZuWhere(filter: FortbildungFilter): Prisma.FortbildungWher
   if (filter.niveaustufe) und.push({ niveaustufe: filter.niveaustufe });
   if (filter.status) und.push({ status: filter.status });
   if (filter.schulart) und.push({ schularten: { has: filter.schulart } });
+  if (filter.bezirk) und.push({ bezirkId: filter.bezirk });
 
   if (filter.kb) {
     // "3" trifft den Bereich selbst und jede Unterkompetenz "3.x".
@@ -212,6 +216,7 @@ export interface FilterChip {
 export function beschreibeFilter(
   params: SuchParameter,
   kompetenzbereiche: Array<{ code: string; titel: string }> = [],
+  bezirke: Array<{ id: string; name: string }> = [],
 ): FilterChip[] {
   const filter = leseFilter(params);
   const chips: FilterChip[] = [];
@@ -254,6 +259,14 @@ export function beschreibeFilter(
   }
   if (filter.schuljahr) {
     chips.push({ param: "schuljahr", art: "Schuljahr", wert: filter.schuljahr });
+  }
+  if (filter.bezirk) {
+    const bezirk = bezirke.find((eintrag) => eintrag.id === filter.bezirk);
+    chips.push({
+      param: "bezirk",
+      art: "Bezirk",
+      wert: bezirk?.name ?? "Unbekannter Bezirk",
+    });
   }
 
   const von = tagesGrenze(filter.von, "start");

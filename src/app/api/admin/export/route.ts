@@ -1,4 +1,4 @@
-import { ladeSchulamt } from "@/lib/schulamt";
+import { ladeBezirksUeberschrift } from "@/lib/bezirke";
 import { NextResponse, type NextRequest } from "next/server";
 import ExcelJS from "exceljs";
 
@@ -28,7 +28,6 @@ const REITER_FILTER: Record<string, Record<string, string>> = {
 
 export async function GET(request: NextRequest) {
   const user = await getSessionUser();
-  const schulamt = await ladeSchulamt();
   if (!user) {
     return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
   }
@@ -37,21 +36,23 @@ export async function GET(request: NextRequest) {
     request.nextUrl.searchParams.entries(),
   );
   const reiter = typeof params.reiter === "string" ? params.reiter : "";
+  const filter = leseFilter(params);
+  const bereich = await ladeBezirksUeberschrift(user, filter.bezirk);
 
   const where = {
     AND: [
       // Referentinnen und Referenten exportieren nur ihre eigenen Termine.
       fortbildungScope(user),
-      filterZuWhere({ ...leseFilter(params), ...(REITER_FILTER[reiter] ?? {}) }),
+      filterZuWhere({ ...filter, ...(REITER_FILTER[reiter] ?? {}) }),
     ],
   };
 
   const fortbildungen = await prisma.fortbildung.findMany({
     where,
-    // Nach Ebene gruppiert, innerhalb der Ebene nach Datum — dieselbe
-    // Gliederung wie im PDF-Bericht.
-    orderBy: [{ organisationsform: "asc" }, { beginn: "asc" }],
+    // Schulämter zusammenhalten, darin nach Ebene und Datum sortieren.
+    orderBy: [{ bezirk: { name: "asc" } }, { organisationsform: "asc" }, { beginn: "asc" }],
     include: {
+      bezirk: { select: { name: true } },
       veranstaltungsort: true,
       schlagworte: { include: { schlagwort: true } },
       kompetenzen: { include: { kompetenz: true } },
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
   });
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = `Fortbildungsportal · ${schulamt.name}`;
+  workbook.creator = `Fortbildungsportal · ${bereich}`;
   workbook.created = new Date();
 
   const blatt = workbook.addWorksheet("Fortbildungen", {
@@ -68,6 +69,7 @@ export async function GET(request: NextRequest) {
   });
 
   blatt.columns = [
+    { header: "Schulamtsbezirk", key: "bezirk", width: 32 },
     { header: "Beginn", key: "beginn", width: 18 },
     { header: "Ende", key: "ende", width: 18 },
     { header: "Lehrgangstitel", key: "titel", width: 45 },
@@ -95,6 +97,7 @@ export async function GET(request: NextRequest) {
   const jetzt = new Date();
   for (const f of fortbildungen) {
     blatt.addRow({
+      bezirk: zelle(f.bezirk.name),
       beginn: zelle(formatDatumZeit(f.beginn)),
       ende: zelle(formatDatumZeit(f.ende)),
       titel: zelle(f.titel),
@@ -138,6 +141,12 @@ export async function GET(request: NextRequest) {
   }
 
   blatt.autoFilter = { from: "A1", to: { row: 1, column: blatt.columnCount } };
+
+  const auswahl = workbook.addWorksheet("Auswahl");
+  auswahl.columns = [{ header: "Bereich", key: "feld", width: 24 }, { header: "Auswahl", key: "wert", width: 90 }];
+  auswahl.addRow({ feld: "Schulämter", wert: zelle(bereich) });
+  auswahl.addRow({ feld: "Veranstaltungen", wert: fortbildungen.length });
+  auswahl.getRow(1).font = { bold: true };
 
   await auditLog({
     userId: user.id,

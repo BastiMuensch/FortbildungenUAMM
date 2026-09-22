@@ -24,9 +24,9 @@ import { logout } from "@/actions/auth";
 import { rolleLabel, type Rolle } from "@/constants/fortbildung";
 import { cn } from "@/lib/utils";
 
-const ALLE: Rolle[] = ["ADMIN", "REDAKTEUR", "REFERENT"];
-const REDAKTION: Rolle[] = ["ADMIN", "REDAKTEUR"];
-const NUR_ADMIN: Rolle[] = ["ADMIN"];
+const ALLE: Rolle[] = ["RVS", "ADMIN", "REDAKTEUR", "REFERENT"];
+const REDAKTION: Rolle[] = ["RVS", "ADMIN", "REDAKTEUR"];
+const NUR_RVS: Rolle[] = ["RVS"];
 
 interface Eintrag {
   href: string;
@@ -56,9 +56,10 @@ const GRUPPEN: Array<{ titel: string; eintraege: Eintrag[] }> = [
   {
     titel: "System",
     eintraege: [
-      { href: "/admin/import", label: "FIBS-Import", icon: Download, rollen: REDAKTION },
-      { href: "/admin/einrichtung", label: "Einrichtung", icon: Settings, rollen: NUR_ADMIN },
-      { href: "/admin/texte", label: "Rechtstexte", icon: FileText, rollen: NUR_ADMIN },
+      { href: "/admin/import", label: "FIBS-Import", icon: Download, rollen: NUR_RVS },
+      { href: "/admin/bezirke", label: "Bezirke und BdBs", icon: Users, rollen: NUR_RVS },
+      { href: "/admin/einrichtung", label: "Einrichtung", icon: Settings, rollen: NUR_RVS },
+      { href: "/admin/texte", label: "Rechtstexte", icon: FileText, rollen: NUR_RVS },
     ],
   },
 ];

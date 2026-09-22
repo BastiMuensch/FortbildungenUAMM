@@ -16,7 +16,7 @@ export async function speichereSystemtext(
   _bisher: FormularState,
   formData: FormData,
 ): Promise<FormularState> {
-  const user = await requireRole("ADMIN");
+  const user = await requireRole("RVS");
 
   if (!ERLAUBT.has(id)) {
     return { fehler: { _: "Dieser Text kann hier nicht bearbeitet werden." } };

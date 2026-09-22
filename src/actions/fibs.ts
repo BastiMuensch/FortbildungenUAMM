@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireRole } from "@/lib/auth";
+import { AuthError, requireRole } from "@/lib/auth";
+import { pruefeBezirk } from "@/lib/bezirke";
 import { auditLog } from "@/lib/audit";
 import { runFibsImport } from "@/lib/fibs/importer";
 import type { FibsImportErgebnis } from "@/lib/fibs/types";
@@ -17,7 +18,7 @@ export interface ImportState {
  *
  * Ohne ausdrückliches Häkchen läuft nur der Trockenlauf: Die Vorschau zeigt,
  * was passieren würde, geschrieben wird nichts. Das echte Übernehmen ist der
- * ADMIN-Rolle vorbehalten.
+ * RvS vorbehalten.
  */
 export async function starteFibsImport(
   _bisher: ImportState,
@@ -25,11 +26,15 @@ export async function starteFibsImport(
 ): Promise<ImportState> {
   const uebernehmen = formData.get("uebernehmen") === "on";
 
-  const user = uebernehmen
-    ? await requireRole("ADMIN")
-    : await requireRole("ADMIN", "REDAKTEUR");
-
-  const ergebnis = await runFibsImport({ dryRun: !uebernehmen });
+  const user = await requireRole("RVS");
+  let bezirk;
+  try {
+    bezirk = await pruefeBezirk(user, String(formData.get("bezirkId") ?? ""));
+  } catch (error) {
+    if (error instanceof AuthError) return { fehler: error.message };
+    throw error;
+  }
+  const ergebnis = await runFibsImport({ dryRun: !uebernehmen, bezirkId: bezirk.id });
 
   await auditLog({
     userId: user.id,

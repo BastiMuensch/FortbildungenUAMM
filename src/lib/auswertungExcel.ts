@@ -18,6 +18,7 @@ export function erstelleAuswertungsmappe(auswertung: Auswertung, filter: Auswert
   for (const zeile of [
     ["Stand (Europe/Berlin)", formatDatumZeit(auswertung.jetzt)],
     ["Schuljahr", filter.schuljahr ?? "Alle Schuljahre"],
+    ["Schulamt", schulamtName],
     ["Von", filter.von ?? "Offener Beginn"], ["Bis", filter.bis ?? "Offenes Ende"],
     ["Fortbildungsart", filter.organisationsform ? organisationsformLabel(filter.organisationsform) : "Alle"],
     ["Format", filter.format ? formatLabel(filter.format) : "Alle"],
@@ -54,6 +55,7 @@ export function erstelleAuswertungsmappe(auswertung: Auswertung, filter: Auswert
     blatt.autoFilter = { from: "A1", to: { row: 1, column: blatt.columnCount } };
   }
   gruppenblatt("Referenten", auswertung.referenten);
+  if (auswertung.bezirke.length > 1) gruppenblatt("Schulämter", auswertung.bezirke);
   gruppenblatt("Monatsverlauf", auswertung.monate);
   gruppenblatt("Fortbildungsarten", auswertung.arten);
   gruppenblatt("Formate", auswertung.formate);
@@ -62,7 +64,7 @@ export function erstelleAuswertungsmappe(auswertung: Auswertung, filter: Auswert
   const termine = mappe.addWorksheet("Veranstaltungen", { views: [{ state: "frozen", ySplit: 1 }] });
   termine.columns = [
     { header: "Beginn (Europe/Berlin)", key: "beginn", width: 24 }, { header: "Ende (Europe/Berlin)", key: "ende", width: 24 },
-    { header: "Veranstaltung", key: "titel", width: 50 }, { header: "Referenten", key: "referenten", width: 35 },
+    { header: "Veranstaltung", key: "titel", width: 50 }, { header: "Schulamt", key: "bezirk", width: 28 }, { header: "Referenten", key: "referenten", width: 35 },
     { header: "Fortbildungsart", key: "art", width: 20 }, { header: "Format", key: "format", width: 18 },
     { header: "Ort", key: "ort", width: 35 }, { header: "Status", key: "status", width: 20 },
     { header: "Geplante Plätze", key: "plaetze", width: 18 }, { header: "Teilnahmen", key: "teilnahmen", width: 15 },
@@ -73,7 +75,7 @@ export function erstelleAuswertungsmappe(auswertung: Auswertung, filter: Auswert
     const tn = auswertbar ? termin.tnTatsaechlich : null;
     termine.addRow({
       beginn: formatDatumZeit(termin.beginn), ende: formatDatumZeit(termin.ende), titel: sichereZelle(termin.titel),
-      referenten: sichereZelle(termin.referenten.map(({ referent }) => `${referent.vorname} ${referent.nachname}`).join(", ")),
+      bezirk: sichereZelle(termin.bezirk.name), referenten: sichereZelle(termin.referenten.map(({ referent }) => `${referent.vorname} ${referent.nachname}`).join(", ")),
       art: organisationsformLabel(termin.organisationsform), format: formatLabel(termin.format), ort: sichereZelle(termin.veranstaltungsort.name),
       status: statusLabel(termin.status), plaetze: termin.maxTn, teilnahmen: tn,
       meldestand: auswertbar ? (tn === null ? "Offen" : "Gemeldet") : "Nicht auswertbar",

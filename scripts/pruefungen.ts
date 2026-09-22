@@ -119,6 +119,7 @@ console.log("\nSchiLf-Formular: Entwurf und Einreichung");
 for (const status of ["ENTWURF", "EINGEREICHT"]) {
   const formular = new FormData();
   for (const [feld, wert] of Object.entries({
+    bezirkId: "00000000-0000-4000-8000-000000000010",
     titel: "SchiLf Formularprüfung",
     beschreibungHtml: "<p>Eine schulinterne Fortbildung.</p>",
     organisationsform: "SCHILF",
@@ -136,6 +137,9 @@ for (const status of ["ENTWURF", "EINGEREICHT"]) {
   const ergebnis = FortbildungSchema.safeParse(formDataZuEingabe(formular));
   pruefe(`${status}: Kurzdatum und leere FIBS-Felder sind zulässig`, ergebnis.success, true);
   if (ergebnis.success) pruefe(`${status}: Einreichungspflichten erfüllt`, pruefeVeroeffentlichung(ergebnis.data), null);
+  formular.delete("bezirkId");
+  pruefe(`${status}: Ausschreibung ohne Bezirk wird abgewiesen`, FortbildungSchema.safeParse(formDataZuEingabe(formular)).success, false);
+  formular.set("bezirkId", "00000000-0000-4000-8000-000000000010");
   formular.set("ende", "16.9.2026 8:00");
   pruefe(`${status}: Ende vor Beginn bleibt verboten`, FortbildungSchema.safeParse(formDataZuEingabe(formular)).success, false);
 }

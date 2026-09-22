@@ -1,3 +1,4 @@
+import { requireRole, ERFASSER, darfBearbeiten } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDatumZeit } from "@/lib/datetime";
 import { statusLabel } from "@/constants/fortbildung";
@@ -10,6 +11,8 @@ import { statusLabel } from "@/constants/fortbildung";
  * Frage, die im Freigabeprozess ständig aufkommt: Wer hat wann was gemacht?
  */
 export async function Aenderungsverlauf({ id }: { id: string }) {
+  const user = await requireRole(...ERFASSER);
+  if (!(await darfBearbeiten(user, id))) return null;
   const eintraege = await prisma.auditLog.findMany({
     where: { entitaet: { in: ["Fortbildung", "Aushang"] }, entitaetId: id },
     orderBy: { at: "desc" },

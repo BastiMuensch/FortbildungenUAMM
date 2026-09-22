@@ -16,7 +16,9 @@ import type { FortbildungWerte, OrtOption } from "./types";
 export function useFortbildungState(
   fortbildung: FortbildungWerte | undefined,
   orte: OrtOption[],
+  standardBezirkId = "",
 ) {
+  const [bezirkId, setBezirkId] = useState(fortbildung?.bezirkId ?? standardBezirkId);
   const [titel, setTitel] = useState(fortbildung?.titel ?? "");
   const [kurztitel, setKurztitel] = useState(fortbildung?.kurztitel ?? "");
   const [maxTn, setMaxTn] = useState(String(fortbildung?.maxTn ?? 20));
@@ -99,6 +101,7 @@ export function useFortbildungState(
   }
 
   return {
+    bezirkId, setBezirkId,
     titel, setTitel,
     kurztitel, setKurztitel,
     maxTn, setMaxTn,
@@ -159,6 +162,9 @@ export function schrittFehler(
 
   for (const feld of pflichtfelder) {
     switch (feld) {
+      case "bezirkId":
+        if (!zustand.bezirkId) fehler.bezirkId = "Bitte einen Schulamtsbezirk wählen.";
+        break;
       case "titel":
         if (wert("titel").length < 3) {
           fehler.titel = "Bitte einen Lehrgangstitel mit mindestens 3 Zeichen angeben.";

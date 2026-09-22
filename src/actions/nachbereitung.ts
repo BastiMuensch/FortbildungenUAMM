@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
-import { AuthError, darfBearbeiten, requireRole, type SessionUser } from "@/lib/auth";
+import { AuthError, fortbildungScope, darfBearbeiten, requireRole, type SessionUser } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 import type { FormularState } from "@/lib/validation/fortbildung";
 
@@ -45,7 +45,7 @@ export async function meldeTeilnehmerzahl(
 ): Promise<FormularState> {
   let user;
   try {
-    user = await requireRole("ADMIN", "REFERENT");
+    user = await requireRole("RVS", "ADMIN", "REFERENT");
   } catch (error) {
     if (error instanceof AuthError) return { fehler: { _: error.message } };
     throw error;
@@ -62,7 +62,7 @@ export async function meldeTeilnehmerzahl(
   }
 
   const fortbildung = await prisma.fortbildung.findUnique({
-    where: { id },
+    where: { id, AND: [fortbildungScope(user)] },
     select: { beginn: true, ende: true, maxTn: true, titel: true, organisationsform: true, status: true },
   });
   if (!fortbildung) return { fehler: { _: "Diese Veranstaltung gibt es nicht mehr." } };
@@ -94,7 +94,7 @@ export async function meldeTeilnehmerzahl(
   }
 
   await prisma.fortbildung.update({
-    where: { id },
+    where: { id, AND: [fortbildungScope(user)] },
     data: {
       tnTatsaechlich: geparst.data.tnTatsaechlich,
       tnBemerkung: geparst.data.tnBemerkung,
@@ -127,9 +127,9 @@ export async function meldeTeilnehmerzahl(
 
 /** Nimmt eine Meldung zurück, etwa nach einem Zahlendreher. */
 export async function meldungZuruecknehmen(id: string): Promise<void> {
-  const user = await requireRole("ADMIN", "REFERENT");
+  const user = await requireRole("RVS", "ADMIN", "REFERENT");
   const fortbildung = await prisma.fortbildung.findUnique({
-    where: { id },
+    where: { id, AND: [fortbildungScope(user)] },
     select: { organisationsform: true, ende: true, status: true },
   });
   if (
@@ -142,7 +142,7 @@ export async function meldungZuruecknehmen(id: string): Promise<void> {
   }
 
   await prisma.fortbildung.update({
-    where: { id },
+    where: { id, AND: [fortbildungScope(user)] },
     data: {
       tnTatsaechlich: null,
       tnBemerkung: null,
@@ -175,7 +175,7 @@ export async function setzeSchilfFibsNachtrag(
   id: string,
   eingetragen: boolean,
 ): Promise<void> {
-  const admin = await requireRole("ADMIN");
+  const admin = await requireRole("RVS", "ADMIN");
   const geparst = FibsNachtragSchema.safeParse({ eingetragen });
   if (!geparst.success) return;
 
@@ -183,6 +183,7 @@ export async function setzeSchilfFibsNachtrag(
   const aktualisiert = await prisma.fortbildung.updateMany({
     where: {
       id,
+      AND: [fortbildungScope(admin)],
       organisationsform: "SCHILF",
       ende: { lt: jetzt },
       status: { in: ["VEROEFFENTLICHT", "ARCHIVIERT"] },
@@ -231,14 +232,14 @@ export async function setzeTeilnahmebestaetigungsVersand(
   empfaenger: "REFERENTEN" | "TEILNEHMENDE",
   versandt: boolean,
 ): Promise<void> {
-  const admin = await requireRole("ADMIN");
+  const admin = await requireRole("RVS", "ADMIN");
   const geparst = BestaetigungsVersandSchema.safeParse({ empfaenger, versandt });
   if (!geparst.success) return;
 
   const versand = geparst.data;
 
   const fortbildung = await prisma.fortbildung.findUnique({
-    where: { id },
+    where: { id, AND: [fortbildungScope(admin)] },
     select: {
       ende: true,
       status: true,
@@ -284,7 +285,7 @@ export async function setzeTeilnahmebestaetigungsVersand(
             teilnahmebestaetigungenTeilnehmendeVersandtVonId: null,
           };
 
-  await prisma.fortbildung.update({ where: { id }, data: daten });
+  await prisma.fortbildung.update({ where: { id, AND: [fortbildungScope(admin)] }, data: daten });
 
   await auditLog({
     userId: admin.id,
@@ -304,7 +305,7 @@ async function darfTeilnehmerzahlMelden(
   fortbildungId: string,
   organisationsform: string,
 ): Promise<boolean> {
-  if (user.role === "ADMIN") return true;
+  if (user.role === "RVS" || user.role === "ADMIN") return darfBearbeiten(user, fortbildungId);
   return (
     user.role === "REFERENT" &&
     organisationsform === "SCHILF" &&

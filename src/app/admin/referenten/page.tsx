@@ -1,14 +1,16 @@
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/auth";
+import { bezirkScope, fortbildungScope, referentScope, requireRole } from "@/lib/auth";
+import { ladeBezirke } from "@/lib/bezirke";
 import { ReferentenVerwaltung } from "@/components/admin/ReferentenVerwaltung";
 import { ReferentenRegistrierungslink } from "@/components/admin/ReferentenRegistrierungslink";
 
 export const metadata = { title: "Referenten" };
 
 export default async function ReferentenPage() {
-  const user = await requireRole("ADMIN", "REDAKTEUR");
+  const user = await requireRole("RVS", "ADMIN", "REDAKTEUR");
 
-  const referenten = await prisma.referent.findMany({
+  const [referenten, bezirke] = await Promise.all([prisma.referent.findMany({
+    where: referentScope(user),
     orderBy: [{ aktiv: "desc" }, { nachname: "asc" }, { vorname: "asc" }],
     select: {
       id: true,
@@ -21,12 +23,13 @@ export default async function ReferentenPage() {
       oeffentlichSichtbar: true,
       aktiv: true,
       userId: true,
+      bezirke: { where: bezirkScope(user), select: { id: true, name: true }, orderBy: { name: "asc" } },
       user: {
         select: { id: true, isActive: true, passwordHash: true, lastLoginAt: true, role: true },
       },
-      _count: { select: { fortbildungen: true } },
+      _count: { select: { fortbildungen: { where: { fortbildung: fortbildungScope(user) } } } },
     },
-  });
+  }), ladeBezirke(user)]);
 
   // Der Passwort-Hash darf den Server nicht verlassen — für die Anzeige
   // genügt die Information, ob überhaupt schon eines gesetzt wurde.
@@ -64,12 +67,13 @@ export default async function ReferentenPage() {
         </p>
       </div>
 
-      <ReferentenRegistrierungslink />
+      <ReferentenRegistrierungslink bezirke={bezirke} />
       <ReferentenVerwaltung
         referenten={zeilen}
-        darfLoeschen={user.role === "ADMIN"}
-        darfZugangVerwalten={user.role === "ADMIN"}
-        darfZuAdministrationHochstufen={user.role === "ADMIN"}
+        bezirke={bezirke}
+        darfLoeschen={user.role === "RVS" || user.role === "ADMIN"}
+        darfZugangVerwalten={user.role === "RVS"}
+        darfZuAdministrationHochstufen={user.role === "RVS"}
       />
     </div>
   );

@@ -10,7 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function ReferentenRegistrierungsFormular({ token }: { token: string }) {
+export function ReferentenRegistrierungsFormular({
+  token,
+  bezirkName,
+}: {
+  token: string;
+  bezirkName: string;
+}) {
   const [state, formAction] = useActionState<FormularState, FormData>(
     registriereReferent,
     {},
@@ -20,6 +26,13 @@ export function ReferentenRegistrierungsFormular({ token }: { token: string }) {
   return (
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="token" value={token} />
+
+      <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm">
+        <p className="font-medium">Bezirk: {bezirkName}</p>
+        <p className="mt-1 text-muted-foreground">
+          Ihr neues Referent:innenkonto wird diesem Bezirk zugeordnet.
+        </p>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Feld

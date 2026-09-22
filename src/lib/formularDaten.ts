@@ -1,6 +1,7 @@
 import "server-only";
 
-import { ladeSchulamt } from "@/lib/schulamt";
+import { ERFASSER, requireRole, type SessionUser } from "@/lib/auth";
+import { ladeBezirke } from "@/lib/bezirke";
 import { prisma } from "@/lib/prisma";
 import type {
   KompetenzBereichOption,
@@ -13,14 +14,16 @@ import type {
  * In einem Rutsch geladen, damit die Seite nicht an vier hintereinander
  * laufenden Abfragen hängt.
  */
-export async function ladeFormularDaten(): Promise<{
+export async function ladeFormularDaten(user: SessionUser): Promise<{
+  bezirke: { id: string; name: string; pflichtSchlagworte: string[] }[];
   orte: OrtOption[];
   kompetenzBereiche: KompetenzBereichOption[];
   referenten: ReferentOption[];
   schlagwortVorschlaege: string[];
-  pflichtSchlagworte: string[];
 }> {
-  const [orte, bereiche, referenten, schlagworte, schulamt] = await Promise.all([
+  await requireRole(...ERFASSER);
+  const bezirke = await ladeBezirke(user);
+  const [orte, bereiche, referenten, schlagworte] = await Promise.all([
     prisma.veranstaltungsort.findMany({
       where: { aktiv: true },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
@@ -43,9 +46,9 @@ export async function ladeFormularDaten(): Promise<{
     }),
 
     prisma.referent.findMany({
-      where: { aktiv: true },
+      where: { aktiv: true, bezirke: { some: { id: { in: bezirke.map((b) => b.id) } } } },
       orderBy: [{ nachname: "asc" }, { vorname: "asc" }],
-      select: { id: true, vorname: true, nachname: true, organisation: true },
+      select: { id: true, vorname: true, nachname: true, organisation: true, bezirke: { where: { id: { in: bezirke.map((b) => b.id) } }, select: { id: true } } },
     }),
 
     prisma.schlagwort.findMany({
@@ -53,14 +56,13 @@ export async function ladeFormularDaten(): Promise<{
       orderBy: { name: "asc" },
       select: { name: true },
     }),
-    ladeSchulamt(),
   ]);
 
   return {
+    bezirke,
     orte,
     kompetenzBereiche: bereiche,
-    referenten,
+    referenten: referenten.map((r) => ({ ...r, bezirkIds: r.bezirke.map((b) => b.id) })),
     schlagwortVorschlaege: schlagworte.map((s) => s.name),
-    pflichtSchlagworte: schulamt.pflichtSchlagworte,
   };
 }

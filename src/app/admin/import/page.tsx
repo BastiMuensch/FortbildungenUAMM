@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
+import { ladeBezirke } from "@/lib/bezirke";
 import { requireRole } from "@/lib/auth";
 import { formatDatumZeit } from "@/lib/datetime";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +20,8 @@ export const metadata = { title: "FIBS-Import" };
 export const dynamic = "force-dynamic";
 
 export default async function ImportSeite() {
-  const user = await requireRole("ADMIN", "REDAKTEUR");
+  const user = await requireRole("RVS");
+  const bezirke = await ladeBezirke(user);
 
   const [suchbegriffe, laeufe] = await Promise.all([
     prisma.schlagwort.findMany({
@@ -92,7 +94,7 @@ export default async function ImportSeite() {
         </div>
       </section>
 
-      <FibsImportFormular darfUebernehmen={user.role === "ADMIN"} />
+      <FibsImportFormular bezirke={bezirke} darfUebernehmen />
 
       <section>
         <h2 className="mb-3 text-sm font-semibold">Letzte Läufe</h2>

@@ -33,6 +33,7 @@ import { Terminumfeld } from "./Terminumfeld";
 import type { FortbildungState } from "./state";
 import type {
   FortbildungWerte,
+  BezirkOption,
   KompetenzBereichOption,
   OrtOption,
   ReferentOption,
@@ -57,14 +58,29 @@ interface GemeinsameProps {
 // ---------------------------------------------------------------------------
 
 export function EckdatenFelder({
-  zustand,
+  bezirke,  zustand,
   fehler,
   fortbildung,
   darfVeroeffentlichen = true,
   zeigeVeroeffentlichung = true,
-}: GemeinsameProps & { zeigeVeroeffentlichung?: boolean }) {
+}: GemeinsameProps & { bezirke: BezirkOption[]; zeigeVeroeffentlichung?: boolean }) {
   return (
     <div className="grid gap-5 md:grid-cols-2">
+      <Feld className="md:col-span-2" label="Schulamtsbezirk" pflicht fehler={fehler.bezirkId}
+        hinweis="Die Ausschreibung gehört zu diesem Bezirk und wird von dessen BdBs verwaltet.">
+        {bezirke.length === 1 ? (
+          <><input type="hidden" name="bezirkId" value={zustand.bezirkId} /><p className="text-sm">{bezirke[0]!.name}</p></>
+        ) : (
+          <select name="bezirkId" aria-label="Schulamtsbezirk" value={zustand.bezirkId} required
+            aria-invalid={Boolean(fehler.bezirkId)}
+            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            onChange={(e) => { zustand.setBezirkId(e.target.value); zustand.setReferenten([]); }}>
+            <option value="">Bitte Bezirk wählen</option>
+            {bezirke.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+        )}
+        {bezirke.length === 0 ? <p className="text-sm text-destructive">Kein aktiver Bezirk zugeordnet. Bitte wenden Sie sich an Ihre BdBs.</p> : null}
+      </Feld>
       <Feld
         className="md:col-span-2"
         label="Lehrgangstitel"

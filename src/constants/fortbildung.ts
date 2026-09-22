@@ -191,7 +191,7 @@ export const STATUS_FUER_REFERENTEN: FortbildungStatus[] = [
  * Administration kann eine Ausschreibung ins öffentliche Angebot überführen.
  */
 export function darfFreigeben(rolle: Rolle): boolean {
-  return rolle === "ADMIN";
+  return rolle === "RVS" || rolle === "ADMIN";
 }
 
 // ---------------------------------------------------------------------------
@@ -207,9 +207,14 @@ export type Quelle = ValueOf<typeof QUELLEN>;
 
 export const ROLLEN = [
   {
+    value: "RVS",
+    label: "Regierung von Schwaben",
+    beschreibung: "Verwaltet alle Bezirke und ihre Zuständigkeiten.",
+  },
+  {
     value: "ADMIN",
-    label: "Administration",
-    beschreibung: "Alle Rechte, inklusive Benutzerverwaltung und Systemtexten.",
+    label: "BdB",
+    beschreibung: "Verwaltet die zugeordneten Schulamtsbezirke.",
   },
   {
     value: "REDAKTEUR",

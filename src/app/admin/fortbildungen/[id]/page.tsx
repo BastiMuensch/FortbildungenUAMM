@@ -56,7 +56,7 @@ export default async function FortbildungBearbeitenPage({
         freigegebenVon: { select: { name: true, email: true } },
       },
     }),
-    ladeFormularDaten(),
+    ladeFormularDaten(user),
   ]);
 
   if (!fortbildung) notFound();
@@ -151,7 +151,7 @@ export default async function FortbildungBearbeitenPage({
             </Button>
           </form>
 
-          {user.role === "ADMIN" ? (
+          {(user.role === "RVS" || user.role === "ADMIN") ? (
             <LoeschenKnopf id={fortbildung.id} titel={fortbildung.titel} />
           ) : null}
         </div>
@@ -207,6 +207,7 @@ export default async function FortbildungBearbeitenPage({
           darfVeroeffentlichen={freigabeberechtigt}
           fortbildung={{
           id: fortbildung.id,
+          bezirkId: fortbildung.bezirkId,
           titel: fortbildung.titel,
           kurztitel: fortbildung.kurztitel,
           beschreibungHtml: fortbildung.beschreibungHtml,
@@ -226,7 +227,7 @@ export default async function FortbildungBearbeitenPage({
           // Pflicht-Schlagworte zeigt das Formular selbst an, sie kommen nicht
           // in die frei bearbeitbare Liste.
           schlagwortNamen: fortbildung.schlagworte
-            .filter((s) => !s.schlagwort.istPflicht)
+            .filter((s) => !daten.bezirke.find((b) => b.id === fortbildung.bezirkId)?.pflichtSchlagworte.some((name) => name.toLocaleLowerCase("de-DE") === s.schlagwort.name.toLocaleLowerCase("de-DE")))
             .map((s) => s.schlagwort.name),
           referentIds: fortbildung.referenten.map((r) => r.referentId),
           }}

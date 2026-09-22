@@ -1,9 +1,9 @@
-import { ladeSchulamt } from "@/lib/schulamt";
 import { NextResponse, type NextRequest } from "next/server";
 import ExcelJS from "exceljs";
 
 import { getSessionUser } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
+import { ladeBezirksUeberschrift } from "@/lib/bezirke";
 import { berlinIsoDatum, formatDatum, formatZeit } from "@/lib/datetime";
 import { leseFilter, type SuchParameter } from "@/lib/filter";
 import { katalogKurzbeschreibung, ladeKatalog } from "@/lib/katalog";
@@ -18,14 +18,17 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const user = await getSessionUser();
-  const schulamt = await ladeSchulamt();
   if (!user) return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
 
   const params: SuchParameter = Object.fromEntries(request.nextUrl.searchParams.entries());
-  const eintraege = await ladeKatalog(user, leseFilter(params));
+  const filter = leseFilter(params);
+  const [eintraege, bereich] = await Promise.all([
+    ladeKatalog(user, filter),
+    ladeBezirksUeberschrift(user, filter.bezirk),
+  ]);
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = `Fortbildungsportal · ${schulamt.name}`;
+  workbook.creator = `Fortbildungsportal · ${bereich}`;
   workbook.created = new Date();
 
   const blatt = workbook.addWorksheet("Fortbildungskatalog", {
@@ -36,6 +39,7 @@ export async function GET(request: NextRequest) {
   // in Zeile 1 schreiben und damit den zusammengeführten Titel überschreiben.
   blatt.columns = [
     { key: "datum", width: 14 },
+    { key: "schulamt", width: 28 },
     { key: "zeit", width: 14 },
     { key: "titel", width: 42 },
     { key: "beschreibung", width: 58 },
@@ -52,21 +56,21 @@ export async function GET(request: NextRequest) {
   ];
   blatt.getColumn("datum").numFmt = "dd.mm.yyyy";
 
-  blatt.mergeCells("A1:N1");
+  blatt.mergeCells("A1:O1");
   blatt.getCell("A1").value = "Fortbildungskatalog";
   blatt.getCell("A1").font = { name: "Aptos Display", size: 18, bold: true, color: { argb: "FFFFFFFF" } };
   blatt.getCell("A1").fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1D3869" } };
   blatt.getCell("A1").alignment = { vertical: "middle" };
   blatt.getRow(1).height = 32;
 
-  blatt.mergeCells("A2:N2");
-  blatt.getCell("A2").value = `${eintraege.length} gehaltene Fortbildungen · erstellt am ${formatDatum(new Date())}`;
+  blatt.mergeCells("A2:O2");
+  blatt.getCell("A2").value = `${bereich} · ${eintraege.length} gehaltene Fortbildungen · erstellt am ${formatDatum(new Date())}`;
   blatt.getCell("A2").font = { italic: true, color: { argb: "FF4B5563" } };
   blatt.getRow(2).height = 22;
 
   const kopf = blatt.getRow(4);
   kopf.values = [
-    "Datum", "Zeit", "Titel", "Beschreibung", "Organisationsform", "Format",
+    "Datum", "Schulamt", "Zeit", "Titel", "Beschreibung", "Organisationsform", "Format",
     "Ort", "Schularten", "Fach", "DigCompEdu", "Kompetenzen", "Schlagworte",
     "Referenten", "Teilnehmende",
   ];
@@ -78,6 +82,7 @@ export async function GET(request: NextRequest) {
   for (const eintrag of eintraege) {
     const zeile = blatt.addRow({
       datum: excelDatum(eintrag.beginn),
+      schulamt: zelle(eintrag.bezirk.name),
       zeit: `${formatZeit(eintrag.beginn)}-${formatZeit(eintrag.ende)} Uhr`,
       titel: zelle(eintrag.titel),
       beschreibung: zelle(katalogKurzbeschreibung(eintrag.beschreibungText, 900)),
@@ -110,7 +115,7 @@ export async function GET(request: NextRequest) {
   hinweis.mergeCells("A1:B1");
   hinweis.getRow(1).height = 30;
   hinweis.getCell("A3").value = "Inhalt";
-  hinweis.getCell("B3").value = "Der Export enthält gehaltene, veröffentlichte oder archivierte Fortbildungen entsprechend der aktuellen Filterung. Die Tabellenüberschriften lassen sich direkt filtern und sortieren.";
+  hinweis.getCell("B3").value = `${bereich}. Der Export enthält gehaltene, veröffentlichte oder archivierte Fortbildungen entsprechend der aktuellen Filterung. Die Tabellenüberschriften lassen sich direkt filtern und sortieren.`;
   hinweis.getCell("A4").value = "Datenschutz";
   hinweis.getCell("B4").value = "Der Katalog enthält keine Kontaktdaten von Referentinnen und Referenten. Er ist für die interne Weiterentwicklung des Fortbildungsangebots bestimmt.";
   for (const zeile of [3, 4]) {

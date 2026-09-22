@@ -17,8 +17,8 @@ export async function NachbereitungsBereich({
 }: {
   eingebettet?: boolean;
 }) {
-  const user = await requireRole("ADMIN", "REFERENT");
-  const istAdmin = user.role === "ADMIN";
+  const user = await requireRole("RVS", "ADMIN", "REFERENT");
+  const istAdmin = (user.role === "RVS" || user.role === "ADMIN");
 
   const jetzt = new Date();
   const grenze = new Date(
@@ -28,7 +28,7 @@ export async function NachbereitungsBereich({
   // Referent:innen sehen ausschließlich eigene beziehungsweise zugeordnete
   // SchiLf. Die Administration bearbeitet dagegen alle Veranstaltungen.
   const bereich = istAdmin
-    ? {}
+    ? fortbildungScope(user)
     : {
         AND: [fortbildungScope(user), { organisationsform: "SCHILF" }],
       };

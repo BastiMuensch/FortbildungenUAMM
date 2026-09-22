@@ -14,7 +14,11 @@ import { Label } from "@/components/ui/label";
 import { REGISTRIERUNG_STANDARD_NUTZUNGEN } from "@/constants/registrierung";
 
 /** Verwaltung des allgemeinen Links; der Klartext erscheint nur nach Erzeugung. */
-export function ReferentenRegistrierungslink() {
+export function ReferentenRegistrierungslink({
+  bezirke,
+}: {
+  bezirke: Array<{ id: string; name: string }>;
+}) {
   const [state, action] = useActionState<ReferentenRegistrierungslinkState, FormData>(
     generiereReferentenRegistrierungslink,
     {},
@@ -26,14 +30,22 @@ export function ReferentenRegistrierungslink() {
         <div>
           <h2 className="flex items-center gap-2 font-medium">
             <LinkIcon className="size-4 text-primary" aria-hidden />
-            Allgemeiner Registrierungslink
+            Registrierungslink für einen Bezirk
           </h2>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground text-pretty">
-            Darüber können sich Referentinnen und Referenten selbst anmelden. Ein
-            neu erzeugter Link ersetzt den bisherigen und ist 30 Tage gültig.
+            Darüber können sich Referentinnen und Referenten für den gewählten
+            Bezirk selbst anmelden. Ein neuer Link ersetzt nur den bisherigen
+            Link dieses Bezirks und ist 30 Tage gültig.
           </p>
         </div>
         <form action={action} className="flex items-end gap-2">
+          <div className="space-y-1">
+            <Label htmlFor="bezirkId" className="text-xs">Bezirk</Label>
+            <select id="bezirkId" name="bezirkId" required className="h-9 max-w-48 border bg-background px-2 text-sm" defaultValue={bezirke.length === 1 ? bezirke[0]?.id : ""}>
+              {bezirke.length !== 1 ? <option value="">Bitte wählen</option> : null}
+              {bezirke.map((bezirk) => <option key={bezirk.id} value={bezirk.id}>{bezirk.name}</option>)}
+            </select>
+          </div>
           <div className="space-y-1">
             <Label htmlFor="maxNutzungen" className="text-xs">
               Registrierungen
@@ -83,6 +95,7 @@ export function ReferentenRegistrierungslink() {
           {state.fehler.maxNutzungen}
         </p>
       ) : null}
+      {state.fehler?.bezirkId ? <p role="alert" className="mt-3 text-sm text-destructive">{state.fehler.bezirkId}</p> : null}
     </section>
   );
 }

@@ -9,6 +9,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
 import { AuthError, requireRole, setSessionCookie, signToken } from "@/lib/auth";
+import { pruefeBezirk } from "@/lib/bezirke";
 import { createRateLimiter, getClientIp } from "@/lib/rateLimit";
 import { REGISTRIERUNG_STANDARD_NUTZUNGEN } from "@/constants/registrierung";
 import {
@@ -48,6 +49,7 @@ export interface ReferentenRegistrierungslinkState extends FormularState {
 }
 
 const LinkSchema = z.object({
+  bezirkId: z.string().uuid("Bitte einen Bezirk auswählen."),
   maxNutzungen: z.coerce
     .number()
     .int()
@@ -65,13 +67,14 @@ export async function generiereReferentenRegistrierungslink(
 ): Promise<ReferentenRegistrierungslinkState> {
   let user;
   try {
-    user = await requireRole("ADMIN", "REDAKTEUR");
+    user = await requireRole("RVS", "ADMIN", "REDAKTEUR");
   } catch (error) {
     if (error instanceof AuthError) return { fehler: { _: error.message } };
     throw error;
   }
 
   const eingabe = LinkSchema.safeParse({
+    bezirkId: formData.get("bezirkId") ?? "",
     maxNutzungen:
       formData.get("maxNutzungen") ?? REGISTRIERUNG_STANDARD_NUTZUNGEN,
   });
@@ -81,9 +84,17 @@ export async function generiereReferentenRegistrierungslink(
     };
   }
 
-  const { maxNutzungen } = eingabe.data;
+  const { maxNutzungen, bezirkId } = eingabe.data;
+  let bezirk;
+  try {
+    bezirk = await pruefeBezirk(user, bezirkId);
+  } catch (error) {
+    if (error instanceof AuthError) return { fehler: { bezirkId: error.message } };
+    throw error;
+  }
   const { token, gueltigBis } = await erzeugeReferentenRegistrierungslink(
     user.id,
+    bezirk.id,
     maxNutzungen,
   );
 
@@ -91,13 +102,13 @@ export async function generiereReferentenRegistrierungslink(
     userId: user.id,
     aktion: "CREATE",
     entitaet: "ReferentenRegistrierungslink",
-    details: { gueltigBis: gueltigBis.toISOString(), maxNutzungen },
+    details: { bezirkId: bezirk.id, bezirk: bezirk.name, gueltigBis: gueltigBis.toISOString(), maxNutzungen },
   });
   revalidatePath("/admin/referenten");
 
   return {
     erfolg: true,
-    meldung: "Allgemeiner Registrierungslink wurde erzeugt.",
+    meldung: `Registrierungslink für ${bezirk.name} wurde erzeugt.`,
     link: referentenRegistrierungsLink(token),
     gueltigBis: gueltigBis.toISOString(),
   };
@@ -155,9 +166,9 @@ export async function registriereReferent(
     const ergebnis = await prisma.$transaction(async (tx) => {
       const link = await tx.referentenRegistrierungslink.findUnique({
         where: { tokenHash: hashRegistrierungsToken(token) },
-        select: { id: true, maxNutzungen: true },
+        select: { id: true, maxNutzungen: true, bezirkId: true, bezirk: { select: { aktiv: true } } },
       });
-      if (!link) return { art: "ungueltig" as const };
+      if (!link?.bezirk.aktiv) return { art: "ungueltig" as const };
 
       // Kein Konto und keinen zweiten Verzeichniseintrag mit derselben Adresse
       // anlegen. Die Prüfung bleibt im Commit, damit die Antwort robust gegen
@@ -202,6 +213,7 @@ export async function registriereReferent(
               // Selbstregistrierung ist keine Einwilligung zur öffentlichen
               // Namensnennung; die Redaktion kann das später ausdrücklich setzen.
               oeffentlichSichtbar: false,
+              bezirke: { connect: { id: link.bezirkId } },
             },
           },
         },
@@ -252,4 +264,77 @@ export async function registriereReferent(
   }
 
   redirect("/admin?willkommen=1");
+}
+
+const LinkTokenSchema = z.object({ token: z.string().min(40).max(200) });
+
+/**
+ * Ordnet einem bereits angemeldeten Referentenkonto einen weiteren Bezirk zu.
+ * Der Login ist hier der Identitätsnachweis; eine angegebene E-Mail-Adresse
+ * wäre dafür nicht ausreichend.
+ */
+export async function fuegeBezirkAusRegistrierungslinkHinzu(
+  _bisher: FormularState,
+  formData: FormData,
+): Promise<FormularState> {
+  const eingabe = LinkTokenSchema.safeParse({ token: formData.get("token")?.toString() ?? "" });
+  if (!eingabe.success) return { fehler: { _: "Dieser Registrierungslink ist ungültig." } };
+
+  let user;
+  try {
+    user = await requireRole("REFERENT");
+  } catch (error) {
+    if (error instanceof AuthError) return { fehler: { _: error.message } };
+    throw error;
+  }
+  if (!user.referentId) {
+    return { fehler: { _: "Dieser Link kann nur einem angemeldeten Referentenkonto hinzugefügt werden." } };
+  }
+
+  const jetzt = new Date();
+  const ergebnis = await prisma.$transaction(async (tx) => {
+    // Seralisiert konkurrierende Einlösungen für dasselbe Referentenkonto.
+    // Nach dem Lock erkennt der zweite Request die bereits bestehende Relation
+    // und verbraucht keine weitere Linknutzung.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${user.referentId!}))`;
+    const link = await tx.referentenRegistrierungslink.findUnique({
+      where: { tokenHash: hashRegistrierungsToken(eingabe.data.token) },
+      select: {
+        id: true,
+        bezirkId: true,
+        aktiv: true,
+        expiresAt: true,
+        nutzungen: true,
+        maxNutzungen: true,
+        bezirk: { select: { name: true, aktiv: true } },
+      },
+    });
+    if (
+      !link?.aktiv ||
+      !link.bezirk.aktiv ||
+      link.expiresAt <= jetzt ||
+      link.nutzungen >= link.maxNutzungen
+    ) return { art: "ungueltig" as const };
+
+    const bereitsZugeordnet = await tx.referent.findFirst({
+      where: { id: user.referentId!, bezirke: { some: { id: link.bezirkId } } },
+      select: { id: true },
+    });
+    if (bereitsZugeordnet) return { art: "bereits" as const, bezirkName: link.bezirk.name };
+
+    const verwendet = await tx.referentenRegistrierungslink.updateMany({
+      where: { id: link.id, aktiv: true, expiresAt: { gt: jetzt }, nutzungen: { lt: link.maxNutzungen } },
+      data: { nutzungen: { increment: 1 }, letzteNutzungAm: jetzt },
+    });
+    if (verwendet.count !== 1) return { art: "ungueltig" as const };
+
+    await tx.referent.update({ where: { id: user.referentId! }, data: { bezirke: { connect: { id: link.bezirkId } } } });
+    return { art: "erfolg" as const, bezirkName: link.bezirk.name };
+  });
+
+  if (ergebnis.art === "ungueltig") return { fehler: { _: "Dieser Registrierungslink ist nicht mehr gültig." } };
+  if (ergebnis.art === "bereits") return { erfolg: true, meldung: `Der Bezirk ${ergebnis.bezirkName} ist bereits zugeordnet.` };
+  await auditLog({ userId: user.id, aktion: "UPDATE", entitaet: "Referent", entitaetId: user.referentId, details: { bezirkHinzugefuegt: ergebnis.bezirkName } });
+  revalidatePath("/admin/referenten");
+  return { erfolg: true, meldung: `Der Bezirk ${ergebnis.bezirkName} wurde zugeordnet.` };
 }

@@ -19,8 +19,9 @@ import {
 } from "@/components/ui/table";
 
 export function FibsImportFormular({
-  darfUebernehmen,
+  bezirke,  darfUebernehmen,
 }: {
+  bezirke: { id: string; name: string }[];
   darfUebernehmen: boolean;
 }) {
   const [state, formAction] = useActionState<ImportState, FormData>(
@@ -32,6 +33,12 @@ export function FibsImportFormular({
     <div className="space-y-6">
       <form action={formAction} className="border p-5">
         <h2 className="text-sm font-semibold">Import starten</h2>
+        <label className="mt-4 block space-y-2 text-sm">Schulamtsbezirk
+          <select name="bezirkId" required className="block h-10 w-full rounded-md border bg-background px-3" defaultValue={bezirke.length === 1 ? bezirke[0]!.id : ""}>
+            <option value="">Bitte Bezirk wählen</option>
+            {bezirke.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+        </label>
 
         {darfUebernehmen ? (
           <label className="mt-4 flex items-start gap-2.5">

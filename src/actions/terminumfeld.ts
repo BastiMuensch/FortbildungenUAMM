@@ -92,6 +92,8 @@ export async function ladeTerminumfeld(eingabe: {
       organisationsform: true,
       status: true,
       createdById: true,
+      bezirkId: true,
+      bezirk: { select: { aktiv: true } },
       veranstaltungsortId: true,
       veranstaltungsort: { select: { name: true, istOnline: true } },
       referenten: { select: { referentId: true } },
@@ -99,9 +101,11 @@ export async function ladeTerminumfeld(eingabe: {
   });
 
   const eigener = (f: (typeof treffer)[number]) =>
-    f.createdById === user.id ||
-    (user.referentId !== null &&
-      f.referenten.some((r) => r.referentId === user.referentId));
+    user.role === "RVS" ||
+    (f.bezirk.aktiv && user.bezirkIds.includes(f.bezirkId) &&
+      (user.role === "ADMIN" || user.role === "REDAKTEUR" ||
+        f.createdById === user.id ||
+        (user.referentId !== null && f.referenten.some((r) => r.referentId === user.referentId))));
 
   const termine: UmfeldTermin[] = treffer.map((f) => {
     const mein = eigener(f);

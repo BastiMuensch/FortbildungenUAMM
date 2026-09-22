@@ -18,6 +18,7 @@ import {
 
 import { prisma } from "@/lib/prisma";
 import { ERFASSER, fortbildungScope, requireRole } from "@/lib/auth";
+import { ladeBezirke } from "@/lib/bezirke";
 import {
   darfFreigeben,
   NACHBEREITUNG_RUECKBLICK_TAGE,
@@ -39,12 +40,12 @@ export default async function AdminDashboard({
   searchParams: Promise<SuchParameter>;
 }) {
   const user = await requireRole(...ERFASSER);
-  if (user.role === "ADMIN" && await istEinrichtungOffen()) redirect("/admin/einrichtung");
+  if (user.role === "RVS" && await istEinrichtungOffen()) redirect("/admin/einrichtung");
   const params = await searchParams;
   const filter = leseFilter(params);
   const scope = fortbildungScope(user);
   const istAdmin = darfFreigeben(user.role);
-  const darfNachbereiten = user.role === "ADMIN" || user.role === "REFERENT";
+  const darfNachbereiten = (user.role === "RVS" || user.role === "ADMIN") || user.role === "REFERENT";
   const bereichParam = Array.isArray(params.bereich) ? params.bereich[0] : params.bereich;
   const aktiverBereich =
     bereichParam === "freigaben" && istAdmin
@@ -87,7 +88,7 @@ export default async function AdminDashboard({
     jetzt.getTime() - NACHBEREITUNG_RUECKBLICK_TAGE * 24 * 60 * 60 * 1000,
   );
 
-  const [fortbildungen, schlagworte, kennzahlen] = await Promise.all([
+  const [fortbildungen, schlagworte, kennzahlen, bezirke] = await Promise.all([
     prisma.fortbildung.findMany({
       where,
       orderBy: { beginn: "desc" },
@@ -107,6 +108,7 @@ export default async function AdminDashboard({
         inFibs: true,
         fibsLehrgangsnummer: true,
         quelle: true,
+        bezirk: { select: { name: true } },
         veranstaltungsort: { select: { name: true, ort: true, istOnline: true } },
         referenten: { select: { referent: { select: { vorname: true, nachname: true } } } },
       },
@@ -136,7 +138,7 @@ export default async function AdminDashboard({
                   : []),
                 { ende: { lt: jetzt, gte: nachbereitungsGrenze } },
                 { status: { in: ["VEROEFFENTLICHT", "ARCHIVIERT"] } },
-                user.role === "ADMIN"
+                (user.role === "RVS" || user.role === "ADMIN")
                   ? {
                       OR: [
                         { tnTatsaechlich: null },
@@ -155,6 +157,7 @@ export default async function AdminDashboard({
         prisma.fortbildung.findFirst({ where: scope, orderBy: { beginn: "desc" }, select: { beginn: true } }),
       ]).then(([erste, letzte]) => vorhandeneSchuljahre(erste?.beginn, letzte?.beginn, laufendes)),
     ]),
+    ladeBezirke(user),
   ]);
 
   const [imSchuljahr, zurFreigabe, ohneFibs, offeneMeldungen, jahrgaenge] = kennzahlen;
@@ -215,7 +218,7 @@ export default async function AdminDashboard({
           <Kachel
             wert={offeneMeldungen}
             label={
-              user.role === "ADMIN"
+              (user.role === "RVS" || user.role === "ADMIN")
                 ? "Nachbereitungen offen"
                 : "SchiLf-Zahlen offen"
             }
@@ -240,7 +243,7 @@ export default async function AdminDashboard({
       ) : null}
 
       <div id="fortbildungslisten" className="scroll-mt-6">
-        <AdminFilterLeiste params={params} schlagworte={schlagworte.map((s) => s.name)} />
+        <AdminFilterLeiste params={params} schlagworte={schlagworte.map((s) => s.name)} bezirke={bezirke} />
       </div>
 
       {fortbildungen.length === 0 ? (

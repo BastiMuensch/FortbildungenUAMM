@@ -1,4 +1,3 @@
-import { ladeSchulamt } from "@/lib/schulamt";
 import { NextResponse, type NextRequest } from "next/server";
 import { jsPDF } from "jspdf";
 
@@ -38,7 +37,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const user = await getSessionUser();
-  const schulamt = await ladeSchulamt();
   if (!user || !ERFASSER.includes(user.role)) {
     return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
   }
@@ -48,6 +46,7 @@ export async function GET(
   const fortbildung = await prisma.fortbildung.findFirst({
     where: { AND: [{ id }, fortbildungScope(user)] },
     include: {
+      bezirk: { select: { name: true } },
       veranstaltungsort: true,
       referenten: {
         where: { referent: { oeffentlichSichtbar: true } },
@@ -98,7 +97,7 @@ export async function GET(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...GRAU);
-  const schulamtZeilen = doc.splitTextToSize(schulamt.kurzname, inhalt / 2) as string[];
+  const schulamtZeilen = doc.splitTextToSize(`Schulamtsbezirk ${fortbildung.bezirk.name}`, inhalt / 2) as string[];
   doc.text(schulamtZeilen, breite - rand, y, {
     align: "right",
   });

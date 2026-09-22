@@ -23,10 +23,12 @@ import {
 export function AdminFilterLeiste({
   params,
   schlagworte,
+  bezirke = [],
   ohne = [],
 }: {
   params: SuchParameter;
   schlagworte: string[];
+  bezirke?: Array<{ id: string; name: string }>;
   ohne?: string[];
 }) {
   const router = useRouter();
@@ -54,6 +56,7 @@ export function AdminFilterLeiste({
     "status",
     "schlagwort",
     "fibs",
+    "bezirk",
   ].some((name) => wert(name));
   const weitereFilterAktiv = [
     "von",
@@ -64,6 +67,7 @@ export function AdminFilterLeiste({
     "status",
     "schlagwort",
     "fibs",
+    "bezirk",
   ].some((name) => wert(name));
 
   return (
@@ -117,6 +121,7 @@ export function AdminFilterLeiste({
                 status: undefined,
                 schlagwort: undefined,
                 fibs: undefined,
+                bezirk: undefined,
               })
             }
           >
@@ -133,6 +138,14 @@ export function AdminFilterLeiste({
           <span className="text-xs font-normal">{weitereFilterAktiv ? "aktiv" : "optional"}</span>
         </summary>
         <div className="mt-3 flex flex-wrap items-end gap-3 border-t pt-3">
+        {bezirke.length > 0 ? (
+          <Liste
+            label="Bezirk"
+            wert={wert("bezirk")}
+            optionen={bezirke.map((bezirk) => ({ value: bezirk.id, label: bezirk.name }))}
+            onChange={(v) => setzen({ bezirk: v })}
+          />
+        ) : null}
         <Auswahl label="Von" typ="date" wert={wert("von")} onChange={(v) => setzen({ von: v })} />
         <Auswahl label="Bis" typ="date" wert={wert("bis")} onChange={(v) => setzen({ bis: v })} />
         {!ohne.includes("organisationsform") ? (

@@ -1,4 +1,4 @@
-import { ladeSchulamt } from "@/lib/schulamt";
+import { ladeBezirksUeberschrift } from "@/lib/bezirke";
 import { NextResponse, type NextRequest } from "next/server";
 import { ERFASSER, getSessionUser } from "@/lib/auth";
 import { leseAuswertungsFilter } from "@/lib/auswertung";
@@ -23,8 +23,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: (fehler as Error).message }, { status: 400 });
   }
   const auswertung = await ladeAuswertung(user, filter);
-  const schulamt = await ladeSchulamt();
-  const mappe = erstelleAuswertungsmappe(auswertung, filter, schulamt.name);
+  const schulamtName = await ladeBezirksUeberschrift(user, filter.bezirk);
+  const mappe = erstelleAuswertungsmappe(auswertung, filter, schulamtName);
   const puffer = await mappe.xlsx.writeBuffer();
   await auditLog({ userId: user.id, aktion: "UPDATE", entitaet: "Export", details: { art: "Auswertung", anzahl: auswertung.gesamt.veranstaltungen } });
   return new NextResponse(puffer as ArrayBuffer, { headers: {

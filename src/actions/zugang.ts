@@ -49,7 +49,7 @@ export async function stufeReferentZuAdministrationHoch(
 ): Promise<FormularState> {
   let admin;
   try {
-    admin = await requireRole("ADMIN");
+    admin = await requireRole("RVS");
   } catch (error) {
     if (error instanceof AuthError) return { fehler: { _: error.message } };
     throw error;
@@ -67,7 +67,7 @@ export async function stufeReferentZuAdministrationHoch(
       role: true,
       isActive: true,
       passwordHash: true,
-      referent: { select: { id: true, aktiv: true } },
+      referent: { select: { id: true, aktiv: true, bezirke: { select: { id: true } } } },
     },
   });
 
@@ -110,6 +110,10 @@ export async function stufeReferentZuAdministrationHoch(
       },
     };
   }
+  await prisma.user.update({
+    where: { id: ziel.id },
+    data: { bezirke: { connect: ziel.referent.bezirke.map((bezirk) => ({ id: bezirk.id })) } },
+  });
 
   await auditLog({
     userId: admin.id,
@@ -141,7 +145,10 @@ export async function richteZugangEin(
 ): Promise<EinladungState> {
   let admin;
   try {
-    admin = await requireRole("ADMIN");
+    // Zugangseinrichtung und Passwort-Reset sind kontoweit wirksam. Diese
+    // sensible Verwaltung bleibt daher bei der RvS, auch wenn ein Referent
+    // mehreren Bezirken zugeordnet ist.
+    admin = await requireRole("RVS");
   } catch (error) {
     if (error instanceof AuthError) return { fehler: { _: error.message } };
     throw error;
@@ -223,7 +230,7 @@ export async function neuerZugangslink(
 ): Promise<EinladungState> {
   let admin;
   try {
-    admin = await requireRole("ADMIN");
+    admin = await requireRole("RVS");
   } catch (error) {
     if (error instanceof AuthError) return { fehler: { _: error.message } };
     throw error;
@@ -259,7 +266,7 @@ export async function neuerZugangslink(
 
 /** Nimmt einer Person den Zugang, ohne den Referenteneintrag zu löschen. */
 export async function zugangEntziehen(userId: string): Promise<void> {
-  const admin = await requireRole("ADMIN");
+  const admin = await requireRole("RVS");
 
   await prisma.$transaction([
     prisma.zugangstoken.deleteMany({ where: { userId } }),

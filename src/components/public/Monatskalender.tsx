@@ -159,6 +159,7 @@ function TerminChip({ fortbildung }: { fortbildung: FortbildungKachel }) {
     >
       <span className="zahl">{formatZeit(fortbildung.beginn)}</span>{" "}
       {fortbildung.kurztitel ?? fortbildung.titel}
+      <span className="text-muted-foreground"> · {fortbildung.bezirk.name}</span>
     </Link>
   );
 }

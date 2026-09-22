@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
-import { AuthError, requireRole } from "@/lib/auth";
+import { AuthError, referentScope, requireRole } from "@/lib/auth";
+import { pruefeBezirk } from "@/lib/bezirke";
 import { auditLog } from "@/lib/audit";
 import { zuFeldFehlern, type FormularState } from "@/lib/validation/fortbildung";
 import { normalisiereSchlagwort, schlagwortSchluessel } from "@/lib/schlagwort";
@@ -17,7 +18,7 @@ import { normalisiereSchlagwort, schlagwortSchluessel } from "@/lib/schlagwort";
  */
 
 async function rolle() {
-  return requireRole("ADMIN", "REDAKTEUR");
+  return requireRole("RVS", "ADMIN", "REDAKTEUR");
 }
 
 function alsFehler(error: unknown): FormularState | null {
@@ -73,11 +74,38 @@ export async function speichereReferent(
   if (!geparst.success) return { fehler: zuFeldFehlern(geparst.error) };
 
   const wirdAngelegt = id === null;
+  const bezirkIds = [...new Set(formData.getAll("bezirkId").map(String).filter(Boolean))];
+  if (bezirkIds.length === 0) return { fehler: { _: "Bitte mindestens einen Bezirk zuordnen." } };
+  try {
+    await Promise.all(bezirkIds.map((bezirkId) => pruefeBezirk(user, bezirkId)));
+  } catch (error) {
+    if (error instanceof AuthError) return { fehler: { _: error.message } };
+    throw error;
+  }
 
   if (id) {
-    await prisma.referent.update({ where: { id }, data: geparst.data });
+    const sichtbar = await prisma.referent.findFirst({
+      where: { AND: [{ id }, referentScope(user)] }, select: { id: true },
+    });
+    if (!sichtbar) return { fehler: { _: "Für diese Person fehlt die Berechtigung." } };
+    // Nur eigene Mitgliedschaften ersetzen. Connect/Disconnect lässt auch bei
+    // paralleler Bearbeitung durch andere BdBs deren Zuordnungen unangetastet.
+    await prisma.referent.update({
+      where: { id, AND: [referentScope(user)] },
+      data: {
+        ...geparst.data,
+        bezirke: user.role === "RVS"
+          ? { set: bezirkIds.map((id) => ({ id })) }
+          : {
+              disconnect: user.bezirkIds.filter((id) => !bezirkIds.includes(id)).map((id) => ({ id })),
+              connect: bezirkIds.map((id) => ({ id })),
+            },
+      },
+    });
   } else {
-    const neu = await prisma.referent.create({ data: geparst.data });
+    const neu = await prisma.referent.create({
+      data: { ...geparst.data, bezirke: { connect: bezirkIds.map((id) => ({ id })) } },
+    });
     id = neu.id;
   }
 
@@ -98,7 +126,35 @@ export async function speichereReferent(
  * Zuordnungen wird wirklich gelöscht (Art. 17 DSGVO, Recht auf Löschung).
  */
 export async function entferneReferent(id: string): Promise<void> {
-  const user = await requireRole("ADMIN");
+  const user = await requireRole("RVS", "ADMIN");
+
+  const referent = await prisma.referent.findFirst({
+    where: { AND: [{ id }, referentScope(user)] },
+    select: { id: true, bezirke: { select: { id: true } } },
+  });
+  if (!referent) throw new AuthError("Für diese Person fehlt die Berechtigung.");
+
+  // Ein BdB kann nur die eigene Bezirksmitgliedschaft entfernen. Das schützt
+  // geteilte Referentenkonten und deren Historie in anderen Bezirken.
+  if (user.role !== "RVS") {
+    const eigeneBezirkIds = referent.bezirke
+      .map((bezirk) => bezirk.id)
+      .filter((id) => user.bezirkIds.includes(id));
+    if (eigeneBezirkIds.length === 0) throw new AuthError("Für diese Person fehlt die Berechtigung.");
+    await prisma.referent.update({
+      where: { id },
+      data: { bezirke: { disconnect: eigeneBezirkIds.map((id) => ({ id })) } },
+    });
+    await auditLog({
+      userId: user.id,
+      aktion: "UPDATE",
+      entitaet: "Referent",
+      entitaetId: id,
+      details: { bezirkzuordnungEntfernt: eigeneBezirkIds },
+    });
+    revalidatePath("/admin/referenten");
+    return;
+  }
 
   const anzahl = await prisma.fortbildungReferent.count({ where: { referentId: id } });
 
@@ -159,13 +215,13 @@ export async function speichereSchlagwort(
 
 /** Steuert, mit welchen Begriffen der FIBS-Import sucht. */
 export async function setzeFibsSuche(id: string, aktiv: boolean): Promise<void> {
-  await rolle();
+  await requireRole("RVS");
   await prisma.schlagwort.update({ where: { id }, data: { fuerFibsImport: aktiv } });
   revalidatePath("/admin/schlagworte");
 }
 
 export async function entferneSchlagwort(id: string): Promise<void> {
-  const user = await requireRole("ADMIN");
+  const user = await requireRole("RVS");
 
   const schlagwort = await prisma.schlagwort.findUnique({ where: { id } });
   // Pflicht-Schlagworte sind Teil der fachlichen Festlegung des Schulamts und

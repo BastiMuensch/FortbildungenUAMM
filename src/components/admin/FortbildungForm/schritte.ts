@@ -21,7 +21,7 @@ export const SCHRITTE: Schritt[] = [
     hilfe:
       "Wann, wo und in welcher Form findet die Fortbildung statt? Diese Angaben stehen später in Kalender und Suchergebnis.",
     pflichtfelder: [
-      "titel",
+      "bezirkId", "titel",
       "organisationsform",
       "maxTn",
       "format",

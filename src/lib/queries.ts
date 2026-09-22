@@ -41,6 +41,7 @@ export const oeffentlicheFortbildungSelect = {
   fibsUrl: true,
   inFibs: true,
   status: true,
+  bezirk: { select: { id: true, name: true } },
   veranstaltungsort: {
     select: { id: true, name: true, ort: true, istOnline: true },
   },
@@ -81,6 +82,7 @@ export const fortbildungKachelSelect = {
   ende: true,
   schularten: true,
   status: true,
+  bezirk: { select: { id: true, name: true } },
   // Die Liste kommuniziert nicht nur, dass ein Angebot existiert, sondern auch,
   // ob die verbindliche Anmeldung bereits offen ist.
   inFibs: true,

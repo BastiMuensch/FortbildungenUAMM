@@ -40,3 +40,12 @@ export const BISHERIGES_SCHULAMT: SchulamtProfil = {
   startText: "Suche für das neue Fortbildungsangebot für Grund- und Mittelschulen in Memmingen und dem Unterallgäu.",
   pflichtSchlagworte: ["UAMM", "Medienteam-UAMM"],
 };
+
+/** Gemeinsamer Auftritt; Ausschreibungsbezirke werden separat verwaltet. */
+export const SCHWABEN_SCHULAMT: SchulamtProfil = SchulamtProfilSchema.parse({
+  ...BISHERIGES_SCHULAMT,
+  name: "Fortbildungsportal Schwaben",
+  kurzname: "Fortbildungen Schwaben",
+  region: "Schwaben",
+  angebotsRegion: "Schwaben",
+});

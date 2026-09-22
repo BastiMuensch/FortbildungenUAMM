@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { BISHERIGES_SCHULAMT, NEUTRALES_SCHULAMT, SchulamtProfilSchema } from "../src/lib/schulamtProfil";
+import { BISHERIGES_SCHULAMT, NEUTRALES_SCHULAMT, SCHWABEN_SCHULAMT, SchulamtProfilSchema } from "../src/lib/schulamtProfil";
 import { leseSchulCsv, planeSchulimport, type BestehenderSchulort } from "../src/lib/schulimport";
 
 const kopf = "schulnummer;name;strasse;ort\n";
 const ort: BestehenderSchulort = { id: "schule-1", name: "Grundschule Beispiel", schulnummer: "0012", strasse: "Schulstraße 1", ort: "Beispielstadt", istOnline: false, aktiv: true, _count: { fortbildungen: 3 } };
 assert.equal(SchulamtProfilSchema.parse(BISHERIGES_SCHULAMT).startText, "Suche für das neue Fortbildungsangebot für Grund- und Mittelschulen in Memmingen und dem Unterallgäu.");
+assert.equal(SCHWABEN_SCHULAMT.startText, "Suche für das neue Fortbildungsangebot für Grund- und Mittelschulen in Schwaben.");
 assert.equal(SchulamtProfilSchema.parse({ ...NEUTRALES_SCHULAMT, zielgruppe: "Realschulen", angebotsRegion: "Musterstadt" }).startText, "Suche für das neue Fortbildungsangebot für Realschulen in Musterstadt.");
 assert.deepEqual(SchulamtProfilSchema.parse({ ...NEUTRALES_SCHULAMT, pflichtSchlagworte: ["Medienteam", "medienteam"] }).pflichtSchlagworte, ["Medienteam"]);
 assert.equal(SchulamtProfilSchema.safeParse({ ...NEUTRALES_SCHULAMT, name: "\n" }).success, false);

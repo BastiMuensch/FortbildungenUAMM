@@ -33,7 +33,11 @@ Kontos.
 ## Gemeinsamer Auftritt und bestehende Funktionen
 
 Name, Region und öffentliche Texte werden von der RvS unter Einrichtung für die
-gemeinsame Plattform angepasst. Die Migration überschreibt diese Texte nicht.
+gemeinsame Plattform angepasst. Die zusätzliche Migration
+`20260922140000_schwaben_auftritt` ersetzt unveränderte UAMM-Standardwerte im
+gespeicherten Profil durch den Schwaben-Auftritt. Individuell angepasste Felder,
+Rechtstexte, Pflichtschlagworte und Kalenderkennungen bleiben erhalten.
+Auch ohne gespeichertes Profil zeigt der öffentliche Auftritt Schwaben.
 Pflichtschlagworte werden je Bezirk unter Bezirke und BdBs gepflegt.
 
 Die öffentliche Übersicht und der Monatskalender zeigen veröffentlichte Angebote

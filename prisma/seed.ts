@@ -7,7 +7,7 @@
  *   npm run db:seed
  */
 import { randomUUID } from "node:crypto";
-import { BISHERIGES_SCHULAMT, NEUTRALES_SCHULAMT, SCHULAMT_PROFIL_SCHLUESSEL, SchulamtProfilSchema, type SchulamtProfil } from "../src/lib/schulamtProfil";
+import { BISHERIGES_SCHULAMT, NEUTRALES_SCHULAMT, SCHWABEN_SCHULAMT, SCHULAMT_PROFIL_SCHLUESSEL, SchulamtProfilSchema, type SchulamtProfil } from "../src/lib/schulamtProfil";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { DIGCOMP_BAUM, type KompetenzSeed } from "./seed-data/digcomp";
@@ -36,7 +36,7 @@ async function seedProfil(): Promise<{ profil: SchulamtProfil; importiereUamm: b
   if (gespeichert) return { profil: SchulamtProfilSchema.parse(JSON.parse(gespeichert.value)), importiereUamm: false };
   const altbestand = (await prisma.user.count()) > 0 || (await prisma.veranstaltungsort.count()) > 0 || (await prisma.fortbildung.count()) > 0;
   const importiereUamm = !altbestand && process.env.SCHULAMT_STARTPROFIL === "uamm";
-  const profil = altbestand || importiereUamm ? BISHERIGES_SCHULAMT : NEUTRALES_SCHULAMT;
+  const profil = altbestand ? SCHWABEN_SCHULAMT : importiereUamm ? BISHERIGES_SCHULAMT : NEUTRALES_SCHULAMT;
   await prisma.$transaction([
     prisma.systemSetting.create({ data: { id: SCHULAMT_PROFIL_SCHLUESSEL, value: JSON.stringify(profil) } }),
     prisma.systemSetting.upsert({ where: { id: "einrichtungStatus" }, update: {}, create: { id: "einrichtungStatus", value: altbestand ? "fertig" : "offen" } }),

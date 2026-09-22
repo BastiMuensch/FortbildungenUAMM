@@ -17,7 +17,7 @@ export function EinrichtungsFormular({ profil, assistent = false }: { profil: Sc
     { name: "region", label: "Region", maximum: 100, hinweis: "Zum Beispiel Landkreis oder Stadt." },
     { name: "startTitel", label: "Überschrift der Startseite", maximum: 100 },
     { name: "zielgruppe", label: "Zielgruppe", maximum: 160, hinweis: "Zum Beispiel Grund- und Mittelschulen oder Lehrkräfte aller Schularten." },
-    { name: "angebotsRegion", label: "Angebotsregion im Einleitungssatz", maximum: 160, hinweis: "Ergänzt den Satz nach „in“, zum Beispiel Memmingen und dem Unterallgäu." },
+    { name: "angebotsRegion", label: "Angebotsregion im Einleitungssatz", maximum: 160, hinweis: "Ergänzt den Satz nach „in“, zum Beispiel Schwaben." },
   ] as const;
   return <form action={aktion} className="space-y-5 rounded-xl border bg-card p-5">
     {assistent ? <input type="hidden" name="weiter" value="schulen" /> : null}

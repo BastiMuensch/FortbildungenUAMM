@@ -57,11 +57,12 @@ model User {
 /// Einmal-Token für das Einrichten eines Zugangs und für das Zurücksetzen
 /// eines Passworts.
 ///
-/// Es wird nur der Hash gespeichert — wer die Datenbank liest, kann damit
-/// keinen fremden Zugang übernehmen.
+/// Die Prüfung verwendet nur den Hash. Für erneut anzeigbare BdB-Links liegt
+/// der Token zusätzlich verschlüsselt vor; der Schlüssel bleibt außerhalb der DB.
 model Zugangstoken {
   id        String    @id @default(uuid())
   tokenHash String    @unique
+  tokenVerschluesselt String? @db.Text
   userId    String
   zweck     String // EINLADUNG | PASSWORT_RESET
   expiresAt DateTime  @db.Timestamptz(3)

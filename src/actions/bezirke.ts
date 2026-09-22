@@ -7,7 +7,7 @@ import { auditLog } from "@/lib/audit";
 import { AuthError, requireRole } from "@/lib/auth";
 import { normalisiereSchlagwortListe } from "@/lib/schlagwort";
 import { prisma } from "@/lib/prisma";
-import { erzeugeZugangstoken, zugangsLink } from "@/lib/zugang";
+import { erzeugeZugangstoken } from "@/lib/zugang";
 import type { FormularState } from "@/lib/validation/fortbildung";
 
 const BezirkSchema = z.object({
@@ -63,7 +63,7 @@ export async function speichereBdb(
   userId: string | null,
   _bisher: FormularState,
   formData: FormData,
-): Promise<FormularState & { link?: string }> {
+): Promise<FormularState> {
   let rvs;
   try { rvs = await requireRole("RVS"); } catch (error) {
     if (error instanceof AuthError) return { fehler: { _: error.message } };
@@ -95,22 +95,23 @@ export async function speichereBdb(
     }
     throw error;
   }
-  const zugang = userId ? null : await erzeugeZugangstoken(konto.id, "EINLADUNG");
+  if (!userId) await erzeugeZugangstoken(konto.id, "EINLADUNG", { wiederAnzeigen: true });
   await auditLog({ userId: rvs.id, aktion: userId ? "UPDATE" : "CREATE", entitaet: "User", entitaetId: konto.id, details: { rolle: "ADMIN", bezirkIds: daten.data.bezirkIds } });
   revalidatePath("/admin/bezirke");
-  return { erfolg: true, meldung: userId ? "BdB gespeichert." : "BdB angelegt. Der Zugangslink kann jetzt weitergegeben werden.", link: zugang ? zugangsLink(zugang.token) : undefined };
+  return { erfolg: true, meldung: userId ? "BdB gespeichert." : `BdB ${konto.email} angelegt. Der Einladungslink ist unten beim Konto gespeichert.` };
 }
 
 /** Erzeugt nur auf ausdrücklichen Wunsch einen neuen Zugangslink für einen BdB. */
-export async function erzeugeBdbZugangslink(userId: string): Promise<FormularState & { link?: string }> {
+export async function erzeugeBdbZugangslink(userId: string): Promise<FormularState> {
   let rvs;
   try { rvs = await requireRole("RVS"); } catch (error) {
     if (error instanceof AuthError) return { fehler: { _: error.message } };
     throw error;
   }
-  const ziel = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, role: true, isActive: true } });
+  const ziel = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, role: true, isActive: true, passwordHash: true } });
   if (!ziel || !["ADMIN", "REDAKTEUR"].includes(ziel.role) || !ziel.isActive) return { fehler: { _: "Für dieses Konto kann kein Zugangslink erzeugt werden." } };
-  const zugang = await erzeugeZugangstoken(ziel.id, "EINLADUNG");
+  await erzeugeZugangstoken(ziel.id, ziel.passwordHash ? "PASSWORT_RESET" : "EINLADUNG", { wiederAnzeigen: true });
   await auditLog({ userId: rvs.id, aktion: "CREATE", entitaet: "Zugang", entitaetId: ziel.id, details: { rolle: ziel.role } });
-  return { erfolg: true, meldung: "Neuer Zugangslink erzeugt.", link: zugangsLink(zugang.token) };
+  revalidatePath("/admin/bezirke");
+  return { erfolg: true, meldung: "Neuer Zugangslink gespeichert. Der bisherige offene Link ist ungültig." };
 }

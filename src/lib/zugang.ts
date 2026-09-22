@@ -3,6 +3,7 @@ import "server-only";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 
 import { prisma } from "@/lib/prisma";
+import { verschluesseleZugangslinkToken } from "@/lib/zugangslinkSpeicher";
 
 /**
  * Einmal-Token für „Zugang einrichten" und „Passwort zurücksetzen".
@@ -23,24 +24,27 @@ function hashe(token: string): string {
 }
 
 /**
- * Erzeugt ein neues Token und gibt den Klartext zurück — der ist nur in
- * diesem Moment bekannt, gespeichert wird ausschließlich der Hash.
+ * Standardmäßig wird nur der Hash gespeichert. BdB-Einladungen können für
+ * die RvS zusätzlich verschlüsselt zur erneuten Anzeige gespeichert werden.
  */
 export async function erzeugeZugangstoken(
   userId: string,
   zweck: Zweck,
+  optionen: { wiederAnzeigen?: boolean } = {},
 ): Promise<{ token: string; gueltigBis: Date }> {
-  // Ältere, noch offene Token derselben Person entwerten — sonst kursieren
-  // mehrere gültige Links für denselben Zugang.
-  await prisma.zugangstoken.deleteMany({ where: { userId, usedAt: null } });
-
   const token = randomBytes(32).toString("base64url");
+  const tokenVerschluesselt = optionen.wiederAnzeigen ? verschluesseleZugangslinkToken(token, userId) : null;
   const gueltigBis = new Date(
     Date.now() + GUELTIGKEIT_TAGE * 24 * 60 * 60 * 1000,
   );
 
-  await prisma.zugangstoken.create({
-    data: { tokenHash: hashe(token), userId, zweck, expiresAt: gueltigBis },
+  await prisma.$transaction(async (tx) => {
+    // Auch bei paralleler Link-Erzeugung bleibt nur ein offener Link je Konto.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"zugang:" + userId}))`;
+    await tx.zugangstoken.deleteMany({ where: { userId, usedAt: null } });
+    await tx.zugangstoken.create({
+      data: { tokenHash: hashe(token), tokenVerschluesselt, userId, zweck, expiresAt: gueltigBis },
+    });
   });
 
   return { token, gueltigBis };
@@ -65,7 +69,7 @@ export async function pruefeZugangstoken(
 
   if (!eintrag) return null;
   if (eintrag.usedAt) return null;
-  if (eintrag.expiresAt < new Date()) return null;
+  if (eintrag.expiresAt <= new Date()) return null;
   if (!eintrag.user.isActive) return null;
 
   return {
@@ -107,7 +111,7 @@ export async function verbraucheTokenUndSetzePasswort(
         expiresAt: { gt: jetzt },
         user: { isActive: true },
       },
-      data: { usedAt: jetzt },
+      data: { usedAt: jetzt, tokenVerschluesselt: null },
     });
     if (verbraucht.count !== 1) return null;
 

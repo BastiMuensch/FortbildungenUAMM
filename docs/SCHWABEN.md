@@ -30,6 +30,21 @@ ordnet neue Referenten diesem Bezirk zu; ein bestehendes Konto erhält bei einer
 weiteren Einladung eine zusätzliche Bezirkszuordnung statt eines zweiten
 Kontos.
 
+Persönliche BdB-Einladungslinks sind unter **Bezirke und BdBs** beim jeweiligen
+Konto für die RvS erneut anzeigbar und kopierbar. Sie gelten 14 Tage und können
+einmal eingelöst werden. Die Übersicht zeigt offene, verwendete, abgelaufene und
+deaktivierte Links. Ein ausdrücklich neu erzeugter Link ersetzt den bisherigen
+offenen Link dieses Kontos.
+
+Die Migration `20260922150000_bdb_einladungslinks` ergänzt eine optionale Spalte;
+bereits versendete Links bleiben unverändert gültig. Ihre bisherigen Prüfwerte
+lassen sich nicht zurück in Links umwandeln. Wer einen solchen Link erneut
+anzeigen möchte, muss einmal einen neuen erzeugen. Neue BdB-Token werden zusätzlich
+mit AES-256-GCM verschlüsselt gespeichert und nach dem Einlösen aus dieser Spalte
+entfernt. Der Schlüssel wird mit eigenem Kontext aus `JWT_SECRET` abgeleitet.
+Ein Wechsel dieses Geheimnisses verhindert die erneute Anzeige bisheriger Links,
+ändert aber nicht deren Gültigkeit. Die Prüfung erfolgt weiterhin über den Hash.
+
 ## Gemeinsamer Auftritt und bestehende Funktionen
 
 Name, Region und öffentliche Texte werden von der RvS unter Einrichtung für die
@@ -73,7 +88,8 @@ löschen nichts, und fehlende Schulen werden nicht entfernt.
 
 `npm test`, `npm run typecheck`, `npm run lint` und `npm run build` prüfen die Anwendung.
 Zusätzlich prüfen `scripts/bezirkeIntegrationPruefungen.ts` und
-`scripts/bezirkeActionsPruefungen.cjs` sowie `scripts/bezirkeExportPruefungen.cjs`
+`scripts/bezirkeActionsPruefungen.cjs`, `scripts/bezirkeExportPruefungen.cjs`
+und `scripts/bdbEinladungsPruefungen.cjs`
 die Rechte mit einer isolierten lokalen
 PostgreSQL-Testdatenbank auf Port 54329. Diese Tests sind nicht Teil der normalen
 Testkette und verweigern den Zugriff auf andere Datenbanken.

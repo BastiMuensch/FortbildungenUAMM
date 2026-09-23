@@ -8,7 +8,7 @@ export const metadata = { title: "Bezirke und BdBs" };
 export default async function BezirkePage() {
   await requireRole("RVS");
   const bezirke = await prisma.bezirk.findMany({
-    select: { id: true, name: true, aktiv: true, pflichtSchlagworte: true },
+    select: { id: true, name: true, kuerzel: true, aktiv: true, pflichtSchlagworte: true },
     orderBy: { name: "asc" },
   });
   const bdbs = await ladeBdbsMitEinladung();

@@ -103,6 +103,8 @@ model ReferentenRegistrierungslink {
 model Bezirk {
   id                 String   @id @default(uuid())
   name               String   @unique
+  /// Öffentliche Kurzadresse, zum Beispiel "gz" für Günzburg.
+  kuerzel            String   @unique @default(uuid())
   aktiv              Boolean  @default(true)
   /// Bezirkseigene Pflichtschlagworte, die bei neuen Ausschreibungen ergänzt werden.
   pflichtSchlagworte String[] @default([])

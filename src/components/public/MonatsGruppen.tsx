@@ -13,7 +13,9 @@ type MitPlaetzen = FortbildungKachel & { maxTn?: number };
  */
 export function MonatsGruppen({
   fortbildungen,
+  basisPfad = "",
 }: {
+  basisPfad?: string;
   fortbildungen: MitPlaetzen[];
 }) {
   const gruppen = new Map<string, MitPlaetzen[]>();
@@ -41,7 +43,7 @@ export function MonatsGruppen({
 
           <div className="grid">
             {termine.map((f) => (
-              <FortbildungKarte key={f.id} fortbildung={f} maxTn={f.maxTn} />
+              <FortbildungKarte basisPfad={basisPfad} key={f.id} fortbildung={f} maxTn={f.maxTn} />
             ))}
           </div>
         </section>

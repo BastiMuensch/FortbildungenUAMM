@@ -10,6 +10,22 @@ export type BezirkAuswahl = {
   pflichtSchlagworte: string[];
 };
 
+export type SchulamtsStartseite = {
+  name: string;
+  kuerzel: string;
+};
+
+/** Öffentliche Startseiten, die in der Administration verlinkt werden dürfen. */
+export async function ladeSchulamtsStartseiten(user: SessionUser): Promise<SchulamtsStartseite[]> {
+  if (!["RVS", "ADMIN", "REDAKTEUR"].includes(user.role)) return [];
+
+  return prisma.bezirk.findMany({
+    where: { AND: [bezirkScope(user), { aktiv: true }] },
+    select: { name: true, kuerzel: true },
+    orderBy: { name: "asc" },
+  });
+}
+
 /** Liefert die Bezirke, die eine Person für Formulare auswählen darf. */
 export async function ladeBezirke(user: SessionUser): Promise<BezirkAuswahl[]> {
   return prisma.bezirk.findMany({

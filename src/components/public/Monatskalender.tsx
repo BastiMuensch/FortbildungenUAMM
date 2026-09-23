@@ -25,7 +25,9 @@ export function Monatskalender({
   jahr,
   monatsIndex,
   fortbildungen,
+  basisPfad = "",
 }: {
+  basisPfad?: string;
   jahr: number;
   monatsIndex: number;
   fortbildungen: FortbildungKachel[];
@@ -99,7 +101,7 @@ export function Monatskalender({
 
                   <div className="space-y-1">
                     {termine.map((f) => (
-                      <TerminChip key={f.id + tag.iso} fortbildung={f} />
+                      <TerminChip basisPfad={basisPfad} key={f.id + tag.iso} fortbildung={f} />
                     ))}
                   </div>
                 </div>
@@ -127,7 +129,7 @@ export function Monatskalender({
                 </p>
                 <div className="space-y-1">
                   {(nachTag.get(tag.iso) ?? []).map((f) => (
-                    <TerminChip key={f.id} fortbildung={f} />
+                    <TerminChip basisPfad={basisPfad} key={f.id} fortbildung={f} />
                   ))}
                 </div>
               </div>
@@ -144,12 +146,12 @@ export function Monatskalender({
   );
 }
 
-function TerminChip({ fortbildung }: { fortbildung: FortbildungKachel }) {
+function TerminChip({ fortbildung, basisPfad }: { fortbildung: FortbildungKachel; basisPfad: string }) {
   const ebene = ebeneKlassen(fortbildung.organisationsform);
 
   return (
     <Link
-      href={`/fortbildungen/${fortbildung.slug}`}
+      href={`${basisPfad}/fortbildungen/${fortbildung.slug}`}
       title={fortbildung.titel}
       className={cn(
         "block truncate px-1.5 py-1 text-[11px] leading-tight font-medium transition-opacity hover:opacity-80",

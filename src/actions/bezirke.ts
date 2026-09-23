@@ -7,11 +7,13 @@ import { auditLog } from "@/lib/audit";
 import { AuthError, requireRole } from "@/lib/auth";
 import { normalisiereSchlagwortListe } from "@/lib/schlagwort";
 import { prisma } from "@/lib/prisma";
+import { generiereSchulamtKuerzel, pruefeSchulamtKuerzel } from "@/lib/schulamtKuerzel";
 import { erzeugeZugangstoken } from "@/lib/zugang";
 import type { FormularState } from "@/lib/validation/fortbildung";
 
 const BezirkSchema = z.object({
   name: z.string().trim().min(2, "Bitte einen Bezirksnamen angeben.").max(120),
+  kuerzel: z.string().trim().max(60),
   pflichtSchlagworte: z.string().max(1000).transform((wert) =>
     normalisiereSchlagwortListe(wert.split(/[,\n]/).filter((tag) => tag.trim())),
   ).pipe(z.array(z.string().min(2, "Schlagworte brauchen mindestens zwei Zeichen.").max(60, "Ein Schlagwort darf höchstens 60 Zeichen haben.")).max(8, "Höchstens acht Pflicht-Schlagworte.")),
@@ -38,18 +40,25 @@ export async function speichereBezirk(
   }
   const daten = BezirkSchema.safeParse({
     name: formData.get("name")?.toString() ?? "",
+    kuerzel: formData.get("kuerzel")?.toString() ?? "",
     pflichtSchlagworte: formData.get("pflichtSchlagworte")?.toString() ?? "",
     aktiv: formData.get("aktiv") === "on",
   });
   if (!daten.success) return { fehler: { _: daten.error.issues[0]?.message ?? "Eingabe ungültig." } };
+  const kuerzel = daten.data.kuerzel || generiereSchulamtKuerzel(daten.data.name);
+  const kuerzelFehler = pruefeSchulamtKuerzel(kuerzel);
+  if (kuerzelFehler) return { fehler: { kuerzel: kuerzelFehler } };
   let bezirk;
   try {
     bezirk = id
-      ? await prisma.bezirk.update({ where: { id }, data: daten.data })
-      : await prisma.bezirk.create({ data: daten.data });
+      ? await prisma.bezirk.update({ where: { id }, data: { ...daten.data, kuerzel } })
+      : await prisma.bezirk.create({ data: { ...daten.data, kuerzel } });
   } catch (error) {
     if (typeof error === "object" && error !== null && "code" in error && error.code === "P2002") {
-      return { fehler: { name: "Ein Bezirk mit diesem Namen existiert bereits." } };
+      const ziel = "meta" in error && typeof error.meta === "object" && error.meta !== null && "target" in error.meta && Array.isArray(error.meta.target) && error.meta.target.includes("kuerzel")
+        ? "kuerzel"
+        : "name";
+      return { fehler: { [ziel]: ziel === "kuerzel" ? "Dieses Kürzel wird bereits verwendet." : "Ein Bezirk mit diesem Namen existiert bereits." } };
     }
     throw error;
   }

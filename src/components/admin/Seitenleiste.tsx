@@ -64,7 +64,7 @@ const GRUPPEN: Array<{ titel: string; eintraege: Eintrag[] }> = [
   },
 ];
 
-export function Seitenleiste({ name, rolle, schulamtName }: { name: string; rolle: Rolle; schulamtName: string }) {
+export function Seitenleiste({ name, rolle, schulamtName, schulamtsStartseiten }: { name: string; rolle: Rolle; schulamtName: string; schulamtsStartseiten: Array<{ name: string; kuerzel: string }> }) {
   const [offen, setOffen] = useState(false);
   const [mobil, setMobil] = useState(false);
   const ausloeserRef = useRef<HTMLButtonElement>(null);
@@ -196,12 +196,28 @@ export function Seitenleiste({ name, rolle, schulamtName }: { name: string; roll
               </section>
             );
           })}
+
+          {schulamtsStartseiten.length > 0 ? (
+            <section aria-label="Schulamts-Startseiten">
+              <p className="mb-2 px-3 text-xs font-medium text-muted-foreground">Schulamts-Startseiten</p>
+              <ul className="space-y-1">
+                {schulamtsStartseiten.map((schulamt) => (
+                  <li key={schulamt.kuerzel}>
+                    <Punkt
+                      eintrag={{ href: `/${schulamt.kuerzel}`, label: schulamt.name, icon: ExternalLink, rollen: REDAKTION }}
+                      onNavigate={() => setOffen(false)}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
         </div>
 
         <div className="space-y-1 border-t border-border p-3">
           <Link href="/" onClick={() => setOffen(false)} className="flex items-center gap-2.5 rounded-md px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
             <ExternalLink className="size-4 shrink-0" aria-hidden />
-            Frontend ansehen
+            Schwaben-Startseite
           </Link>
 
           <Link href="/admin/konto" onClick={() => setOffen(false)} className="flex items-center gap-2.5 rounded-md px-3 py-2.5 transition-colors hover:bg-muted">

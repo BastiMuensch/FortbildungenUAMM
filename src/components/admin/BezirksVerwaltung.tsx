@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import type { BdbEinladung } from "@/lib/bdbEinladungTypes";
 import { formatDatumZeit } from "@/lib/datetime";
 
-type Bezirk = { id: string; name: string; aktiv: boolean; pflichtSchlagworte: string[] };
+type Bezirk = { id: string; name: string; kuerzel: string; aktiv: boolean; pflichtSchlagworte: string[] };
 type Bdb = { id: string; name: string | null; email: string; role: string; isActive: boolean; bezirke: Array<{ id: string; name: string }>; einladung: BdbEinladung | null };
 
 export function BezirksVerwaltung({ bezirke, bdbs }: { bezirke: Bezirk[]; bdbs: Bdb[] }) {
@@ -19,11 +19,12 @@ export function BezirksVerwaltung({ bezirke, bdbs }: { bezirke: Bezirk[]; bdbs: 
       <h2 className="font-semibold">Schulamtsbezirk anlegen</h2>
       <form action={bezirkAction} className="mt-4 space-y-3">
         <label className="block space-y-1 text-sm" htmlFor="neuer-bezirk-name">Name des Schulamtsbezirks<Input id="neuer-bezirk-name" name="name" required placeholder="z. B. Memmingen-Unterallgäu" /></label>
+        <label className="block space-y-1 text-sm" htmlFor="neuer-bezirk-kuerzel">Kürzel für die öffentliche Startseite<Input id="neuer-bezirk-kuerzel" name="kuerzel" placeholder="z. B. gz" /><span className="block text-xs text-muted-foreground">Leer lassen, um das Kürzel aus dem Namen zu bilden. Die Seite ist unter /&lt;Kürzel&gt; erreichbar.</span></label>
         <label className="block space-y-1 text-sm" htmlFor="neuer-bezirk-schlagworte">Pflichtschlagworte<Input id="neuer-bezirk-schlagworte" name="pflichtSchlagworte" placeholder="Durch Komma getrennt" /></label>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="aktiv" defaultChecked /> Aktiv</label>
         <Button type="submit" disabled={bezirkPending}>{bezirkPending ? "Speichert …" : "Bezirk speichern"}</Button>
       </form>
-      {bezirkState.fehler?._ ? <p className="mt-3 text-sm text-destructive">{bezirkState.fehler._}</p> : null}
+      {bezirkState.fehler?._ || bezirkState.fehler?.name || bezirkState.fehler?.kuerzel ? <p className="mt-3 text-sm text-destructive">{bezirkState.fehler._ ?? bezirkState.fehler.name ?? bezirkState.fehler.kuerzel}</p> : null}
       {bezirkState.meldung ? <p className="mt-3 text-sm text-primary">{bezirkState.meldung}</p> : null}
       <div className="mt-5 divide-y border-t text-sm">
         {bezirke.map((bezirk) => <BezirkZeile key={bezirk.id} bezirk={bezirk} />)}
@@ -55,9 +56,10 @@ function BezirkZeile({ bezirk }: { bezirk: Bezirk }) {
   const [state, action, pending] = useActionState(speichereBezirk.bind(null, bezirk.id), {});
   return <form action={action} className="space-y-2 py-3">
     <Input name="name" required defaultValue={bezirk.name} aria-label={`Name für ${bezirk.name}`} />
+    <label className="block space-y-1 text-sm"><span>Kürzel für die öffentliche Startseite</span><Input name="kuerzel" defaultValue={bezirk.kuerzel} aria-label={`Kürzel für ${bezirk.name}`} /><span className="block text-xs text-muted-foreground">Pfad: /{bezirk.kuerzel || "…"} {bezirk.kuerzel ? <a href={`/${bezirk.kuerzel}`} target="_blank" rel="noreferrer" className="underline">Vorschau öffnen</a> : null}</span></label>
     <Input name="pflichtSchlagworte" defaultValue={bezirk.pflichtSchlagworte.join(", ")} aria-label={`Pflichtschlagworte für ${bezirk.name}`} />
     <div className="flex items-center gap-3"><label className="flex items-center gap-2"><input type="checkbox" name="aktiv" defaultChecked={bezirk.aktiv} /> Aktiv</label><Button type="submit" size="sm" variant="outline" disabled={pending}>{pending ? "Speichert …" : "Änderungen speichern"}</Button></div>
-    {state.fehler?._ || state.fehler?.name ? <p className="text-destructive">{state.fehler._ ?? state.fehler.name}</p> : null}
+    {state.fehler?._ || state.fehler?.name || state.fehler?.kuerzel ? <p className="text-destructive">{state.fehler._ ?? state.fehler.name ?? state.fehler.kuerzel}</p> : null}
   </form>;
 }
 

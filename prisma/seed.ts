@@ -26,6 +26,7 @@ async function seedBezirk() {
     create: {
       id: UAMM_BEZIRK_ID,
       name: "Memmingen-Unterallgäu",
+      kuerzel: "uamm",
       pflichtSchlagworte: ["UAMM", "Medienteam-UAMM"],
     },
   });

@@ -10,8 +10,8 @@ import { berlinIsoDatum } from "@/lib/datetime";
  * mitbringen, wäre ein vergessener Status-Filter irgendwann unvermeidlich —
  * und damit ein Entwurf öffentlich.
  */
-export function oeffentlicheFortbildungWhere(): Prisma.FortbildungWhereInput {
-  return { status: { in: STATUS_OEFFENTLICH } };
+export function oeffentlicheFortbildungWhere(bezirkId?: string): Prisma.FortbildungWhereInput {
+  return { status: { in: STATUS_OEFFENTLICH }, ...(bezirkId ? { bezirkId } : {}) };
 }
 
 /**

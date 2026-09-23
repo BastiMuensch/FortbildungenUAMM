@@ -47,6 +47,23 @@ Ein Wechsel dieses Geheimnisses verhindert die erneute Anzeige bisheriger Links,
 
 ## Gemeinsamer Auftritt und bestehende Funktionen
 
+Jedes aktive Schulamt hat zusätzlich eine öffentliche Startseite unter seinem
+Kürzel, beispielsweise `/gz` für Günzburg und `/uamm` für Memmingen-Unterallgäu.
+Die RvS pflegt das eindeutige Kürzel unter **Bezirke und BdBs**. Bereits vorhandene
+Bezirke erhalten durch `20260922160000_schulamts_kuerzel` eine Adresse aus ihrem Namen.
+Ein geändertes Kürzel ersetzt die bisherige Adresse; bereits geteilte Links sollten
+deshalb bei einer Änderung angepasst werden.
+
+Startseite, Kennzahlen, Suche, Kalender, Detailseiten und Kalender-Abo bleiben im
+gewählten Schulamt. Filter zurücksetzen hebt diese Zuordnung nicht auf. Die
+normale Adresse `/` zeigt weiterhin das gemeinsame Schwaben-Angebot. Ein sichtbarer
+Link führt aus jedem Schulamtsbereich dorthin zurück. Unbekannte oder deaktivierte
+Schulämter liefern eine Nicht-gefunden-Seite.
+
+BdBs und Redaktionskonten finden die Startseiten ihrer aktiven, zugeordneten
+Schulämter im Menü unter **Schulamts-Startseiten**; bei mehreren Zuständigkeiten
+erscheinen mehrere Links. Die RvS sieht dort alle aktiven Schulämter.
+
 Name, Region und öffentliche Texte werden von der RvS unter Einrichtung für die
 gemeinsame Plattform angepasst. Die zusätzliche Migration
 `20260922140000_schwaben_auftritt` ersetzt unveränderte UAMM-Standardwerte im
@@ -93,6 +110,10 @@ und `scripts/bdbEinladungsPruefungen.cjs`
 die Rechte mit einer isolierten lokalen
 PostgreSQL-Testdatenbank auf Port 54329. Diese Tests sind nicht Teil der normalen
 Testkette und verweigern den Zugriff auf andere Datenbanken.
+
+`scripts/schulamtsSeitenPruefungen.cjs` prüft die öffentlichen Schulamtsseiten
+gegen einen lokalen Testserver auf Port 3019 mit derselben isolierten Datenbank,
+einschließlich fremder Filter, Detailadressen und Kalender-Abos.
 
 Zur Inbetriebnahme die reguläre Prisma-Migration und Client-Generierung ausführen
 (`npm run db:deploy`, `npm run db:generate`), anschließend den Dienst neu starten.

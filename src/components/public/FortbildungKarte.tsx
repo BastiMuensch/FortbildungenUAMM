@@ -19,7 +19,9 @@ import { Anmeldestatus } from "./Anmeldestatus";
 export function FortbildungKarte({
   fortbildung,
   maxTn,
+  basisPfad = "",
 }: {
+  basisPfad?: string;
   fortbildung: FortbildungKachel;
   maxTn?: number;
 }) {
@@ -30,7 +32,7 @@ export function FortbildungKarte({
   return (
     <article className={cn("group relative", abgesagt && "opacity-60")}>
       <Link
-        href={`/fortbildungen/${fortbildung.slug}`}
+        href={`${basisPfad}/fortbildungen/${fortbildung.slug}`}
         className={cn(
           "zeile grid grid-cols-[4rem_minmax(0,1fr)] gap-x-4 gap-y-4 rounded-2xl border border-border bg-card p-4 shadow-sm outline-none sm:grid-cols-[4rem_minmax(0,1fr)_auto] sm:p-5",
           "hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring",

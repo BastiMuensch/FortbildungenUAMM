@@ -2,6 +2,7 @@ import { ladeSchulamt } from "@/lib/schulamt";
 import { redirect } from "next/navigation";
 
 import { getSessionUser } from "@/lib/auth";
+import { ladeSchulamtsStartseiten } from "@/lib/bezirke";
 import { Seitenleiste } from "@/components/admin/Seitenleiste";
 
 export const metadata = {
@@ -18,13 +19,17 @@ export default async function AdminLayout({
   const user = await getSessionUser();
   if (!user) redirect("/login?weiter=/admin");
 
-  const schulamt = await ladeSchulamt();
+  const [schulamt, schulamtsStartseiten] = await Promise.all([
+    ladeSchulamt(),
+    ladeSchulamtsStartseiten(user),
+  ]);
   return (
     <div className="flex min-h-full flex-col lg:flex-row">
       <Seitenleiste
         name={user.name ?? user.email}
         rolle={user.role}
         schulamtName={schulamt.kurzname}
+        schulamtsStartseiten={schulamtsStartseiten}
       />
 
       <main id="hauptinhalt" className="min-w-0 flex-1 px-4 py-7 sm:px-8 sm:py-10 lg:px-10">

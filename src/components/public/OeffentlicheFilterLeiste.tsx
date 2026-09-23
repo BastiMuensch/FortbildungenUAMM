@@ -34,8 +34,10 @@ export function OeffentlicheFilterLeiste({
   kompetenzbereiche,
   bezirke,
   nurBezirk = false,
+  festerBezirk,
 }: {
   nurBezirk?: boolean;
+  festerBezirk?: string;
   params: SuchParameter;
   schlagworte: string[];
   kompetenzbereiche: Array<{ code: string; titel: string }>;
@@ -58,6 +60,7 @@ export function OeffentlicheFilterLeiste({
 
   const aktiv = FILTERNAMEN.some((name) => wert(name));
 
+  if (nurBezirk && festerBezirk) return <p className="text-sm text-muted-foreground">Schulamtsbezirk {festerBezirk}</p>;
   if (nurBezirk) return <Liste label="Bezirk" wert={wert("bezirk")}
     optionen={bezirke.map((b) => ({ value: b.id, label: b.name }))}
     onChange={(v) => setzen({ bezirk: v })} />;
@@ -93,12 +96,12 @@ export function OeffentlicheFilterLeiste({
         </summary>
 
         <div className="mt-4 flex flex-wrap items-end gap-3">
-          <Liste
+          {!festerBezirk ? <Liste
             label="Bezirk"
             wert={wert("bezirk")}
             optionen={bezirke.map((bezirk) => ({ value: bezirk.id, label: bezirk.name }))}
             onChange={(v) => setzen({ bezirk: v })}
-          />
+          /> : null}
           <Liste
             label="Schulart"
             wert={wert("schulart")}

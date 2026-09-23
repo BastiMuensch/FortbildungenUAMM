@@ -6,6 +6,8 @@ import { filterZuWhere, leseFilter, type SuchParameter } from "@/lib/filter";
 import { oeffentlicheFortbildungWhere } from "@/lib/queries";
 import { htmlZuText } from "@/lib/sanitize";
 import { bestimmeFibsAnmeldestatus } from "@/lib/fibs/status";
+import { ladeOeffentlichenBezirk } from "@/lib/schulamtStartseite";
+import { bereichsPfad } from "@/lib/oeffentlicherBereich";
 
 export const dynamic = "force-dynamic";
 
@@ -27,11 +29,14 @@ export async function GET(request: NextRequest) {
     request.nextUrl.searchParams.entries(),
   );
   const slug = typeof params.slug === "string" ? params.slug : undefined;
+  const bezirk = typeof params.schulamt === "string"
+    ? await ladeOeffentlichenBezirk(params.schulamt) : undefined;
+  if (bezirk) delete params.bezirk;
 
   const fortbildungen = await prisma.fortbildung.findMany({
     where: {
       AND: [
-        oeffentlicheFortbildungWhere(),
+        oeffentlicheFortbildungWhere(bezirk?.id),
         slug ? { slug } : filterZuWhere(leseFilter(params)),
         // Ohne Einzelabruf nur ein sinnvolles Fenster: ein Jahr zurück,
         // alles Kommende. Sonst wächst das Abo unbegrenzt.
@@ -58,6 +63,7 @@ export async function GET(request: NextRequest) {
   });
 
   const basis = process.env.APP_BASE_URL ?? request.nextUrl.origin;
+  const detailBasis = `${basis}${bereichsPfad(bezirk)}/fortbildungen`;
 
   const zeilen: string[] = [
     "BEGIN:VCALENDAR",
@@ -65,7 +71,7 @@ export async function GET(request: NextRequest) {
     "PRODID:-//Fortbildungsportal//Fortbildungen//DE",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
-    ...falte(`X-WR-CALNAME:${maskiere(`Fortbildungen ${schulamt.kurzname}`)}`),
+    ...falte(`X-WR-CALNAME:${maskiere(`Fortbildungen ${bezirk?.name ?? schulamt.kurzname}`)}`),
     "X-WR-TIMEZONE:Europe/Berlin",
   ];
 
@@ -89,7 +95,7 @@ export async function GET(request: NextRequest) {
     const beschreibung = [
       htmlZuText(f.beschreibungHtml),
       "",
-      `Details: ${basis}/fortbildungen/${f.slug}`,
+      `Details: ${detailBasis}/${f.slug}`,
       anmeldehinweis,
     ].join("\n");
 
@@ -106,7 +112,7 @@ export async function GET(request: NextRequest) {
       ),
       ...falte(`DESCRIPTION:${maskiere(beschreibung)}`),
       ...falte(`LOCATION:${maskiere(ort)}`),
-      `URL:${basis}/fortbildungen/${f.slug}`,
+      `URL:${detailBasis}/${f.slug}`,
       `STATUS:${f.status === "ABGESAGT" ? "CANCELLED" : "CONFIRMED"}`,
       "END:VEVENT",
     );

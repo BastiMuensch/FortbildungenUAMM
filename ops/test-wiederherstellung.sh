@@ -22,7 +22,11 @@ BACKUP_ZIEL=$(cd -P "$BACKUP_ZIEL" && pwd)
 RESTORE_PGHOST=${RESTORE_PGHOST:-127.0.0.1}
 [[ "$RESTORE_PGHOST" == 127.0.0.1 || "$RESTORE_PGHOST" == localhost || "$RESTORE_PGHOST" == ::1 ]] || fehler "Wiederherstellung ist nur auf localhost erlaubt"
 [[ -f "$BACKUP_AGE_IDENTITAETSDATEI" && -r "$BACKUP_AGE_IDENTITAETSDATEI" ]] || fehler "Privater age-Schlüssel nicht lesbar"
-[[ $(stat -f '%OLp' "$BACKUP_AGE_IDENTITAETSDATEI" 2>/dev/null || stat -c '%a' "$BACKUP_AGE_IDENTITAETSDATEI") =~ ^(400|600)$ ]] || fehler "Privater Schlüssel braucht 0400 oder 0600"
+# Fehlgeschlagene GNU-/BSD-stat-Ausgaben dürfen die Rechtezahl nicht verunreinigen.
+if ! DATEIRECHTE=$(stat -c '%a' "$BACKUP_AGE_IDENTITAETSDATEI" 2>/dev/null); then
+  DATEIRECHTE=$(stat -f '%OLp' "$BACKUP_AGE_IDENTITAETSDATEI")
+fi
+[[ "$DATEIRECHTE" =~ ^(400|600)$ ]] || fehler "Privater Schlüssel braucht 0400 oder 0600"
 
 brauch age
 brauch pg_restore

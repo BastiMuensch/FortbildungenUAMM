@@ -38,5 +38,21 @@ try {
   ergebnis = ausfuehren("ops/test-wiederherstellung.sh", [dump], { ...restoreEnv, PG_RESTORE_EXIT: "8" });
   assert.notEqual(ergebnis.status, 0); assert.match(ergebnis.stderr, /Einzeltransaktion/);
   assert.equal(readFileSync(log, "utf8").includes("--single-transaction"), true, "Restore muss atomar angefordert werden");
+  // Beide stat-Varianten auch auf dem jeweils anderen Betriebssystem prüfen.
+  // Fehlgeschlagene Aufrufe können bereits stdout geschrieben haben.
+  schreibe("stat", 'if [[ "$STAT_VARIANTE:$1" == "gnu:-c" || "$STAT_VARIANTE:$1" == "bsd:-f" ]]; then printf "%s\\n" "$STAT_RECHTE"; else printf "Dateisystemdaten statt Dateirechte\\n"; exit 1; fi');
+  for (const variante of ["gnu", "bsd"]) {
+    const statEnv = { STAT_VARIANTE: variante, STAT_RECHTE: "600" };
+    ergebnis = ausfuehren("ops/sichere-postgres-sicherung.sh", [], { ...statEnv, BACKUP_ZIEL: ziel, DOCKER_DUMP_EXIT: "9" });
+    assert.match(ergebnis.stderr, /keine Sicherung veröffentlicht/, `${variante}: 0600 muss bis zum Dump gelangen`);
+    ergebnis = ausfuehren("ops/test-wiederherstellung.sh", [dump], { ...restoreEnv, ...statEnv, AGE_FAIL: "1" });
+    assert.match(ergebnis.stderr, /Archivprüfung/, `${variante}: 0600 muss bis zur Archivprüfung gelangen`);
+    ergebnis = ausfuehren("ops/sichere-postgres-sicherung.sh", [], { ...statEnv, STAT_RECHTE: "644", BACKUP_ZIEL: ziel });
+    assert.notEqual(ergebnis.status, 0);
+    assert.match(ergebnis.stderr, /Empfängerdatei braucht restriktive Rechte/);
+    ergebnis = ausfuehren("ops/test-wiederherstellung.sh", [dump], { ...restoreEnv, ...statEnv, STAT_RECHTE: "644" });
+    assert.notEqual(ergebnis.status, 0);
+    assert.match(ergebnis.stderr, /Privater Schlüssel braucht 0400 oder 0600/);
+  }
   console.log("Backup-Protokollprüfungen erfolgreich.");
 } finally { rmSync(arbeit, { recursive: true, force: true }); }

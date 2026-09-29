@@ -17,7 +17,12 @@ cd "$PROJEKT_ORDNER"
 : "${BACKUP_AGE_EMPFAENGERDATEI:?BACKUP_AGE_EMPFAENGERDATEI muss eine age-Empfängerdatei sein}"
 [[ "$BACKUP_ZIEL" = /* ]] || fehler "BACKUP_ZIEL muss absolut sein"
 [[ -f "$BACKUP_AGE_EMPFAENGERDATEI" && -r "$BACKUP_AGE_EMPFAENGERDATEI" ]] || fehler "Empfängerdatei nicht lesbar"
-[[ $(stat -f '%OLp' "$BACKUP_AGE_EMPFAENGERDATEI" 2>/dev/null || stat -c '%a' "$BACKUP_AGE_EMPFAENGERDATEI") =~ ^(400|440|600|640)$ ]] || fehler "Empfängerdatei braucht restriktive Rechte (z. B. 0400)"
+# GNU-stat und BSD-stat verwenden unterschiedliche Optionen. Ausgabe eines
+# fehlgeschlagenen Versuchs verwerfen: GNU-stat kann dabei Dateisystemdaten liefern.
+if ! DATEIRECHTE=$(stat -c '%a' "$BACKUP_AGE_EMPFAENGERDATEI" 2>/dev/null); then
+  DATEIRECHTE=$(stat -f '%OLp' "$BACKUP_AGE_EMPFAENGERDATEI")
+fi
+[[ "$DATEIRECHTE" =~ ^(400|440|600|640)$ ]] || fehler "Empfängerdatei braucht restriktive Rechte (z. B. 0400)"
 
 brauch docker
 brauch age

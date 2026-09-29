@@ -30,6 +30,10 @@ Dieser Nachweis beschreibt Prüfungen des lokalen Projektstands. Er ersetzt wede
 - Fehlende MFA-Umgebungsvariable im Container-Workflow ergänzt, Startanleitung an MFA und lokale Portbindung angepasst; Python-Cachedateien werden nicht versioniert.
 - Windows-/SMB-Ausführung und vollständiger Docker-Image-Bau sind lokal nicht geprüft; dafür sind GitHub-Workflows vorhanden. Kein produktives Deployment und keine produktive Migration ausgeführt.
 
+### Ergänzung zur GitHub-Prüfung am 29. September 2026
+
+Der Windows-/SMB-Job im [Lauf 36571076023](https://github.com/BastiMuensch/FortbildungenUAMM/actions/runs/36571076023) ist erfolgreich. Der Linux-Job deckte einen Portabilitätsfehler in den hostdirekten Backup-/Restore-Skripten auf: Die Ausgabe eines fehlgeschlagenen BSD-stat-Aufrufs wurde unter GNU/Linux mit der Rechtezahl vermischt. Die Rechteermittlung verwirft jetzt fehlgeschlagene Ausgaben. Regressionstests simulieren GNU- und BSD-stat, prüfen akzeptierte 0600- und abgewiesene 0644-Rechte und schlagen mit dem vorherigen Code nachweislich fehl. Backup-, Vollbackup-Betriebsprüfungen und ESLint sind nach der Korrektur lokal erfolgreich.
+
 ## Reproduzierbare Befehle
 
 Ohne Datenbank: `npm test`, `npm run lint`, `npm run typecheck`, `npm run test:mfa`, `npm run test:importfristen`, `npm run test:backup`.

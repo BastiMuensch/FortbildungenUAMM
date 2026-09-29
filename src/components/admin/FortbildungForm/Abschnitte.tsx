@@ -341,7 +341,7 @@ export function BeschreibungFelder({ zustand, fehler }: GemeinsameProps) {
       label="Lehrgangsbeschreibung"
       pflicht
       fehler={fehler.beschreibungHtml}
-      hinweis="Worum geht es, für wen ist der Lehrgang gedacht, was wird mitgebracht?"
+      hinweis="Dieser Text wird veröffentlicht. Bitte keine Referentennamen, persönlichen Kontaktdaten oder Signaturen eintragen. Die Namensanzeige wird separat nach der eigenen Zustimmung gesteuert."
     >
       <RichTextEditor
         wert={zustand.beschreibung}

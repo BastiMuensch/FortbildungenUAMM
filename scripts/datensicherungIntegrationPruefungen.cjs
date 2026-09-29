@@ -1,0 +1,154 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- isolierter PostgreSQL-Integrationstest. */
+const assert = require("node:assert/strict");
+const Module = require("node:module");
+const fs = require("node:fs/promises");
+const { mkdtempSync } = require("node:fs");
+const { tmpdir } = require("node:os");
+const { join } = require("node:path");
+const { randomUUID, createHash } = require("node:crypto");
+const { spawnSync } = require("node:child_process");
+if (!/^postgresql:\/\/bezirketest@127\.0\.0\.1:54329\/fortbildungen_test(?:\?|$)/.test(process.env.DATABASE_URL || "")) throw new Error("Nur die isolierte fortbildungen_test-Datenbank ist zulässig.");
+const arbeit = mkdtempSync(join(tmpdir(), "fortbildungs-vollbackup-test-"));
+process.env.DATENSICHERUNG_SPOOL = join(arbeit, "sicherungen");
+process.env.DATENSICHERUNG_SPOOL_TAGE = "30";
+process.env.JWT_SECRET = "vollbackup-test-geheimnis-mit-mindestens-32-zeichen";
+process.env.MFA_ENCRYPTION_KEY = Buffer.alloc(32, 37).toString("base64");
+process.env.APP_IMAGE = "test.invalid/fortbildung:testversion";
+const cookies = new Map();
+const ursprung = Module._load;
+Module._load = function (request, parent, main) {
+  if (request === "server-only") return {};
+  if (request === "next/headers") return { cookies: async () => ({ get: (k) => cookies.has(k) ? { value: cookies.get(k) } : undefined, set: (k, v) => cookies.set(k, v), delete: (k) => cookies.delete(k) }) };
+  if (request === "next/cache") return { revalidatePath() {} };
+  return ursprung.call(this, request, parent, main);
+};
+require("tsx/cjs");
+const { prisma } = require("../src/lib/prisma");
+const { signToken, setSessionCookie, clearSessionCookie } = require("../src/lib/auth");
+const { berlinIsoDatum } = require("../src/lib/datetime");
+const { erstelleTagesDatensicherung, oeffneDatensicherung, bereinigeDatensicherungen } = require("../src/lib/datensicherung");
+const { datensicherungsHinweis } = require("../src/lib/datensicherungsHinweis");
+const { bereiteTagesDatensicherungVor, bestaetigeDatensicherungsAblage, ladeTagesSicherungshinweis } = require("../src/actions/datensicherung");
+const download = require("../src/app/api/admin/datensicherung/download/route");
+const werkzeuge = require("../src/app/api/admin/datensicherung/werkzeuge/route");
+const { NextRequest } = require("next/server");
+const JSZip = require("jszip");
+const prefix = `sicherung-test-${Date.now()}`;
+const paketIds = [], userIds = [];
+const form = (werte) => { const f = new FormData(); for (const [k,v] of Object.entries(werte)) f.set(k, String(v)); return f; };
+const login = async (user, mfa = true) => setSessionCookie(await signToken(user.id, user.sessionVersion, mfa));
+function prozess(befehl, args, optionen = {}) {
+  const ergebnis = spawnSync(befehl, args, { maxBuffer: 30 * 1024 * 1024, ...optionen });
+  assert.equal(ergebnis.status, 0, `${befehl}: ${ergebnis.error?.message ?? ergebnis.stderr?.toString()}`);
+  return ergebnis.stdout;
+}
+(async () => {
+  const identitaet = join(arbeit, "privat.age");
+  prozess("age-keygen", ["-o", identitaet]);
+  const privat = await fs.readFile(identitaet, "utf8");
+  const empfaenger = privat.match(/# public key: (age1\S+)/)[1];
+  process.env.DATENSICHERUNG_AGE_EMPFAENGER = empfaenger;
+  const rvs = await prisma.user.create({ data: { email: `${prefix}@test.invalid`, name: "Backup Test Regierung", role: "RVS", isActive: true, mfaAktiviertAm: new Date() } });
+  userIds.push(rvs.id);
+  const heute = berlinIsoDatum(new Date());
+  assert.equal(await prisma.datensicherung.findUnique({ where: { tag: heute } }), null, "Test benötigt einen freien heutigen Sicherungstag");
+  const ergebnis = await erstelleTagesDatensicherung();
+  assert.ok(ergebnis?.id);
+  paketIds.push(ergebnis.id);
+  let paket = await prisma.datensicherung.findUniqueOrThrow({ where: { id: ergebnis.id } });
+  assert.equal(paket.status, "BEREIT");
+  const datei = join(process.env.DATENSICHERUNG_SPOOL, paket.dateiname);
+  const bytes = await fs.readFile(datei);
+  assert.equal(createHash("sha256").update(bytes).digest("hex"), paket.sha256);
+  assert.equal(BigInt(bytes.length), paket.bytes);
+  assert.equal(bytes.includes(Buffer.from(process.env.JWT_SECRET)), false, "Sicherung darf keinen Schlüssel im Klartext enthalten");
+  assert.equal((await fs.readdir(process.env.DATENSICHERUNG_SPOOL)).length, 1, "Kein unverschlüsselter Dump oder Rest im Serverordner");
+  const zip = await JSZip.loadAsync(prozess("age", ["-d", "-i", identitaet, datei]));
+  const betrieb = JSON.parse(await zip.file("betrieb.json").async("string"));
+  assert.equal(betrieb.MFA_ENCRYPTION_KEY, process.env.MFA_ENCRYPTION_KEY);
+  assert.equal(betrieb.JWT_SECRET, process.env.JWT_SECRET);
+  assert.ok(!(JSON.stringify(betrieb).includes("AGE-SECRET-KEY")));
+  assert.ok(zip.file("prisma/schema.prisma"));
+  assert.ok(zip.file("werkzeuge/Uebernehme-Vollbackup.ps1"));
+  const manifest = JSON.parse(await zip.file("manifest.json").async("string"));
+  assert.equal(manifest.appImage, process.env.APP_IMAGE);
+  assert.equal(manifest.tag, heute);
+  assert.equal((await erstelleTagesDatensicherung()).id, paket.id, "Wiederholung erzeugt kein zweites Paket");
+  const anfrage = () => new NextRequest(`http://localhost/api/admin/datensicherung/download?id=${paket.id}`);
+  const toolAnfrage = () => new NextRequest("http://localhost/api/admin/datensicherung/werkzeuge?datei=windows");
+  assert.equal((await download.GET(anfrage())).status, 403);
+  assert.equal((await werkzeuge.GET(toolAnfrage())).status, 403);
+  for (const rolle of ["ADMIN", "REDAKTEUR", "REFERENT"]) {
+    await prisma.user.update({ where: { id: rvs.id }, data: { role: rolle } });
+    await login(rvs);
+    assert.equal((await download.GET(anfrage())).status, 403, `${rolle} darf kein bezirksübergreifendes Backup laden`);
+    assert.equal((await werkzeuge.GET(toolAnfrage())).status, 403);
+    assert.ok((await bereiteTagesDatensicherungVor({}, form({}))).fehler);
+    assert.ok((await bestaetigeDatensicherungsAblage({}, form({}))).fehler);
+    await assert.rejects(() => ladeTagesSicherungshinweis());
+  }
+  await prisma.user.update({ where: { id: rvs.id }, data: { role: "RVS" } });
+  await login(rvs, false);
+  assert.equal((await download.GET(anfrage())).status, 403, "RVS ohne zweiten Faktor bleibt gesperrt");
+  await login(rvs);
+  const antwort = await download.GET(anfrage());
+  assert.equal(antwort.status, 200);
+  assert.match(antwort.headers.get("cache-control"), /no-store/);
+  assert.equal(antwort.headers.get("x-backup-sha256"), paket.sha256);
+  assert.deepEqual(Buffer.from(await antwort.arrayBuffer()), bytes);
+  assert.equal((await werkzeuge.GET(toolAnfrage())).status, 200);
+  assert.equal((await prisma.datensicherung.findUniqueOrThrow({ where: { id: paket.id } })).abgelegtAm, null, "Download gilt nicht als Ablage");
+  const angaben = { id: paket.id, sha256: paket.sha256, externeAblage: "\\\\regierung\\test\\Datensicherung", ablageBestaetigt: "on" };
+  assert.ok((await bestaetigeDatensicherungsAblage({}, form({ ...angaben, sha256: "0".repeat(64) }))).fehler);
+  assert.ok((await bestaetigeDatensicherungsAblage({}, form({ ...angaben, ablageBestaetigt: "" }))).fehler);
+  assert.equal((await bestaetigeDatensicherungsAblage({}, form(angaben))).erfolg, true);
+  assert.equal((await bestaetigeDatensicherungsAblage({}, form(angaben))).erfolg, true);
+  assert.equal(await prisma.auditLog.count({ where: { entitaetId: paket.id, entitaet: "DatensicherungsAblage" } }), 1);
+  assert.equal((await ladeTagesSicherungshinweis()).art, "erledigt");
+  // Der produktive Testhelfer entschlüsselt und spielt wirklich in eine zweite
+  // lokale PostgreSQL-Datenbank zurück. Keine automatisierte Live-Konfiguration.
+  prozess("bash", ["ops/test-vollbackup-wiederherstellung.sh", datei], { env: { ...process.env, BACKUP_AGE_IDENTITAETSDATEI: identitaet, ERWARTETE_SHA256: paket.sha256, RESTORE_PGHOST: "127.0.0.1", RESTORE_PGPORT: "54329", RESTORE_PGUSER: "bezirketest", RESTORE_DATABASE: "fortbildungen_backup_restore_test", ICH_BESTAETIGE_LOKALE_TESTWIEDERHERSTELLUNG: "JA" } });
+  const wiederDa = prozess("psql", ["-h", "127.0.0.1", "-p", "54329", "-U", "bezirketest", "-d", "fortbildungen_backup_restore_test", "-tAc", `SELECT count(*) FROM "User" WHERE "id" = '${rvs.id}'`]);
+  assert.equal(wiederDa.toString().trim(), "1", "Synthetisches Benutzerkonto vollständig zurückgespielt");
+  // Direktzugriff verweigert abgelaufene und verlinkte Dateien auch vor Cleanup.
+  await fs.rename(datei, `${datei}.testkopie`);
+  await fs.symlink(`${datei}.testkopie`, datei);
+  assert.equal(await oeffneDatensicherung(paket.id), null, "Kein Symlink-Download");
+  await fs.unlink(datei); await fs.rename(`${datei}.testkopie`, datei);
+  const datumVor = (tage) => { const d = new Date(`${heute}T12:00:00Z`); d.setUTCDate(d.getUTCDate() - tage); return berlinIsoDatum(d); };
+  for (const [tage, erlaubt] of [[29, true], [30, false]]) {
+    const id = randomUUID(), tag = datumVor(tage);
+    const name = `fortbildungsportal-vollbackup-${tag}-${id}.zip.age`;
+    await fs.writeFile(join(process.env.DATENSICHERUNG_SPOOL, name), bytes);
+    await prisma.datensicherung.create({ data: { id, tag, dateiname: name, status: "BEREIT", sha256: paket.sha256, bytes: paket.bytes } });
+    paketIds.push(id);
+    const offen = await oeffneDatensicherung(id);
+    assert.equal(Boolean(offen), erlaubt, `Frist bei ${tage} Tagen`);
+    offen?.stream.destroy();
+  }
+  await fs.writeFile(join(process.env.DATENSICHERUNG_SPOOL, `${paket.dateiname}.neu`), "verwaist");
+  await bereinigeDatensicherungen();
+  assert.equal((await prisma.datensicherung.findUniqueOrThrow({ where: { id: paketIds[2] } })).geloeschtAm instanceof Date, true);
+  assert.ok(!(await fs.readdir(process.env.DATENSICHERUNG_SPOOL)).some((n) => n.endsWith(".neu")));
+  // Echter Unterprozessfehler darf keinen Erfolg ausgeben und muss FEHLER speichern.
+  await prisma.datensicherung.delete({ where: { id: paket.id } });
+  process.env.DATENSICHERUNG_AGE_EMPFAENGER = "age1qqqqqqqq";
+  assert.ok((await bereiteTagesDatensicherungVor({}, form({}))).fehler);
+  paket = await prisma.datensicherung.findUniqueOrThrow({ where: { tag: heute } });
+  paketIds.push(paket.id);
+  assert.equal(paket.status, "FEHLER");
+  assert.ok(!(await fs.readdir(process.env.DATENSICHERUNG_SPOOL)).some((n) => n.endsWith(".neu")));
+  const gestern = { tag: "2026-09-23", status: "BEREIT", abgelegtAm: new Date(), geloeschtAm: null };
+  assert.equal(datensicherungsHinweis(true, [gestern], new Date("2026-09-23T21:59:59Z")).art, "erledigt");
+  assert.equal(datensicherungsHinweis(true, [gestern], new Date("2026-09-23T22:00:00Z")).art, "offen", "Berliner Mitternacht verlangt neue Tagesbestätigung");
+  assert.equal(datensicherungsHinweis(true, [{ ...gestern, tag: "2026-10-25" }], new Date("2026-10-25T02:30:00Z")).art, "erledigt", "Winterzeitumstellung zählt als ein Tag");
+  assert.equal(datensicherungsHinweis(false, []).art, "fehler");
+  console.log("Vollbackup-Integration erfolgreich: echtes age, PostgreSQL-Dump und Wiederherstellung; Rollen, MFA, Prüfsummen, Ablage, Fristen und Fehlerpfad geprüft.");
+})().catch((error) => { console.error(error); process.exitCode = 1; }).finally(async () => {
+  await clearSessionCookie();
+  await prisma.auditLog.deleteMany({ where: { userId: { in: userIds } } });
+  await prisma.datensicherung.deleteMany({ where: { OR: [{ id: { in: paketIds } }, { tag: berlinIsoDatum(new Date()), status: "FEHLER" }] } });
+  await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+  await prisma.$disconnect();
+  await fs.rm(arbeit, { recursive: true, force: true });
+});

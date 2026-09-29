@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
-import { AuthError, requireRole, requireUser, setSessionCookie, signToken } from "@/lib/auth";
+import { AuthError, clearSessionCookie, requireRole, requireUser, setSessionCookie, signToken } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 import {
   erzeugeZugangstoken,
@@ -334,12 +334,10 @@ export async function setzePasswort(
     details: { passwortGesetzt: true, zweck: eintrag.zweck },
   });
 
-  // Direkt anmelden — die Person hat sich gerade ausgewiesen.
-  await setSessionCookie(
-    await signToken(eintrag.userId, eintrag.sessionVersion),
-  );
-
-  redirect("/admin?willkommen=1");
+  // Ein Zugangs- oder Reset-Link ersetzt nie die zweite Anmeldung. Das
+  // verhindert insbesondere, dass ein Passwort-Reset MFA umgehen kann.
+  await clearSessionCookie();
+  redirect("/login?passwort=gesetzt");
 }
 
 // ---------------------------------------------------------------------------

@@ -4,12 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Archive,
   BarChart3,
   Settings,
   BookOpen,
   CalendarDays,
   CalendarRange,
   Download,
+  DatabaseBackup,
   ExternalLink,
   FileText,
   LogOut,
@@ -43,6 +45,7 @@ const GRUPPEN: Array<{ titel: string; eintraege: Eintrag[] }> = [
       { href: "/admin/kalender", label: "Planungskalender", icon: CalendarRange, rollen: ALLE },
       { href: "/admin/katalog", label: "Fortbildungskatalog", icon: BookOpen, rollen: ALLE },
       { href: "/admin/auswertung", label: "Auswertung", icon: BarChart3, rollen: ALLE },
+      { href: "/admin/archiv", label: "Archivübergabe", icon: Archive, rollen: ["RVS", "ADMIN"] },
     ],
   },
   {
@@ -56,6 +59,7 @@ const GRUPPEN: Array<{ titel: string; eintraege: Eintrag[] }> = [
   {
     titel: "System",
     eintraege: [
+      { href: "/admin/datensicherung", label: "Datensicherung", icon: DatabaseBackup, rollen: NUR_RVS },
       { href: "/admin/import", label: "FIBS-Import", icon: Download, rollen: NUR_RVS },
       { href: "/admin/bezirke", label: "Bezirke und BdBs", icon: Users, rollen: NUR_RVS },
       { href: "/admin/einrichtung", label: "Einrichtung", icon: Settings, rollen: NUR_RVS },
@@ -90,6 +94,11 @@ export function Seitenleiste({ name, rolle, schulamtName, schulamtsStartseiten }
   useEffect(() => {
     if (!mobil || !offen) return;
 
+    // Das seitliche Menü ist modal: Der Inhalt dahinter darf auf Touch-Geräten
+    // weder scrollen noch unter dem Overlay versehentlich weiterbedient werden.
+    const vorherigerOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     const beiTaste = (ereignis: KeyboardEvent) => {
       if (ereignis.key === "Escape") {
         ereignis.preventDefault();
@@ -118,7 +127,10 @@ export function Seitenleiste({ name, rolle, schulamtName, schulamtsStartseiten }
 
     document.addEventListener("keydown", beiTaste);
     window.requestAnimationFrame(() => schliessenRef.current?.focus());
-    return () => document.removeEventListener("keydown", beiTaste);
+    return () => {
+      document.removeEventListener("keydown", beiTaste);
+      document.body.style.overflow = vorherigerOverflow;
+    };
   }, [mobil, offen, schliesseNavigation]);
 
   return (
@@ -138,7 +150,7 @@ export function Seitenleiste({ name, rolle, schulamtName, schulamtsStartseiten }
           aria-label="Navigation öffnen"
           aria-controls="admin-navigation"
           aria-expanded={offen}
-          className="flex size-9 items-center justify-center rounded-md border border-border bg-card transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/35"
+          className="flex size-11 items-center justify-center rounded-md border border-border bg-card transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/35"
         >
           <Menu className="size-4" aria-hidden />
         </button>
@@ -172,7 +184,7 @@ export function Seitenleiste({ name, rolle, schulamtName, schulamtsStartseiten }
             type="button"
             onClick={schliesseNavigation}
             aria-label="Navigation schließen"
-            className="flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/35 lg:hidden"
+            className="flex size-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/35 lg:hidden"
           >
             <X className="size-4" aria-hidden />
           </button>

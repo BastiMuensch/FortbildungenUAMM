@@ -21,7 +21,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # Nicht als root laufen.
-RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+RUN apk add --no-cache age postgresql16-client \
+  && addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001 \
+  && mkdir -p /var/lib/fortbildungsportal/sicherungen \
+  && chown -R nextjs:nodejs /var/lib/fortbildungsportal
 
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
@@ -31,6 +34,9 @@ COPY --from=builder /app/package.json ./package.json
 # gebraucht.
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+# Wiederherstellungswerkzeuge werden sowohl für den RvS-Download als auch als
+# Teil der verschlüsselten Betriebsdokumentation benötigt.
+COPY --from=builder /app/ops ./ops
 
 USER nextjs
 EXPOSE 3000

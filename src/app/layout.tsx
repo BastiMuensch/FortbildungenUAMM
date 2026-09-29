@@ -1,30 +1,31 @@
 import { ladeSchulamt } from "@/lib/schulamt";
 import type { Metadata } from "next";
-import { Archivo, IBM_Plex_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-// next/font lädt die Schriften zur Bauzeit herunter und liefert sie vom
-// eigenen Server aus. Es gibt damit keine Verbindung des Browsers zu Google —
-// das ist die datenschutzrechtlich entscheidende Eigenschaft, nicht bloß eine
-// Frage der Ladezeit.
+// Die OFL-lizenzierten Dateien liegen im Repository. next/font/local erzeugt
+// daraus lokale Build-Artefakte; weder Build noch Browser benötigen Google.
 //
 // Archivo statt einer Standardschrift: eine kräftige Grotesk mit geraden
 // Endungen und engem Innenraum. Sie trägt große Überschriften, ohne
 // beliebig zu wirken.
-const archivo = Archivo({
+const archivo = localFont({
+  src: "./fonts/archivo-latin.woff2",
   variable: "--font-archivo",
-  subsets: ["latin"],
   display: "swap",
-  weight: ["400", "500", "600", "700"],
+  weight: "400 700",
 });
 
 // Für alles Zählbare. Dieselbe Zeichenbreite lässt Uhrzeiten und Platzzahlen
 // in Listen untereinander stehen.
-const plexMono = IBM_Plex_Mono({
+const plexMono = localFont({
+  src: [
+    { path: "./fonts/ibm-plex-mono-latin-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/ibm-plex-mono-latin-500.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/ibm-plex-mono-latin-600.woff2", weight: "600", style: "normal" },
+  ],
   variable: "--font-plex-mono",
-  subsets: ["latin"],
   display: "swap",
-  weight: ["400", "500", "600"],
 });
 
 export const dynamic = "force-dynamic";

@@ -9,6 +9,7 @@ import type { FormularState } from "@/lib/validation/fortbildung";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NamensfreigabeAuswahl } from "@/components/registrierung/NamensfreigabeAuswahl";
 
 export function ReferentenRegistrierungsFormular({
   token,
@@ -86,6 +87,8 @@ export function ReferentenRegistrierungsFormular({
         autoComplete="new-password"
         fehler={fehler.wiederholung}
       />
+
+      <NamensfreigabeAuswahl fehler={fehler.namensfreigabe} />
 
       {fehler._ ? (
         <p

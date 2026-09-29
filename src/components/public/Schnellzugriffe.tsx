@@ -93,7 +93,7 @@ export function Schnellzugriffe({
                 )
               }
               className={cn(
-                "etikett border px-2.5 py-1.5 transition-colors",
+                "min-h-11 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 aktiv
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-input text-muted-foreground hover:border-primary hover:text-foreground",
@@ -115,12 +115,13 @@ export function Schnellzugriffe({
               type="button"
               onClick={() => entferne(chip.param)}
               title={`${chip.art}: ${chip.wert} entfernen`}
-              className="group flex items-center gap-1.5 border border-input bg-secondary px-2.5 py-1.5 text-sm transition-colors hover:border-destructive hover:bg-destructive/10"
+              aria-label={`${chip.art}: ${chip.wert} entfernen`}
+              className="group flex min-h-11 max-w-full items-center gap-1.5 rounded-full border border-input bg-secondary px-3 py-2 text-sm transition-colors hover:border-destructive hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <span className="etikett text-muted-foreground">{chip.art}</span>
-              <span className="font-medium">{chip.wert}</span>
+              <span className="min-w-0 break-words font-medium">{chip.wert}</span>
               <X
-                className="size-3.5 text-muted-foreground group-hover:text-destructive"
+                className="size-3.5 shrink-0 text-muted-foreground group-hover:text-destructive"
                 aria-hidden
               />
             </button>
@@ -132,7 +133,7 @@ export function Schnellzugriffe({
               onClick={() =>
                 starte(() => router.push(pathname, { scroll: false }))
               }
-              className="etikett text-muted-foreground underline underline-offset-4 hover:text-foreground"
+              className="min-h-11 rounded-md px-2 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               alle entfernen
             </button>

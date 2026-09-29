@@ -1,0 +1,63 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- eigenständiger Werkzeugtest. */
+/* Sicherheitsregressionen für die unabhängigen Vollbackup-Betriebswerkzeuge. */
+const assert = require('node:assert/strict');
+const { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } = require('node:fs');
+const { join } = require('node:path');
+const { tmpdir } = require('node:os');
+const { spawnSync } = require('node:child_process');
+const projekt = join(__dirname, '..');
+const ps = join(projekt, 'ops', 'Uebernehme-Vollbackup.ps1');
+const sh = join(projekt, 'ops', 'test-vollbackup-wiederherstellung.sh');
+assert.ok(existsSync(ps) && existsSync(sh));
+const quelltext = readFileSync(ps, 'utf8');
+assert.match(quelltext, /SupportsShouldProcess/);
+assert.match(quelltext, /Get-FileHash/);
+assert.match(quelltext, /\.fortbildungsportal-vollbackup-ziel/);
+assert.match(quelltext, /\[ValidateRange\(7, 90\)\]/);
+assert.match(quelltext, /Get-CimInstance Win32_LogicalDisk/);
+assert.match(quelltext, /\$UebernahmeErfolgreich -and/);
+assert.match(quelltext, /\$Aufbewahrungstage - 1/);
+assert.match(quelltext, /\\\\\[\^\\\\\?\.\]/);
+assert.match(quelltext, /Archiv -ne \$ZielDatei/);
+assert.match(quelltext, /Select-Object -First 2/);
+assert.match(quelltext, /ReparsePoint/);
+const wiederherstellung = readFileSync(sh, 'utf8');
+assert.match(wiederherstellung, /PurePosixPath/);
+assert.match(wiederherstellung, /fortbildungsportal-vollbackup-v1/);
+assert.match(wiederherstellung, /--single-transaction/);
+assert.match(wiederherstellung, /ERWARTETE_SHA256/);
+assert.match(wiederherstellung, /Nur localhost ist zulässig/);
+assert.match(wiederherstellung, /betrieb\.json wurde nicht/);
+let result = spawnSync('bash', ['-n', sh], { encoding: 'utf8' });
+assert.equal(result.status, 0, result.stderr);
+result = spawnSync('bash', [sh, '/tmp/does-not-matter.zip.age'], { encoding: 'utf8', env: { ...process.env, BACKUP_AGE_IDENTITAETSDATEI: '/nope', RESTORE_DATABASE: 'produktion', RESTORE_PGUSER: 'test', ERWARTETE_SHA256: '0'.repeat(64), ICH_BESTAETIGE_LOKALE_TESTWIEDERHERSTELLUNG: 'JA' } });
+assert.notEqual(result.status, 0); assert.match(result.stderr, /Testdatenbank/);
+// Ein entschlüsseltes ZIP mit traversal darf niemals bis pg_restore gelangen.
+const arbeit = mkdtempSync(join(tmpdir(), 'vollbackup-betrieb-test-'));
+try {
+  const zip = join(arbeit, 'boese.zip');
+  const pythonZip = "import json,sys,zipfile; z=zipfile.ZipFile(sys.argv[1],'w'); m={'format':'fortbildungsportal-vollbackup-v1','tag':'2026-09-24','erstelltAm':'2026-09-24T06:00:00Z','appVersion':'test','appImage':None,'verschluesselung':'age'}; b={'DATABASE_URL':'postgres://test','JWT_SECRET':'x','MFA_ENCRYPTION_KEY':'x'}; files={'datenbank.dump':'dump','betrieb.json':json.dumps(b),'manifest.json':json.dumps(m),'prisma/schema.prisma':'schema','werkzeuge/Uebernehme-Vollbackup.ps1':'ps','werkzeuge/test-vollbackup-wiederherstellung.sh':'sh','WIEDERHERSTELLUNG.txt':'hinweis'}; [z.writestr(k,v) for k,v in files.items()]; z.writestr('../ausbruch','x'); z.close()";
+  result = spawnSync('python3', ['-c', pythonZip, zip], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  const archiv = join(arbeit, 'fortbildungsportal-vollbackup-2026-09-24-550e8400-e29b-41d4-a716-446655440000.zip.age');
+  writeFileSync(archiv, 'cipher'); writeFileSync(join(arbeit, 'identity'), 'test');
+  const bin = join(arbeit, 'bin'); mkdirSync(bin);
+  const age = join(bin, 'age'); writeFileSync(age, `#!/usr/bin/env bash\nwhile [[ $# -gt 0 ]]; do [[ "$1" == -o ]] && { cp "$MOCK_ZIP" "$2"; exit 0; }; shift; done\nexit 1\n`); chmodSync(age, 0o755);
+  const pgRestore = join(bin, 'pg_restore'); writeFileSync(pgRestore, '#!/usr/bin/env bash\necho "$*" >> "$MOCK_LOG"\n[[ "${PG_FAIL:-0}" == 1 && "$*" == *--clean* ]] && exit 9\nexit 0\n'); chmodSync(pgRestore, 0o755);
+  const psql = join(bin, 'psql'); writeFileSync(psql, '#!/usr/bin/env bash\necho "psql $*" >> "$MOCK_LOG"\nexit 0\n'); chmodSync(psql, 0o755);
+  const hash = require('node:crypto').createHash('sha256').update('cipher').digest('hex');
+  result = spawnSync('bash', [sh, archiv], { encoding: 'utf8', env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, MOCK_ZIP: zip, BACKUP_AGE_IDENTITAETSDATEI: join(arbeit, 'identity'), RESTORE_DATABASE: 'vollbackup_test', RESTORE_PGUSER: 'test', ERWARTETE_SHA256: hash, ICH_BESTAETIGE_LOKALE_TESTWIEDERHERSTELLUNG: 'JA' } });
+  assert.notEqual(result.status, 0); assert.match(result.stderr, /Unsicherer oder nicht erlaubter Archivpfad/);
+  const gut = join(arbeit, 'gut.zip');
+  result = spawnSync('python3', ['-c', pythonZip.replace("; z.writestr('../ausbruch','x')", ''), gut], { encoding: 'utf8' }); assert.equal(result.status, 0, result.stderr);
+  const log = join(arbeit, 'aufrufe.log');
+  const basis = { ...process.env, PATH: `${bin}:${process.env.PATH}`, MOCK_ZIP: gut, MOCK_LOG: log, BACKUP_AGE_IDENTITAETSDATEI: join(arbeit, 'identity'), RESTORE_DATABASE: 'vollbackup_test', RESTORE_PGUSER: 'test', ERWARTETE_SHA256: hash, ICH_BESTAETIGE_LOKALE_TESTWIEDERHERSTELLUNG: 'JA' };
+  result = spawnSync('bash', [sh, archiv], { encoding: 'utf8', env: basis });
+  assert.equal(result.status, 0, result.stderr); assert.match(result.stdout, /Wiederherstellungsprobe erfolgreich/);
+  assert.match(readFileSync(log, 'utf8'), /--list/); assert.match(readFileSync(log, 'utf8'), /--clean/);
+  result = spawnSync('bash', [sh, archiv], { encoding: 'utf8', env: { ...basis, PG_FAIL: '1' } });
+  assert.notEqual(result.status, 0); assert.match(result.stderr, /Wiederherstellung der Testdatenbank fehlgeschlagen/);
+  result = spawnSync('bash', [sh, archiv], { encoding: 'utf8', env: { ...basis, ERWARTETE_SHA256: 'f'.repeat(64) } });
+  assert.notEqual(result.status, 0); assert.match(result.stderr, /Prüfsumme/);
+} finally { rmSync(arbeit, { recursive: true, force: true }); }
+console.log('Vollbackup-Betriebsprüfungen erfolgreich. PowerShell-Skript statisch geprüft; Windows-Ausführung steht aus.');

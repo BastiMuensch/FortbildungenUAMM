@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { ladeSchulamtsStartseiten } from "@/lib/bezirke";
 import { Seitenleiste } from "@/components/admin/Seitenleiste";
+import { DatensicherungsHinweis } from "@/components/admin/DatensicherungsHinweis";
 
 export const metadata = {
   robots: { index: false, follow: false },
@@ -16,8 +17,10 @@ export default async function AdminLayout({
 }) {
   // proxy.ts hat das Cookie bereits oberflächlich geprüft. Hier wird gegen die
   // Datenbank geprüft, damit ein deaktivierter Zugang sofort greift.
-  const user = await getSessionUser();
+  const user = await getSessionUser({ mfaEinrichtungErlauben: true });
   if (!user) redirect("/login?weiter=/admin");
+
+  if (user.mfaEinrichtungErforderlich) return <main id="hauptinhalt" className="mx-auto w-full max-w-2xl p-8">{children}</main>;
 
   const [schulamt, schulamtsStartseiten] = await Promise.all([
     ladeSchulamt(),
@@ -33,7 +36,10 @@ export default async function AdminLayout({
       />
 
       <main id="hauptinhalt" className="min-w-0 flex-1 px-4 py-7 sm:px-8 sm:py-10 lg:px-10">
-        <div className="mx-auto max-w-[82.5rem] scroll-mt-6">{children}</div>
+        <div className="mx-auto max-w-[82.5rem] scroll-mt-6">
+          {user.role === "RVS" ? <DatensicherungsHinweis /> : null}
+          {children}
+        </div>
       </main>
     </div>
   );

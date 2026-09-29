@@ -35,6 +35,17 @@ model User {
   /// Wird bei einem Passwortwechsel erhöht. JWTs mit einer älteren Version
   /// verlieren dadurch beim nächsten serverseitigen Zugriff ihre Gültigkeit.
   sessionVersion Int       @default(0)
+  /// AES-256-GCM-verschlüsseltes TOTP-Geheimnis. Der Schlüssel liegt nur in
+  /// MFA_ENCRYPTION_KEY außerhalb der Datenbank.
+  mfaSecretVerschluesselt String?   @db.Text
+  /// Ein noch nicht bestätigtes Geheimnis; berechtigt nie zur Anmeldung.
+  mfaAusstehendesSecretVerschluesselt String? @db.Text
+  mfaAusstehendBis DateTime? @db.Timestamptz(3)
+  mfaAktiviertAm DateTime? @db.Timestamptz(3)
+  /// Höchster erfolgreich genutzter 30-Sekunden-TOTP-Zähler gegen Replay.
+  mfaLetzterZaehler Int?
+  /// SHA-256-Hashes der nur einmal verwendbaren Wiederherstellungscodes.
+  mfaWiederherstellungscodeHashes String[] @default([])
   lastLoginAt    DateTime? @db.Timestamptz(3)
   createdAt      DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
@@ -48,6 +59,10 @@ model User {
   auditLogs                           AuditLog[]
   zugangstoken                        Zugangstoken[]
   referentenRegistrierungslinks       ReferentenRegistrierungslink[] @relation("RegistrierungslinkErsteller")
+  archivpakete                       Archivpaket[]                  @relation("ArchivpaketErsteller")
+  archivuebernahmen                  Archivuebernahme[]             @relation("ArchivuebernahmeBestaetiger")
+  archivnachfristen                  ArchivnachfristFreigabe[]      @relation("ArchivnachfristErteiler")
+  abgelegteDatensicherungen          Datensicherung[]               @relation("DatensicherungAblage")
   /// Gesetzt, wenn dieses Konto zu einer Referentin oder einem Referenten gehört
   referent                            Referent?
   /// Zuständigkeiten von BdBs und Redaktionskonten. RvS ist global.
@@ -113,6 +128,8 @@ model Bezirk {
   referenten                    Referent[]
   fortbildungen                 Fortbildung[]
   referentenRegistrierungslinks ReferentenRegistrierungslink[]
+  archivpakete                 Archivpaket[]
+  archivnachfristen            ArchivnachfristFreigabe[]
 }
 
 // ---------------------------------------------------------------------------
@@ -140,6 +157,10 @@ model Fortbildung {
   /// Immer als UTC gespeichert, immer in Europe/Berlin angezeigt
   beginn DateTime @db.Timestamptz(3)
   ende   DateTime @db.Timestamptz(3)
+  /// Datenbank-Trigger berechnet das Schuljahr anhand des Beginns in Europe/Berlin.
+  schuljahr Int @default(dbgenerated())
+  /// 400 volle Tage nach Schuljahresende; Änderungen verlängern diese Frist nie.
+  aufbewahrenBis DateTime @default(dbgenerated()) @db.Timestamptz(3)
 
   veranstaltungsortId String
   /// Mehrfachauswahl, z. B. ["GRUNDSCHULE", "MITTELSCHULE"]
@@ -213,6 +234,8 @@ model Fortbildung {
   bezirk                                         Bezirk                  @relation(fields: [bezirkId], references: [id], onDelete: Restrict)
 
   @@index([beginn])
+  @@index([aufbewahrenBis])
+  @@index([bezirkId, schuljahr])
   @@index([status, beginn])
   @@index([organisationsform])
   @@index([veranstaltungsortId])
@@ -315,10 +338,9 @@ model FortbildungKompetenz {
 // ---------------------------------------------------------------------------
 // Referenten
 //
-// DSGVO: Das sind die einzigen personenbezogenen Daten des Systems (neben den
-// Redaktions-Accounts). E-Mail und Telefon sind reine Innendaten und werden
-// nie an das öffentliche Frontend ausgeliefert — siehe publicReferentSelect
-// in src/lib/queries.ts.
+// Dienstliche Referentenstammdaten. E-Mail und Notizen bleiben intern;
+// öffentlich sind nur eigens freigegebene Namen — siehe
+// oeffentlicherReferentSelect in src/lib/namensfreigabe.ts.
 // ---------------------------------------------------------------------------
 
 model Referent {
@@ -328,12 +350,14 @@ model Referent {
   organisation        String?
   /// Nur intern sichtbar
   email               String?
-  /// Nur intern sichtbar
-  telefon             String?
   /// Interne Notiz, nie öffentlich
   notiz               String?
-  /// Steuert, ob der Name im öffentlichen Frontend erscheint
-  oeffentlichSichtbar Boolean  @default(true)
+  /// Veröffentlichung nur mit eigener dokumentierter Einwilligung.
+  oeffentlichSichtbar Boolean  @default(false)
+  oeffentlicheEinwilligungVersion String?
+  oeffentlicheEinwilligungAm DateTime? @db.Timestamptz(3)
+  /// Verhindert, dass ein altes Formular einen neueren Widerruf überschreibt.
+  namensfreigabeStand Int @default(0)
   aktiv               Boolean  @default(true)
   createdAt           DateTime @default(now()) @db.Timestamptz(3)
   updatedAt           DateTime @updatedAt @db.Timestamptz(3)
@@ -344,10 +368,26 @@ model Referent {
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   fortbildungen FortbildungReferent[]
+  namensfreigaben NamensfreigabeNachweis[]
   /// Eine Person kann für mehrere Schulamtsbezirke ausschreiben.
   bezirke       Bezirk[]
 
   @@index([nachname, vorname])
+}
+
+/// Eigenständiger Nachweis; nicht mit den kurzlebigen AuditLogs löschen.
+model NamensfreigabeNachweis {
+  id String @id @default(uuid())
+  referentId String
+  handelnderUserId String
+  entscheidung String // ERTEILT | WIDERRUFEN | GESTOPPT
+  version String
+  erklaerung String @db.Text
+  zeitpunkt DateTime @default(now()) @db.Timestamptz(3)
+
+  referent Referent @relation(fields: [referentId], references: [id], onDelete: Restrict)
+
+  @@index([referentId, zeitpunkt])
 }
 
 model FortbildungReferent {
@@ -410,4 +450,90 @@ model SystemSetting {
   id        String   @id
   value     String   @db.Text
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+
+// ---------------------------------------------------------------------------
+// Verschlüsselte Vollsicherungen
+// ---------------------------------------------------------------------------
+
+/// Ein tägliches, mit einem extern verwahrten age-Schlüssel verschlüsseltes
+/// Anwendungspaket. Der Server besitzt ausdrücklich keinen privaten Schlüssel.
+model Datensicherung {
+  id              String    @id @default(uuid())
+  /// Berliner Kalendertag, z. B. 2026-09-24; nur ein Paket pro Tag.
+  tag             String    @unique
+  status          String    @default("LAEUFT") // LAEUFT | BEREIT | FEHLER
+  dateiname       String?
+  sha256          String?
+  bytes           BigInt?
+  erstelltAm      DateTime  @default(now()) @db.Timestamptz(3)
+  abgelegtAm      DateTime? @db.Timestamptz(3)
+  abgelegtVonId   String?
+  externeAblage   String?
+  /// Öffentlich verwertbare Fehlerklasse, nie Prozessausgaben oder Geheimnisse.
+  fehler          String?
+  /// Paketdatei aus dem lokalen Spool entfernt; der Nachweis bleibt befristet.
+  geloeschtAm     DateTime? @db.Timestamptz(3)
+  heruntergeladenAm DateTime? @db.Timestamptz(3)
+
+  abgelegtVon User? @relation("DatensicherungAblage", fields: [abgelegtVonId], references: [id], onDelete: SetNull)
+
+  @@index([status, tag])
+  @@index([geloeschtAm])
+}
+
+// ---------------------------------------------------------------------------
+// Archivübergabe
+// ---------------------------------------------------------------------------
+
+/// Ein reproduzierbares, datensparsames Übergabepaket je Bezirk und Schuljahr.
+/// Der Aufbewahrungszeitraum der externen Ablage ist noch nicht festgelegt.
+model Archivpaket {
+  id            String   @id @default(uuid())
+  bezirkId      String
+  schuljahr     Int
+  paketkennung  String   @unique
+  inhaltsHash   String
+  anzahl        Int
+  erstelltAm    DateTime @default(now()) @db.Timestamptz(3)
+  erstelltVonId String?
+
+  bezirk       Bezirk             @relation(fields: [bezirkId], references: [id], onDelete: Restrict)
+  erstelltVon  User?              @relation("ArchivpaketErsteller", fields: [erstelltVonId], references: [id], onDelete: SetNull)
+  uebernahmen  Archivuebernahme[]
+
+  @@unique([bezirkId, schuljahr])
+  @@index([schuljahr])
+}
+
+/// Bestätigung, dass das Paket in der getrennten externen Ablage lesbar liegt.
+/// Eine später veränderte Datenbasis macht den Nachweis über den Inhalts-Hash ungültig.
+model Archivuebernahme {
+  id                     String   @id @default(uuid())
+  archivpaketId          String
+  externeAblage          String
+  lesbarkeitBestaetigtAm DateTime @default(now()) @db.Timestamptz(3)
+  bestaetigtVonId        String
+  inhaltsHash            String
+
+  archivpaket  Archivpaket @relation(fields: [archivpaketId], references: [id], onDelete: Cascade)
+  bestaetigtVon User       @relation("ArchivuebernahmeBestaetiger", fields: [bestaetigtVonId], references: [id], onDelete: Restrict)
+
+  @@index([archivpaketId, lesbarkeitBestaetigtAm])
+}
+
+/// Begründete, auf sieben Tage begrenzte Ausnahme für einen Download nach Fristablauf.
+model ArchivnachfristFreigabe {
+  id String @id @default(uuid())
+  bezirkId String
+  schuljahr Int
+  begruendung String @db.Text
+  erteiltAm DateTime @default(now()) @db.Timestamptz(3)
+  gueltigBis DateTime @db.Timestamptz(3)
+  erteiltVonId String
+
+  bezirk Bezirk @relation(fields: [bezirkId], references: [id], onDelete: Restrict)
+  erteiltVon User @relation("ArchivnachfristErteiler", fields: [erteiltVonId], references: [id], onDelete: Restrict)
+  @@unique([bezirkId, schuljahr])
+  @@index([gueltigBis])
 }

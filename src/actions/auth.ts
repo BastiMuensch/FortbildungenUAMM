@@ -10,9 +10,11 @@ import { auditLog } from "@/lib/audit";
 import {
   clearSessionCookie,
   getSessionUser,
+  setzeMfaAnmeldeCookie,
   setSessionCookie,
   signToken,
 } from "@/lib/auth";
+import { istPrivilegierteRolle } from "@/lib/mfa";
 import { createRateLimiter, getClientIp } from "@/lib/rateLimit";
 
 /**
@@ -77,6 +79,8 @@ export async function login(
       passwordHash: true,
       isActive: true,
       sessionVersion: true,
+      role: true,
+      mfaAktiviertAm: true,
     },
   });
 
@@ -103,7 +107,19 @@ export async function login(
   proKonto.zuruecksetzen(email);
   proIp.zuruecksetzen(ip);
 
-  await setSessionCookie(await signToken(user.id, user.sessionVersion));
+  // Ein privilegiertes Konto ohne MFA erhält nur eine eingeschränkte Sitzung,
+  // die ausschließlich die Einrichtung unter /admin/konto öffnen kann.
+  if (istPrivilegierteRolle(user.role) && !user.mfaAktiviertAm) {
+    await setSessionCookie(await signToken(user.id, user.sessionVersion, false));
+    redirect("/admin/konto");
+  }
+
+  if (istPrivilegierteRolle(user.role)) {
+    await setzeMfaAnmeldeCookie(user.id, user.sessionVersion);
+    redirect("/mfa");
+  }
+
+  await setSessionCookie(await signToken(user.id, user.sessionVersion, true));
   await prisma.user.update({
     where: { id: user.id },
     data: { lastLoginAt: new Date() },

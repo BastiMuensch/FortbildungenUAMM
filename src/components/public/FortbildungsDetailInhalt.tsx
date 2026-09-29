@@ -18,6 +18,7 @@ import {
   oeffentlicheFortbildungWhere,
 } from "@/lib/queries";
 import { formatDatumLang, formatZeitraum } from "@/lib/datetime";
+import { organisationsKennzeichnungen } from "@/lib/namensfreigabe";
 import { terminWarnung } from "@/lib/ferien";
 import { hatAktiveFibsAnmeldung } from "@/lib/fibs/status";
 import {
@@ -84,6 +85,7 @@ export async function FortbildungsDetailInhalt({
   const fibsAnmeldungAktiv = hatAktiveFibsAnmeldung(fortbildung);
   const teilnahmeSchulintern =
     fortbildung.organisationsform === "SCHILF" && !fibsAnmeldungAktiv;
+  const kennzeichnungen = organisationsKennzeichnungen(fortbildung.bezirk.name);
 
   return (
     <article className="mx-auto max-w-3xl">
@@ -173,6 +175,14 @@ export async function FortbildungsDetailInhalt({
           {fortbildung.bezirk.name}
         </Angabe>
 
+        <Angabe label="Organisation">
+          {kennzeichnungen.map((kennzeichnung) => (
+            <span key={kennzeichnung} className="block">
+              {kennzeichnung}
+            </span>
+          ))}
+        </Angabe>
+
         <Angabe label="Zielgruppe">
           {fortbildung.schularten.map(schulartLabel).join(", ")}
           {fortbildung.fach ? (
@@ -192,11 +202,9 @@ export async function FortbildungsDetailInhalt({
         <section className="mt-8">
           <h2 className="etikett mb-2 text-muted-foreground">Leitung</h2>
           <ul className="space-y-1 text-sm text-muted-foreground">
-            {fortbildung.referenten.map(({ referent, rolle }) => (
-              <li key={referent.id}>
+            {fortbildung.referenten.map(({ referent }, index) => (
+              <li key={`${referent.vorname}-${referent.nachname}-${index}`}>
                 {referent.vorname} {referent.nachname}
-                {referent.organisation ? ` · ${referent.organisation}` : ""}
-                {rolle ? ` (${rolle})` : ""}
               </li>
             ))}
           </ul>

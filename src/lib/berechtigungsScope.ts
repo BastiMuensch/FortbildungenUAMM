@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { operativeFortbildungWhere } from "@/lib/schuljahr";
 
 /** Minimaler Sitzungsanteil für die rein deterministischen Bereichsfilter. */
 export interface BereichsUser {
@@ -10,6 +11,11 @@ export interface BereichsUser {
 
 /** Bereichsfilter für Fortbildungen. Unbekannte Rollen erhalten keinen Treffer. */
 export function fortbildungScope(user: BereichsUser): Prisma.FortbildungWhereInput {
+  return { AND: [fortbildungBezirksScope(user), operativeFortbildungWhere()] };
+}
+
+/** Nur für getrennte, ausdrücklich autorisierte Archivverfahren ohne operativen Zugriff. */
+export function fortbildungBezirksScope(user: BereichsUser): Prisma.FortbildungWhereInput {
   if (user.role === "RVS") return {};
   if (user.role === "ADMIN" || user.role === "REDAKTEUR") return { bezirkId: { in: user.bezirkIds } };
   if (user.role !== "REFERENT") return { id: { in: [] } };

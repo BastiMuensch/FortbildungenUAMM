@@ -21,10 +21,10 @@ import { ERFASSER, fortbildungScope, requireRole } from "@/lib/auth";
 import { ladeBezirke } from "@/lib/bezirke";
 import {
   darfFreigeben,
-  NACHBEREITUNG_RUECKBLICK_TAGE,
 } from "@/constants/fortbildung";
 import { baueUrl, filterZuWhere, leseFilter, type SuchParameter } from "@/lib/filter";
-import { aktuellesSchuljahr, schuljahrZeitraum } from "@/lib/datetime";
+import { aktuellesSchuljahr } from "@/lib/datetime";
+import { parseSchuljahr, schuljahrWhere } from "@/lib/schuljahr";
 import { Button } from "@/components/ui/button";
 import { AdminFilterLeiste } from "@/components/admin/AdminFilterLeiste";
 import { FortbildungTabelle } from "@/components/admin/FortbildungTabelle";
@@ -43,6 +43,15 @@ export default async function AdminDashboard({
   if (user.role === "RVS" && await istEinrichtungOffen()) redirect("/admin/einrichtung");
   const params = await searchParams;
   const filter = leseFilter(params);
+  const schuljahrParam = Array.isArray(params.schuljahr) ? params.schuljahr[0] : params.schuljahr;
+  const laufendes = aktuellesSchuljahr();
+  const gewaehltesSchuljahr = schuljahrParam === "alle"
+    ? null
+    : parseSchuljahr(filter.schuljahr) ?? parseSchuljahr(laufendes)!;
+  const kennzahlJahr = gewaehltesSchuljahr ? `${gewaehltesSchuljahr}/${gewaehltesSchuljahr + 1}` : null;
+  const paramsMitSchuljahr: SuchParameter = schuljahrParam === "alle"
+    ? params
+    : { ...params, schuljahr: kennzahlJahr! };
   const scope = fortbildungScope(user);
   const istAdmin = darfFreigeben(user.role);
   const darfNachbereiten = (user.role === "RVS" || user.role === "ADMIN") || user.role === "REFERENT";
@@ -57,11 +66,11 @@ export default async function AdminDashboard({
     aktiverBereich === null &&
     filter.status === "VEROEFFENTLICHT" &&
     filter.fibs === "offen-ausschreibung";
-  const freigabenUrl = `${baueUrl("/admin", params, { bereich: "freigaben" })}#arbeitsbereich`;
-  const nachbereitungUrl = `${baueUrl("/admin", params, { bereich: "nachbereitung" })}#arbeitsbereich`;
+  const freigabenUrl = `${baueUrl("/admin", paramsMitSchuljahr, { bereich: "freigaben" })}#arbeitsbereich`;
+  const nachbereitungUrl = `${baueUrl("/admin", paramsMitSchuljahr, { bereich: "nachbereitung" })}#arbeitsbereich`;
   const fibsUrl = `${baueUrl(
     "/admin",
-    params,
+    paramsMitSchuljahr,
     fibsAktiv
       ? { status: undefined, fibs: undefined }
       : {
@@ -72,21 +81,20 @@ export default async function AdminDashboard({
   )}#fortbildungslisten`;
   const uebersichtUrl = baueUrl(
     "/admin",
-    params,
+    paramsMitSchuljahr,
     fibsAktiv
       ? { bereich: undefined, status: undefined, fibs: undefined }
       : { bereich: undefined },
   );
   const uebersichtAktiv = aktiverBereich === null && !fibsAktiv;
-  const where = { AND: [scope, filterZuWhere(filter)] };
-
-  const laufendes = aktuellesSchuljahr();
-  const kennzahlJahr = filter.schuljahr ?? laufendes;
-  const { start, ende } = schuljahrZeitraum(kennzahlJahr);
+  const where = {
+    AND: [
+      scope,
+      filterZuWhere(filter),
+      ...(gewaehltesSchuljahr ? [schuljahrWhere(gewaehltesSchuljahr)] : []),
+    ],
+  };
   const jetzt = new Date();
-  const nachbereitungsGrenze = new Date(
-    jetzt.getTime() - NACHBEREITUNG_RUECKBLICK_TAGE * 24 * 60 * 60 * 1000,
-  );
 
   const [fortbildungen, schlagworte, kennzahlen, bezirke] = await Promise.all([
     prisma.fortbildung.findMany({
@@ -115,13 +123,14 @@ export default async function AdminDashboard({
     }),
     prisma.schlagwort.findMany({ orderBy: { name: "asc" }, select: { name: true } }),
     Promise.all([
-      prisma.fortbildung.count({ where: { AND: [scope, { beginn: { gte: start, lte: ende } }] } }),
-      prisma.fortbildung.count({ where: { AND: [scope, { status: "EINGEREICHT" }] } }),
+      prisma.fortbildung.count({ where }),
+      prisma.fortbildung.count({ where: { AND: [scope, { status: "EINGEREICHT" }, ...(gewaehltesSchuljahr ? [schuljahrWhere(gewaehltesSchuljahr)] : [])] } }),
       prisma.fortbildung.count({
         where: {
           AND: [
             scope,
             { status: "VEROEFFENTLICHT" },
+            ...(gewaehltesSchuljahr ? [schuljahrWhere(gewaehltesSchuljahr)] : []),
             { organisationsform: { not: "SCHILF" } },
             { inFibs: false },
             { ende: { gte: jetzt } },
@@ -133,10 +142,11 @@ export default async function AdminDashboard({
             where: {
               AND: [
                 scope,
+                ...(gewaehltesSchuljahr ? [schuljahrWhere(gewaehltesSchuljahr)] : []),
                 ...(user.role === "REFERENT"
                   ? [{ organisationsform: "SCHILF" }]
                   : []),
-                { ende: { lt: jetzt, gte: nachbereitungsGrenze } },
+                { ende: { lt: jetzt } },
                 { status: { in: ["VEROEFFENTLICHT", "ARCHIVIERT"] } },
                 (user.role === "RVS" || user.role === "ADMIN")
                   ? {
@@ -167,7 +177,7 @@ export default async function AdminDashboard({
     <div className="space-y-7">
       <div className="flex flex-wrap items-end justify-between gap-5">
         <div>
-          <p className="text-sm text-muted-foreground">Verwaltung · {kennzahlJahr}</p>
+          <p className="text-sm text-muted-foreground">Verwaltung · {kennzahlJahr ?? "alle Schuljahre"}</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">
             {user.role === "REFERENT" ? "Meine Fortbildungen" : "Fortbildungen"}
           </h1>
@@ -181,17 +191,17 @@ export default async function AdminDashboard({
               <Download className="size-4" aria-hidden />Export<ChevronDown className="size-3.5 transition-transform group-open:rotate-180" aria-hidden />
             </summary>
             <div className="absolute right-0 z-10 mt-2 grid min-w-48 gap-1 rounded-xl border bg-popover p-1.5 text-sm shadow-lg">
-              <a className="flex items-center gap-2 rounded-lg px-2.5 py-2 hover:bg-accent" href={baueUrl("/api/admin/export", params, {})}><FileSpreadsheet className="size-4" aria-hidden />Excel exportieren</a>
-              <a className="flex items-center gap-2 rounded-lg px-2.5 py-2 hover:bg-accent" title="Bericht nach SchiLf, RLFB und ALP gegliedert" href={baueUrl("/api/admin/export/pdf", params, {})}><FileText className="size-4" aria-hidden />PDF-Bericht</a>
+              <a className="flex items-center gap-2 rounded-lg px-2.5 py-2 hover:bg-accent" href={baueUrl("/api/admin/export", paramsMitSchuljahr, {})}><FileSpreadsheet className="size-4" aria-hidden />Excel exportieren</a>
+              <a className="flex items-center gap-2 rounded-lg px-2.5 py-2 hover:bg-accent" title="Bericht nach SchiLf, RLFB und ALP gegliedert" href={baueUrl("/api/admin/export/pdf", paramsMitSchuljahr, {})}><FileText className="size-4" aria-hidden />PDF-Bericht</a>
             </div>
           </details>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 min-[381px]:grid-cols-2 lg:grid-cols-4">
         <Kachel
           wert={imSchuljahr}
-          label={`Termine im Schuljahr ${kennzahlJahr}`}
+          label={kennzahlJahr ? `Termine im Schuljahr ${kennzahlJahr}` : "Termine in allen Schuljahren"}
           icon={CalendarDays}
           href={uebersichtUrl}
           aktiv={uebersichtAktiv}
@@ -238,12 +248,12 @@ export default async function AdminDashboard({
             <p className="etikett text-primary">Arbeitsbereich</p>
             <Button nativeButton={false} size="sm" variant="outline" render={<Link href={uebersichtUrl}>Zur Fortbildungsübersicht</Link>} />
           </div>
-          {aktiverBereich === "freigaben" ? <FreigabenBereich eingebettet /> : <NachbereitungsBereich eingebettet />}
+          {aktiverBereich === "freigaben" ? <FreigabenBereich eingebettet params={params} /> : <NachbereitungsBereich eingebettet params={params} />}
         </section>
       ) : null}
 
       <div id="fortbildungslisten" className="scroll-mt-6">
-        <AdminFilterLeiste params={params} schlagworte={schlagworte.map((s) => s.name)} bezirke={bezirke} />
+        <AdminFilterLeiste params={paramsMitSchuljahr} schlagworte={schlagworte.map((s) => s.name)} bezirke={bezirke} />
       </div>
 
       {fortbildungen.length === 0 ? (
@@ -341,13 +351,13 @@ function Kachel({
   href?: string;
 }) {
   const inhalt = (
-    <div className="grid h-[140px] grid-rows-[1.25rem_1fr_2.5rem] p-4 max-[360px]:h-[160px] max-[360px]:grid-rows-[1.25rem_1fr_3.75rem] sm:h-[160px] sm:p-5">
-      <div className="flex items-center justify-between gap-3">
+    <div className="grid h-[140px] grid-rows-[1.25rem_1fr_2.5rem] p-4 max-[380px]:flex max-[380px]:h-20 max-[380px]:items-center max-[380px]:gap-3 max-[380px]:p-4 sm:h-[160px] sm:p-5">
+      <div className="flex items-center justify-between gap-3 max-[380px]:w-5 max-[380px]:shrink-0 max-[380px]:[&>span]:hidden">
         <Icon className={`size-5 shrink-0 ${aktiv ? "text-primary-foreground" : "text-primary"}`} aria-hidden />
         {hervorheben && !aktiv ? <span className="size-2 shrink-0 rounded-full bg-ferien" aria-label="Offene Aufgabe" /> : null}
       </div>
-      <p className={`zahl self-end text-3xl leading-none font-semibold sm:text-4xl ${aktiv ? "text-primary-foreground" : "text-foreground"}`}>{String(wert).padStart(2, "0")}</p>
-      <p className={`min-h-10 pt-2 text-sm leading-snug ${aktiv ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{label}</p>
+      <p className={`zahl self-end text-3xl leading-none font-semibold max-[380px]:self-auto max-[380px]:text-[28px] sm:text-4xl ${aktiv ? "text-primary-foreground" : "text-foreground"}`}>{String(wert).padStart(2, "0")}</p>
+      <p className={`min-h-10 pt-2 text-sm leading-snug max-[380px]:min-h-0 max-[380px]:flex-1 max-[380px]:pt-0 ${aktiv ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{label}</p>
     </div>
   );
   const klassen = `rounded-2xl border shadow-sm transition-colors ${aktiv ? "border-primary bg-primary shadow-md" : "border-border bg-card"}`;

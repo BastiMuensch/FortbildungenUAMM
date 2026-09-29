@@ -9,6 +9,7 @@ import { pruefeBezirk } from "@/lib/bezirke";
 import { auditLog } from "@/lib/audit";
 import { zuFeldFehlern, type FormularState } from "@/lib/validation/fortbildung";
 import { normalisiereSchlagwort, schlagwortSchluessel } from "@/lib/schlagwort";
+import { sperreNamensfreigabe, schreibeNamensfreigabe } from "@/lib/namensfreigabeSpeicher";
 
 /**
  * Stammdaten: Referenten, Schlagworte, Veranstaltungsorte.
@@ -42,9 +43,7 @@ const ReferentSchema = z.object({
       (w) => w === null || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(w),
       "Bitte eine gültige E-Mail-Adresse eingeben.",
     ),
-  telefon: z.string().trim().max(40).optional().transform((w) => w || null),
   notiz: z.string().trim().max(1000).optional().transform((w) => w || null),
-  oeffentlichSichtbar: z.coerce.boolean().default(false),
 });
 
 export async function speichereReferent(
@@ -66,9 +65,7 @@ export async function speichereReferent(
     nachname: formData.get("nachname") ?? "",
     organisation: formData.get("organisation") ?? "",
     email: formData.get("email") ?? "",
-    telefon: formData.get("telefon") ?? "",
     notiz: formData.get("notiz") ?? "",
-    oeffentlichSichtbar: formData.get("oeffentlichSichtbar") === "on",
   });
 
   if (!geparst.success) return { fehler: zuFeldFehlern(geparst.error) };
@@ -84,24 +81,35 @@ export async function speichereReferent(
   }
 
   if (id) {
-    const sichtbar = await prisma.referent.findFirst({
-      where: { AND: [{ id }, referentScope(user)] }, select: { id: true },
+    const referentId = id;
+    const gespeichert = await prisma.$transaction(async (tx) => {
+      await sperreNamensfreigabe(tx, referentId);
+      const vorhanden = await tx.referent.findFirst({
+        where: { AND: [{ id: referentId }, referentScope(user)] },
+        select: { vorname: true, nachname: true, oeffentlichSichtbar: true },
+      });
+      if (!vorhanden) return false;
+      // Der Redaktion übermittelte Sichtbarkeitswerte werden niemals übernommen.
+      await tx.referent.update({
+        where: { id: referentId, AND: [referentScope(user)] },
+        data: {
+          ...geparst.data,
+          bezirke: user.role === "RVS"
+            ? { set: bezirkIds.map((id) => ({ id })) }
+            : {
+                disconnect: user.bezirkIds.filter((id) => !bezirkIds.includes(id)).map((id) => ({ id })),
+                connect: bezirkIds.map((id) => ({ id })),
+              },
+        },
+      });
+      if (vorhanden.oeffentlichSichtbar &&
+          (vorhanden.vorname !== geparst.data.vorname || vorhanden.nachname !== geparst.data.nachname)) {
+        // Eine Namensänderung veröffentlicht keinen neuen Namen unter alter Zustimmung.
+        await schreibeNamensfreigabe(tx, referentId, user.id, "GESTOPPT");
+      }
+      return true;
     });
-    if (!sichtbar) return { fehler: { _: "Für diese Person fehlt die Berechtigung." } };
-    // Nur eigene Mitgliedschaften ersetzen. Connect/Disconnect lässt auch bei
-    // paralleler Bearbeitung durch andere BdBs deren Zuordnungen unangetastet.
-    await prisma.referent.update({
-      where: { id, AND: [referentScope(user)] },
-      data: {
-        ...geparst.data,
-        bezirke: user.role === "RVS"
-          ? { set: bezirkIds.map((id) => ({ id })) }
-          : {
-              disconnect: user.bezirkIds.filter((id) => !bezirkIds.includes(id)).map((id) => ({ id })),
-              connect: bezirkIds.map((id) => ({ id })),
-            },
-      },
-    });
+    if (!gespeichert) return { fehler: { _: "Für diese Person fehlt die Berechtigung." } };
   } else {
     const neu = await prisma.referent.create({
       data: { ...geparst.data, bezirke: { connect: bezirkIds.map((id) => ({ id })) } },
@@ -116,14 +124,14 @@ export async function speichereReferent(
     entitaetId: id,
   });
 
-  revalidatePath("/admin/referenten");
+  revalidatePath("/", "layout");
   return { erfolg: true, meldung: "Gespeichert." };
 }
 
 /**
  * Referenten werden deaktiviert statt gelöscht, solange sie an Fortbildungen
- * hängen — sonst verlöre die Historie ihre Referentenangabe. Ohne
- * Zuordnungen wird wirklich gelöscht (Art. 17 DSGVO, Recht auf Löschung).
+ * hängen oder Einwilligungsnachweise bestehen. Deren Aufbewahrung und spätere
+ * Löschung werden im Löschkonzept gesondert geregelt.
  */
 export async function entferneReferent(id: string): Promise<void> {
   const user = await requireRole("RVS", "ADMIN");
@@ -156,9 +164,12 @@ export async function entferneReferent(id: string): Promise<void> {
     return;
   }
 
-  const anzahl = await prisma.fortbildungReferent.count({ where: { referentId: id } });
+  const [anzahl, nachweise] = await Promise.all([
+    prisma.fortbildungReferent.count({ where: { referentId: id } }),
+    prisma.namensfreigabeNachweis.count({ where: { referentId: id } }),
+  ]);
 
-  if (anzahl > 0) {
+  if (anzahl > 0 || nachweise > 0) {
     await prisma.referent.update({ where: { id }, data: { aktiv: false } });
     await auditLog({
       userId: user.id,
@@ -177,7 +188,7 @@ export async function entferneReferent(id: string): Promise<void> {
     });
   }
 
-  revalidatePath("/admin/referenten");
+  revalidatePath("/", "layout");
 }
 
 // ---------------------------------------------------------------------------

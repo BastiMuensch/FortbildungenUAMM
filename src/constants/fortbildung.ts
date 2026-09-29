@@ -234,9 +234,6 @@ export type Rolle = ValueOf<typeof ROLLEN>;
 // ---------------------------------------------------------------------------
 
 
-/** Zeitraum, in dem vergangene Fortbildungen aktiv nachbereitet werden. */
-export const NACHBEREITUNG_RUECKBLICK_TAGE = 400;
-
 // ---------------------------------------------------------------------------
 // Hilfsfunktionen für Labels
 
@@ -278,3 +275,11 @@ export const STATUS_VALUES = STATUS.map((s) => s.value) as [
   ...FortbildungStatus[],
 ];
 export const ROLLE_VALUES = ROLLEN.map((r) => r.value) as [Rolle, ...Rolle[]];
+/** Nachweisarten für die freiwillige öffentliche Namensnennung. */
+export const NAMENSFREIGABE_ENTSCHEIDUNGEN = ["ERTEILT", "WIDERRUFEN", "GESTOPPT"] as const;
+
+export const NAMENSFREIGABE_VERSION = "2026-09-24.1";
+/** Status einer verschlüsselten täglichen Vollsicherung. */
+export const DATENSICHERUNG_STATUS = ["LAEUFT", "BEREIT", "FEHLER"] as const;
+export const NAMENSFREIGABE_TEXT =
+  "Ich willige ein, dass die Regierung von Schwaben meinen Vor- und Nachnamen bei den mir zugeordneten veröffentlichten Fortbildungen in diesem Portal nennt: auf den Webseiten, in öffentlichen Kalenderfeeds (ICS) und in öffentlichen Ausschreibungs-PDFs. Dies gilt für alle meine Bezirkszuordnungen und auch für künftige Fortbildungen. Dienststelle und Kontaktdaten werden nicht veröffentlicht. Die Einwilligung ist freiwillig; eine Ablehnung oder ein Widerruf hat keine Nachteile für mein Konto oder meine dienstlichen Aufgaben. Ich kann sie jederzeit unter ‚Eigenes Konto‘ widerrufen. Die Rechtmäßigkeit der bisherigen Veröffentlichung bleibt unberührt. Bereits heruntergeladene oder gedruckte Kopien sowie Suchmaschinenkopien lassen sich nicht vollständig zurückholen.";

@@ -237,6 +237,7 @@ In der `.env` mindestens setzen:
 
 - `DATABASE_URL`
 - `JWT_SECRET` — erzeugen mit `openssl rand -base64 48`
+- `MFA_ENCRYPTION_KEY` — separat mit `openssl rand -base64 48` erzeugen und sichern
 - `APP_BASE_URL` — die Adresse, unter der Nutzer die Anwendung aufrufen
 - `SEED_ADMIN_EMAIL` und `SEED_ADMIN_PASSWORD`
 
@@ -286,14 +287,15 @@ die bisherige UAMM-Schulliste (Quelle und Stand in `prisma/seed-data/orte.ts`).
 ## Erstinstallation für ein anderes Schulamt
 
 1. Eine eigene Installation mit eigener PostgreSQL-Datenbank bereitstellen.
-   `.env.example` nach `.env` kopieren, Datenbankzugang, `JWT_SECRET`,
+   `.env.example` nach `.env` kopieren, Datenbankzugang, `JWT_SECRET`, `MFA_ENCRYPTION_KEY`,
    öffentliche `APP_BASE_URL` und das erste Administrationskonto setzen.
    `SCHULAMT_STARTPROFIL=neutral` beibehalten.
 2. `npm run db:deploy` und `npm run db:seed` ausführen, die Anwendung bauen
    und starten. Der Assistent setzt eine erreichbare Datenbank und das
    Administrationskonto voraus; er erfragt keine Betriebsgeheimnisse im Browser.
-3. Unter `/login` anmelden. Der erste Aufruf von `/admin` führt zum
-   Installationsassistenten unter `/admin/einrichtung`.
+3. Unter `/login` anmelden und im Konto die Zwei-Faktor-Authentifizierung
+   einrichten. Wiederherstellungscodes sicher verwahren. Anschließend führt
+   der erste Aufruf von `/admin` zum Installationsassistenten unter `/admin/einrichtung`.
 4. **Schulamt:** amtliche Bezeichnung, Kurzname, Region, Überschrift und
    Pflicht-Schlagworte speichern. Zielgruppe und Angebotsregion erzeugen
    automatisch die Einleitung: „Suche für das neue Fortbildungsangebot für
@@ -444,10 +446,10 @@ Die Anwendung ist auf Datensparsamkeit ausgelegt:
 - **Keine Teilnehmerdaten.** Die Anmeldung läuft für RLFB/ALP über FIBS;
   SchiLf-Teilnahmen werden schulintern organisiert und ebenfalls nicht in
   dieser Anwendung als Personenliste gespeichert.
-- **Referentinnen und Referenten** sind die einzigen personenbezogenen Daten
-  neben den Redaktionszugängen. E-Mail, Telefon und Notizen sind Innendaten und
-  werden nie an das Frontend ausgeliefert (`src/lib/queries.ts`). Ob der Name
-  öffentlich erscheint, steuert ein Schalter je Person.
+- **Referentinnen und Referenten:** E-Mail-Adresse, Organisation und Notizen
+  bleiben intern; Telefonnummern werden nicht mehr erfasst. Öffentlich erscheint
+  nur der selbst freigegebene Name (`src/lib/namensfreigabe.ts`). Auch Konten,
+  Sicherheitsnachweise und Veranstaltungszuordnungen enthalten personenbezogene Daten.
 - **Keine Drittdienste.** Schriften werden selbst gehostet, es gibt kein
   Analytics, keine CDNs, keine eingebetteten Inhalte. Durchgesetzt über die
   Content-Security-Policy in `next.config.ts` (`default-src 'self'`).
@@ -517,29 +519,29 @@ unset SEED_ADMIN_EMAIL SEED_ADMIN_PASSWORD SEED_ADMIN_NAME
 ```
 
 Der App-Container hört intern weiterhin auf Port `3000`; Docker veröffentlicht
-ihn auf dem Server über Host-Port `3001`. Für Newt/Pangolin ist deshalb das
-interne Ziel `http://192.168.1.56:3001`. Nach außen gehört weiterhin ein Reverse
-Proxy mit TLS davor. HSTS ist gesetzt, die Anwendung geht also von HTTPS aus.
+ihn ausschließlich unter `127.0.0.1:3001` auf dem Server. Ein auf demselben
+Host laufender Reverse Proxy beziehungsweise Newt im Host-Netz erreicht ihn
+unter `http://127.0.0.1:3001`. Ein Proxy in einem getrennten Container benötigt
+eine Verbindung zum gemeinsamen Docker-Netz und verwendet dort `http://app:3000`.
+Der bisherige Zugriff über die LAN-IP des Servers ist mit dieser Konfiguration
+nicht mehr möglich. Nach außen gehört ein Reverse Proxy mit TLS davor.
+HSTS ist gesetzt, die Anwendung geht also von HTTPS aus.
 In `APP_BASE_URL` muss die öffentlich sichtbare HTTPS-Adresse stehen,
 nicht das interne Newt/Pangolin-Ziel. Docker Compose verlangt diesen Wert
 ausdrücklich, damit Registrierungslinks nie unbemerkt auf `localhost` zeigen.
 
 Sitzungscookies sind im Produktionscontainer standardmäßig nur über HTTPS
-gültig (`SESSION_COOKIE_SECURE=true`). Beim vorübergehenden direkten Aufruf über
-`http://<NAS-IP>:3001` muss in der `.env` ausdrücklich
-`SESSION_COOKIE_SECURE=false` stehen. Für korrekt erzeugte Registrierungslinks
-in dieser Übergangsphase außerdem
-`APP_BASE_URL="http://192.168.1.56:3001"` setzen; danach den
-App-Container neu erstellen:
+gültig (`SESSION_COOKIE_SECURE=true`). `APP_BASE_URL` bleibt die öffentliche
+HTTPS-Adresse. Nach Änderungen der Umgebungswerte den App-Container neu erstellen:
 
 ```bash
 docker compose up -d --no-build --force-recreate app
 ```
 
-Sobald der Browser über die öffentliche Pangolin-HTTPS-Adresse zugreift, den
-Cookie-Wert wieder auf `true` und `APP_BASE_URL` auf die öffentliche
-HTTPS-Adresse setzen. `http://192.168.1.56:3001` ist dann nur noch das interne
-Newt/Pangolin-Ziel, nicht die Browser-Adresse.
+Vor dem Update bestehender Installationen den separaten `MFA_ENCRYPTION_KEY`
+setzen und die Proxy-Verbindung an die lokale Portbindung anpassen.
+Die Inbetriebnahme von Archiv und verschlüsselter Datensicherung beschreibt
+[die Betriebsanleitung](docs/datenschutz/INBETRIEBNAHME.md).
 
 Die Portzuordnung ist direkt in `docker-compose.yml` hinterlegt. Eine lokale
 `docker-compose.override.yml` ist für den Betrieb auf Port `3001` nicht nötig.

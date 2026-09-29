@@ -1,18 +1,34 @@
-import { requireUser } from "@/lib/auth";
+import { getSessionUser, requireMfaEinrichtungUser, requireUser } from "@/lib/auth";
 import { rolleLabel, ROLLEN } from "@/constants/fortbildung";
 import { formatDatumZeit } from "@/lib/datetime";
 import { prisma } from "@/lib/prisma";
 import { PasswortAendernFormular } from "@/components/admin/PasswortAendernFormular";
+import { NamensfreigabeFormular } from "@/components/admin/NamensfreigabeFormular";
+import { NAMENSFREIGABE_VERSION } from "@/constants/fortbildung";
+import { MfaEinrichtungsFormular } from "@/components/admin/MfaEinrichtungsFormular";
 
 export const metadata = { title: "Eigenes Konto" };
 export const dynamic = "force-dynamic";
 
 export default async function KontoSeite() {
-  const user = await requireUser();
+  const sitzung = await getSessionUser({ mfaEinrichtungErlauben: true });
+  if (!sitzung) return null;
+  const user = sitzung.mfaEinrichtungErforderlich ? await requireMfaEinrichtungUser() : await requireUser();
 
   const konto = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { createdAt: true, lastLoginAt: true },
+    select: {
+      createdAt: true, lastLoginAt: true,
+      referent: { select: {
+        vorname: true,
+        nachname: true,
+        aktiv: true,
+        oeffentlichSichtbar: true,
+        oeffentlicheEinwilligungVersion: true,
+        oeffentlicheEinwilligungAm: true,
+        namensfreigabeStand: true,
+      } },
+    },
   });
 
   return (
@@ -49,7 +65,17 @@ export default async function KontoSeite() {
         </div>
       </dl>
 
-      <PasswortAendernFormular />
+      {sitzung.mfaEinrichtungErforderlich ? <MfaEinrichtungsFormular /> : <PasswortAendernFormular />}
+      {konto?.referent?.aktiv ? (
+        <NamensfreigabeFormular
+          key={konto.referent.namensfreigabeStand}
+          name={`${konto.referent.vorname} ${konto.referent.nachname}`}
+          stand={konto.referent.namensfreigabeStand}
+          sichtbar={konto.referent.oeffentlichSichtbar &&
+            konto.referent.oeffentlicheEinwilligungVersion === NAMENSFREIGABE_VERSION &&
+            konto.referent.oeffentlicheEinwilligungAm !== null}
+        />
+      ) : null}
     </div>
   );
 }

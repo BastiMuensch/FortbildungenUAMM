@@ -4,7 +4,10 @@ import { CheckCircle2 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { fortbildungScope, requireRole } from "@/lib/auth";
 import { TeilnehmerMeldung } from "@/components/admin/TeilnehmerMeldung";
-import { NACHBEREITUNG_RUECKBLICK_TAGE } from "@/constants/fortbildung";
+import { aktuellesSchuljahr } from "@/lib/datetime";
+import { baueUrl, type SuchParameter } from "@/lib/filter";
+import { parseSchuljahr, schuljahrWhere } from "@/lib/schuljahr";
+import { SchuljahrWahl } from "@/components/admin/SchuljahrWahl";
 
 /**
  * Arbeitsbereich für die Nachbereitung vergangener Fortbildungen.
@@ -14,16 +17,19 @@ import { NACHBEREITUNG_RUECKBLICK_TAGE } from "@/constants/fortbildung";
  */
 export async function NachbereitungsBereich({
   eingebettet = false,
+  params = {},
 }: {
   eingebettet?: boolean;
+  params?: SuchParameter;
 }) {
   const user = await requireRole("RVS", "ADMIN", "REFERENT");
   const istAdmin = (user.role === "RVS" || user.role === "ADMIN");
+  const schuljahrParam = Array.isArray(params.schuljahr) ? params.schuljahr[0] : params.schuljahr;
+  const laufendes = aktuellesSchuljahr();
+  const schuljahr = schuljahrParam === "alle" ? null : parseSchuljahr(schuljahrParam) ?? parseSchuljahr(laufendes)!;
+  const schuljahrText = schuljahr ? `${schuljahr}/${schuljahr + 1}` : "alle Schuljahre";
 
   const jetzt = new Date();
-  const grenze = new Date(
-    jetzt.getTime() - NACHBEREITUNG_RUECKBLICK_TAGE * 24 * 60 * 60 * 1000,
-  );
 
   // Referent:innen sehen ausschließlich eigene beziehungsweise zugeordnete
   // SchiLf. Die Administration bearbeitet dagegen alle Veranstaltungen.
@@ -36,7 +42,8 @@ export async function NachbereitungsBereich({
   const vergangen = {
     AND: [
       bereich,
-      { ende: { lt: jetzt, gte: grenze } },
+      ...(schuljahr ? [schuljahrWhere(schuljahr)] : []),
+      { ende: { lt: jetzt } },
       // Nur tatsächlich veröffentlichte oder inzwischen archivierte Termine
       // werden nachbereitet. Entwürfe und abgesagte Veranstaltungen gehören
       // nicht in diesen Arbeitsbereich.
@@ -44,7 +51,7 @@ export async function NachbereitungsBereich({
     ],
   };
 
-  const [offen, gemeldet] = await Promise.all([
+  const [offen, gemeldet, vorhandeneJahre] = await Promise.all([
     prisma.fortbildung.findMany({
       where: {
         AND: [
@@ -88,7 +95,14 @@ export async function NachbereitungsBereich({
       take: 50,
       select: auswahl,
     }),
+    prisma.fortbildung.findMany({
+      where: bereich,
+      distinct: ["schuljahr"],
+      orderBy: { schuljahr: "desc" },
+      select: { schuljahr: true },
+    }),
   ]);
+  const jahrgaenge = [...new Set([laufendes, ...vorhandeneJahre.map((f) => `${f.schuljahr}/${f.schuljahr + 1}`)])].sort().reverse();
 
   return (
     <section
@@ -119,6 +133,10 @@ export async function NachbereitungsBereich({
             ? " Sie können ausschließlich für Ihre eigenen oder zugeordneten SchiLf Teilnehmerzahlen nachtragen."
             : ""}
         </p>
+        <div className="mt-3">
+          <SchuljahrWahl params={params} jahrgaenge={jahrgaenge} aktuell={laufendes} />
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">Angezeigt: {schuljahrText}.</p>
       </div>
 
       <section aria-labelledby="nachbereitung-offen">
@@ -187,9 +205,9 @@ export async function NachbereitungsBereich({
       ) : null}
 
       <p className="text-xs text-muted-foreground">
-        Angezeigt werden Veranstaltungen der letzten {NACHBEREITUNG_RUECKBLICK_TAGE} Tage.
-        Ältere lassen sich weiterhin über die{" "}
-        <Link href="/admin" className="underline underline-offset-4">
+        Angezeigt werden vergangene Veranstaltungen aus {schuljahrText}.
+        Weitere Daten lassen sich über die{" "}
+        <Link href={baueUrl("/admin", params, {})} className="underline underline-offset-4">
           Fortbildungsübersicht
         </Link>{" "}
         aufrufen.

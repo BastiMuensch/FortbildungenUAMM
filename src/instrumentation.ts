@@ -4,8 +4,12 @@
  */
 export async function register() {
   // Nur im Node-Prozess, nicht in der Edge-Runtime.
-  if (process.env.NEXT_RUNTIME !== "nodejs") return;
-
-  const { startRetentionScheduler } = await import("@/lib/scheduler");
-  startRetentionScheduler();
+  // Der positive Runtime-Zweig erlaubt Next.js, Node-Module bereits beim
+  // Bündeln der Edge-Instrumentierung vollständig auszuschließen.
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    const { startRetentionScheduler } = await import("@/lib/scheduler");
+    startRetentionScheduler();
+    const { starteDatensicherungsScheduler } = await import("@/lib/datensicherung");
+    starteDatensicherungsScheduler();
+  }
 }

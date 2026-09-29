@@ -28,8 +28,13 @@ export function SchuljahrWahl({
   const pathname = usePathname();
   const [laeuft, starte] = useTransition();
 
-  const gewaehlt =
-    (Array.isArray(params.schuljahr) ? params.schuljahr[0] : params.schuljahr) ?? "";
+  const schuljahrParam = Array.isArray(params.schuljahr)
+    ? params.schuljahr[0]
+    : params.schuljahr;
+  // Ohne URL-Parameter ist das laufende Schuljahr der Standard. „alle“ ist
+  // absichtlich ein eigener Wert, damit sich die bewusste Auswahl nicht beim
+  // nächsten Laden wieder in den Standard zurückverwandelt.
+  const gewaehlt = schuljahrParam === "alle" ? "alle" : schuljahrParam ?? aktuell;
 
   return (
     <label
@@ -42,14 +47,14 @@ export function SchuljahrWahl({
         onChange={(e) =>
           starte(() => {
             router.push(
-              baueUrl(pathname, params, { schuljahr: e.target.value || undefined }),
+              baueUrl(pathname, params, { schuljahr: e.target.value }),
               { scroll: false },
             );
           })
         }
         className="h-9 rounded-md border border-input bg-card px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35 dark:bg-input/30"
       >
-        <option value="">Alle Schuljahre</option>
+        <option value="alle">Alle Schuljahre</option>
         {jahrgaenge.map((jahr) => (
           <option key={jahr} value={jahr}>
             Schuljahr {jahr}

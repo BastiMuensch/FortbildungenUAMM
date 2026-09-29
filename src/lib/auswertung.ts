@@ -52,7 +52,7 @@ export function auswertungsFilterZuWhere(filter: AuswertungsFilter): Prisma.Fort
   if (bis) und.push({ beginn: { lte: new Date(fromDatetimeLocalValue(`${bis}T23:59`)!.getTime() + 59_999) } });
   if (schuljahr) {
     const { start, ende } = schuljahrZeitraum(schuljahr);
-    und.push({ beginn: { gte: start, lte: new Date(ende.getTime() + 59_999) } });
+    und.push({ beginn: { gte: start, lte: ende } });
   }
   if (referent) und.push({ referenten: { some: { referentId: referent } } });
   if (bezirk) und.push({ bezirkId: bezirk });

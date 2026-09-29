@@ -1,0 +1,93 @@
+name: Pruefungen
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  pruefungen:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://bezirketest@127.0.0.1:54329/fortbildungen_test?schema=public
+      JWT_SECRET: ci-test-geheimnis-mit-mindestens-zweiunddreissig-zeichen
+      APP_BASE_URL: http://localhost:3000
+      PDF_PYTHON: python3
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: bezirketest
+          POSTGRES_DB: fortbildungen_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 127.0.0.1:54329:5432
+        options: >-
+          --health-cmd "pg_isready -U bezirketest -d fortbildungen_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Abhaengigkeiten installieren
+        run: npm ci
+
+      - name: Prisma-Client erzeugen
+        run: npm run db:generate
+
+      - name: Datenbankschema bereitstellen
+        run: npm run db:deploy
+
+      - name: PDF-Pruefbibliothek installieren
+        run: python3 -m pip install --disable-pip-version-check pdfplumber
+
+      - name: Vollbackup-Werkzeuge und getrennte Testdatenbank bereitstellen
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y age postgresql-client-16
+          echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
+          /usr/lib/postgresql/16/bin/createdb -h 127.0.0.1 -p 54329 -U bezirketest fortbildungen_backup_restore_test
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typen pruefen
+        run: npm run typecheck
+
+      - name: Bestehende Pruefungen
+        run: npm test
+
+      - name: Namensfreigabe mit Datenbank pruefen
+        run: npm run test:namensfreigabe
+
+      - name: MFA und Importfristen pruefen
+        run: npm run test:mfa && npm run test:importfristen && npm run test:backup
+
+      - name: Datenschutz und Archiv mit Datenbank pruefen
+        run: npm run test:datenschutz && npm run test:archiv && npm run test:mfa:db
+
+      - name: Vollbackup verschluesseln und wirklich wiederherstellen
+        run: npm run test:datensicherung && npm run test:vollbackup:betrieb && npm run test:datensicherung:db
+
+  vollbackup-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vollbackup-Uebernahme auf isolierter SMB-Testfreigabe pruefen
+        shell: pwsh
+        run: ./scripts/vollbackupWindowsPruefungen.ps1

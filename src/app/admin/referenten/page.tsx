@@ -3,6 +3,7 @@ import { bezirkScope, fortbildungScope, referentScope, requireRole } from "@/lib
 import { ladeBezirke } from "@/lib/bezirke";
 import { ReferentenVerwaltung } from "@/components/admin/ReferentenVerwaltung";
 import { ReferentenRegistrierungslink } from "@/components/admin/ReferentenRegistrierungslink";
+import { NAMENSFREIGABE_VERSION } from "@/constants/fortbildung";
 
 export const metadata = { title: "Referenten" };
 
@@ -18,9 +19,10 @@ export default async function ReferentenPage() {
       nachname: true,
       organisation: true,
       email: true,
-      telefon: true,
       notiz: true,
       oeffentlichSichtbar: true,
+      oeffentlicheEinwilligungVersion: true,
+      oeffentlicheEinwilligungAm: true,
       aktiv: true,
       userId: true,
       bezirke: { where: bezirkScope(user), select: { id: true, name: true }, orderBy: { name: "asc" } },
@@ -33,8 +35,10 @@ export default async function ReferentenPage() {
 
   // Der Passwort-Hash darf den Server nicht verlassen — für die Anzeige
   // genügt die Information, ob überhaupt schon eines gesetzt wurde.
-  const zeilen = referenten.map(({ user, ...rest }) => ({
+  const zeilen = referenten.map(({ user, oeffentlicheEinwilligungVersion, oeffentlicheEinwilligungAm, ...rest }) => ({
     ...rest,
+    oeffentlichSichtbar: rest.oeffentlichSichtbar && rest.aktiv && Boolean(user?.isActive) &&
+      oeffentlicheEinwilligungVersion === NAMENSFREIGABE_VERSION && oeffentlicheEinwilligungAm !== null,
     zugang: user
       ? {
           userId: user.id,
@@ -53,10 +57,10 @@ export default async function ReferentenPage() {
           Referentinnen und Referenten
         </h1>
         <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-          E-Mail-Adresse, Telefonnummer und Notizen sind reine Innendaten und
-          erscheinen nie im öffentlichen Bereich. Ob der Name im Frontend
-          genannt wird, steuert der Schalter „Öffentlich sichtbar“ — dafür
-          braucht es das Einverständnis der jeweiligen Person.
+          E-Mail-Adresse und Notizen sind reine Innendaten und
+          erscheinen nie im öffentlichen Bereich. Über die öffentliche Namensanzeige
+          entscheidet die Person selbst unter „Eigenes Konto“. Die Redaktion kann
+          sie bei Bedarf portalweit stoppen, aber keine Zustimmung erteilen.
         </p>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
           Für bereits eingetragene Personen kann die Administration einen

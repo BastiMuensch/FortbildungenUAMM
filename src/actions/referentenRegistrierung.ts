@@ -19,6 +19,8 @@ import {
   referentenRegistrierungsLink,
 } from "@/lib/referentenRegistrierung";
 import type { FormularState } from "@/lib/validation/fortbildung";
+import { leseNamensentscheidung } from "@/lib/namensfreigabe";
+import { schreibeNamensfreigabe } from "@/lib/namensfreigabeSpeicher";
 
 const RegistrierungsSchema = z.object({
   vorname: z.string().trim().min(2, "Bitte den Vornamen angeben.").max(80),
@@ -122,6 +124,10 @@ export async function registriereReferent(
   _bisher: FormularState,
   formData: FormData,
 ): Promise<FormularState> {
+  const namensentscheidung = leseNamensentscheidung(formData);
+  if (!namensentscheidung.success) {
+    return { fehler: { namensfreigabe: namensentscheidung.error.issues[0]!.message } };
+  }
   const geparst = RegistrierungsSchema.safeParse({
     vorname: formData.get("vorname")?.toString() ?? "",
     nachname: formData.get("nachname")?.toString() ?? "",
@@ -210,15 +216,18 @@ export async function registriereReferent(
               vorname,
               nachname,
               email,
-              // Selbstregistrierung ist keine Einwilligung zur öffentlichen
-              // Namensnennung; die Redaktion kann das später ausdrücklich setzen.
+              // Erst die gesonderte eigene Entscheidung mit Nachweis aktiviert die Anzeige.
               oeffentlichSichtbar: false,
               bezirke: { connect: { id: link.bezirkId } },
             },
           },
         },
-        select: { id: true, sessionVersion: true },
+        select: { id: true, sessionVersion: true, referent: { select: { id: true } } },
       });
+      if (namensentscheidung.data.zustimmung) {
+        // Der neue Datensatz ist bis zum Commit für andere Transaktionen unsichtbar.
+        await schreibeNamensfreigabe(tx, user.referent!.id, user.id, "ERTEILT");
+      }
       return { art: "erfolg" as const, user };
     });
 

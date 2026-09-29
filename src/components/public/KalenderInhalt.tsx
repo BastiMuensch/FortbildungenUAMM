@@ -68,7 +68,7 @@ export async function KalenderInhalt({
         <div className="flex items-center gap-2">
           <Button nativeButton={false}
             variant="outline"
-            size="sm"
+            size="sm" className="min-h-11"
             render={<Link href={baueUrl(`${basis}/kalender`, params, { monat: vorheriger })} aria-label="Vorheriger Monat">
                 <ChevronLeft className="size-4" aria-hidden />
                 Zurück
@@ -77,12 +77,12 @@ export async function KalenderInhalt({
           />
           <Button nativeButton={false}
             variant="outline"
-            size="sm"
+            size="sm" className="min-h-11"
             render={<Link href={baueUrl(`${basis}/kalender`, params, { monat: undefined })}>Heute</Link>}
           />
           <Button nativeButton={false}
             variant="outline"
-            size="sm"
+            size="sm" className="min-h-11"
             render={<Link href={baueUrl(`${basis}/kalender`, params, { monat: naechster })} aria-label="Nächster Monat">
                 Weiter
                 <ChevronRight className="size-4" aria-hidden />

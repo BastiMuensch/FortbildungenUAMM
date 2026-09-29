@@ -10,6 +10,11 @@ import { htmlZuText } from "@/lib/sanitize";
 import { formatDatumLang, formatZeit } from "@/lib/datetime";
 import { bestimmeFibsAnmeldestatus } from "@/lib/fibs/status";
 import {
+  organisationsKennzeichnungen,
+  oeffentlicherReferentSelect,
+  oeffentlicherReferentWhere,
+} from "@/lib/namensfreigabe";
+import {
   formatLabel,
   niveaustufeLabel,
   organisationsformKurz,
@@ -49,8 +54,8 @@ export async function GET(
       bezirk: { select: { name: true } },
       veranstaltungsort: true,
       referenten: {
-        where: { referent: { oeffentlichSichtbar: true } },
-        include: { referent: true },
+        where: { referent: oeffentlicherReferentWhere },
+        select: { referent: { select: oeffentlicherReferentSelect } },
       },
     },
   });
@@ -65,6 +70,7 @@ export async function GET(
   const adresse = `${basis}/fortbildungen/${fortbildung.slug}`;
   const anmeldestatus = bestimmeFibsAnmeldestatus(fortbildung);
   const teilnahmeSchulintern = anmeldestatus === "SCHILF_INTERN";
+  const kennzeichnungen = organisationsKennzeichnungen(fortbildung.bezirk.name);
 
   // compress: Der gestaltete QR-Code besteht aus mehreren hundert
   // Vektorformen — unkomprimiert wäre die Datei über ein Megabyte groß.
@@ -169,32 +175,16 @@ export async function GET(
 
   y += feldHoehe + 12;
 
-  // --- Beschreibung -------------------------------------------------------
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.setTextColor(45, 50, 60);
-
   // Der QR-Code sitzt unten rechts, deshalb bekommt der Text nur so viel
-  // Platz, dass er nicht darunter läuft.
+  // Platz, dass er nicht darunter läuft. Auch die umgebrochenen Fußzeilen
+  // werden eingerechnet: Die Organisationskennzeichnungen können je Bezirk
+  // deutlich länger sein als eine normale Zeile.
   const qrKante = 45;
   const qrOben = hoehe - rand - qrKante - 12;
 
-  const text = htmlZuText(fortbildung.beschreibungHtml);
-  const textZeilen = doc.splitTextToSize(text, inhalt) as string[];
-  const maxZeilen = Math.floor((qrOben - y - 30) / 5.6);
-  const gekuerzt = textZeilen.slice(0, Math.max(0, maxZeilen));
-  if (textZeilen.length > gekuerzt.length && gekuerzt.length > 0) {
-    gekuerzt[gekuerzt.length - 1] += " …";
-  }
-
-  doc.text(gekuerzt, rand, y, { lineHeightFactor: 1.45 });
-  y += gekuerzt.length * 5.6 + 8;
-
-  // --- Zielgruppe, Leitung, Niveaustufe ----------------------------------
-  doc.setFontSize(9.5);
-
   const fusszeilen: string[] = [
     `Zielgruppe: ${fortbildung.schularten.map(schulartLabel).join(", ")}`,
+    ...kennzeichnungen,
   ];
   if (fortbildung.fach) fusszeilen.push(`Fach: ${fortbildung.fach}`);
   if (fortbildung.niveaustufe) {
@@ -208,8 +198,33 @@ export async function GET(
     );
   }
 
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9.5);
+  const umbrocheneFusszeilen = fusszeilen.flatMap(
+    (zeile) => doc.splitTextToSize(zeile, inhalt) as string[],
+  );
+  const fussHoehe = umbrocheneFusszeilen.length * 5.5;
+
+  // --- Beschreibung -------------------------------------------------------
+  doc.setFontSize(11);
+  doc.setTextColor(45, 50, 60);
+
+  const text = htmlZuText(fortbildung.beschreibungHtml);
+  const textZeilen = doc.splitTextToSize(text, inhalt) as string[];
+  const maxZeilen = Math.max(0, Math.floor((qrOben - y - fussHoehe - 24) / 5.6));
+  const gekuerzt = textZeilen.slice(0, Math.max(0, maxZeilen));
+  if (textZeilen.length > gekuerzt.length && gekuerzt.length > 0) {
+    gekuerzt[gekuerzt.length - 1] += " …";
+  }
+
+  doc.text(gekuerzt, rand, y, { lineHeightFactor: 1.45 });
+  y += gekuerzt.length * 5.6 + 8;
+
+  // --- Zielgruppe, Leitung, Niveaustufe ----------------------------------
+  doc.setFontSize(9.5);
+
   doc.setTextColor(...GRAU);
-  for (const zeile of fusszeilen) {
+  for (const zeile of umbrocheneFusszeilen) {
     doc.text(zeile, rand, y);
     y += 5.5;
   }

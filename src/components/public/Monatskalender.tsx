@@ -9,6 +9,7 @@ import {
   WOCHENTAGE_KURZ,
 } from "@/lib/datetime";
 import { ferienStatus } from "@/lib/ferien";
+import { organisationsKennzeichnungen } from "@/lib/namensfreigabe";
 import { ebeneKlassen } from "@/constants/fortbildung";
 import type { FortbildungKachel } from "@/lib/queries";
 import { cn } from "@/lib/utils";
@@ -129,7 +130,7 @@ export function Monatskalender({
                 </p>
                 <div className="space-y-1">
                   {(nachTag.get(tag.iso) ?? []).map((f) => (
-                    <TerminChip basisPfad={basisPfad} key={f.id} fortbildung={f} />
+                    <TerminChip basisPfad={basisPfad} key={f.id} fortbildung={f} listenansicht />
                   ))}
                 </div>
               </div>
@@ -146,22 +147,26 @@ export function Monatskalender({
   );
 }
 
-function TerminChip({ fortbildung, basisPfad }: { fortbildung: FortbildungKachel; basisPfad: string }) {
+function TerminChip({ fortbildung, basisPfad, listenansicht = false }: { fortbildung: FortbildungKachel; basisPfad: string; listenansicht?: boolean }) {
   const ebene = ebeneKlassen(fortbildung.organisationsform);
+  const kennzeichnungen = organisationsKennzeichnungen(fortbildung.bezirk.name);
+  const beschriftung = `${formatZeit(fortbildung.beginn)} bis ${formatZeit(fortbildung.ende)} Uhr · ${fortbildung.titel} · ${kennzeichnungen.join(" · ")}`;
 
   return (
     <Link
       href={`${basisPfad}/fortbildungen/${fortbildung.slug}`}
-      title={fortbildung.titel}
+      title={beschriftung}
+      aria-label={beschriftung}
       className={cn(
-        "block truncate px-1.5 py-1 text-[11px] leading-tight font-medium transition-opacity hover:opacity-80",
+        "block font-medium transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        listenansicht ? "min-h-11 rounded-lg px-3 py-3 text-sm leading-relaxed" : "truncate px-1.5 py-1 text-[11px] leading-tight",
         ebene.weich,
         fortbildung.status === "ABGESAGT" && "line-through opacity-60",
       )}
     >
-      <span className="zahl">{formatZeit(fortbildung.beginn)}</span>{" "}
+      <span className={cn("zahl", listenansicht && "mb-1 block text-xs")}>{formatZeit(fortbildung.beginn)}{listenansicht ? `–${formatZeit(fortbildung.ende)} Uhr` : ""}</span>{" "}
       {fortbildung.kurztitel ?? fortbildung.titel}
-      <span className="text-muted-foreground"> · {fortbildung.bezirk.name}</span>
+      <span className={cn("text-muted-foreground", listenansicht && "mt-1 block text-xs")}>{listenansicht ? "" : " · "}{fortbildung.bezirk.name}</span>
     </Link>
   );
 }

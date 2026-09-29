@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { entferneReferent, speichereReferent } from "@/actions/stammdaten";
+import { stoppeNamensfreigabe } from "@/actions/namensfreigabe";
 import {
   neuerZugangslink,
   richteZugangEin,
@@ -52,7 +53,6 @@ export interface ReferentZeile {
   nachname: string;
   organisation: string | null;
   email: string | null;
-  telefon: string | null;
   notiz: string | null;
   oeffentlichSichtbar: boolean;
   aktiv: boolean;
@@ -66,6 +66,22 @@ export interface ReferentZeile {
   } | null;
   _count: { fortbildungen: number };
   bezirke: Array<{ id: string; name: string }>;
+}
+
+function NamensanzeigeStoppen({ referentId }: { referentId: string }) {
+  const [state, action, pending] = useActionState<FormularState, FormData>(
+    stoppeNamensfreigabe.bind(null, referentId), {},
+  );
+  return (
+    <form action={action} className="mt-2 space-y-1">
+      <Button type="submit" variant="outline" size="sm" disabled={pending}>
+        {pending ? "Wird gestoppt …" : "Namensanzeige stoppen"}
+      </Button>
+      <p className="text-xs text-muted-foreground">Gilt für alle Bezirke dieser Person.</p>
+      {state.fehler?._ ? <p role="alert" className="text-xs text-destructive">{state.fehler._}</p> : null}
+      {state.erfolg ? <p role="status" className="text-xs">{state.meldung}</p> : null}
+    </form>
+  );
 }
 
 export function ReferentenVerwaltung({
@@ -104,7 +120,7 @@ export function ReferentenVerwaltung({
               <TableRow>
                 <TableHead className="min-w-48">Name</TableHead>
                 <TableHead className="min-w-40">Organisation</TableHead>
-                <TableHead className="min-w-48">Kontakt (intern)</TableHead>
+                <TableHead className="min-w-48">E-Mail (intern)</TableHead>
                 <TableHead>Im Frontend</TableHead>
                 <TableHead>Zugang</TableHead>
                 <TableHead className="text-right">Termine</TableHead>
@@ -129,9 +145,6 @@ export function ReferentenVerwaltung({
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {r.email ?? "—"}
-                    {r.telefon ? (
-                      <span className="block">{r.telefon}</span>
-                    ) : null}
                   </TableCell>
                   <TableCell>
                     {r.oeffentlichSichtbar ? (
@@ -145,6 +158,7 @@ export function ReferentenVerwaltung({
                         verborgen
                       </span>
                     )}
+                    {r.oeffentlichSichtbar ? <NamensanzeigeStoppen referentId={r.id} /> : null}
                   </TableCell>
                   <TableCell>
                     <ZugangsStand zugang={r.zugang} />
@@ -530,12 +544,7 @@ function ReferentDialog({
               typ="email"
               wert={referent?.email ?? ""}
               fehler={fehler.email}
-            />
-            <FeldEinfach
-              name="telefon"
-              label="Telefon (intern)"
-              wert={referent?.telefon ?? ""}
-              fehler={fehler.telefon}
+              className="sm:col-span-2"
             />
 
             <div className="space-y-1.5 sm:col-span-2">
@@ -549,20 +558,10 @@ function ReferentDialog({
               />
             </div>
 
-            <label className="flex items-start gap-2.5 sm:col-span-2">
-              <Checkbox
-                name="oeffentlichSichtbar"
-                defaultChecked={referent?.oeffentlichSichtbar ?? true}
-                className="mt-0.5"
-              />
-              <span className="text-sm">
-                Öffentlich sichtbar
-                <span className="block text-xs text-muted-foreground">
-                  Name und Organisation erscheinen auf den Detailseiten im
-                  Frontend. Setzt das Einverständnis der Person voraus.
-                </span>
-              </span>
-            </label>
+            <p className="text-sm text-muted-foreground sm:col-span-2">
+              Über die öffentliche Namensanzeige entscheidet die Person selbst in ihrem Konto.
+              Neue Einträge bleiben zunächst intern. Bei einer Namensänderung ist eine neue Zustimmung erforderlich.
+            </p>
             <fieldset className="space-y-2 sm:col-span-2">
               <legend className="text-sm font-medium">Zugeordnete Bezirke</legend>
               {bezirke.map((bezirk) => (

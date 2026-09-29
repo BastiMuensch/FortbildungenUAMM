@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Globe, MapPin } from "lucide-react";
 
 import { formatDatumLang, formatZeit } from "@/lib/datetime";
+import { organisationsKennzeichnungen } from "@/lib/namensfreigabe";
 import {
   ebeneKlassen,
   formatLabel,
@@ -28,6 +29,7 @@ export function FortbildungKarte({
   const ebene = ebeneKlassen(fortbildung.organisationsform);
   const abgesagt = fortbildung.status === "ABGESAGT";
   const online = fortbildung.veranstaltungsort.istOnline;
+  const kennzeichnungen = organisationsKennzeichnungen(fortbildung.bezirk.name);
 
   return (
     <article className={cn("group relative", abgesagt && "opacity-60")}>
@@ -96,6 +98,9 @@ export function FortbildungKarte({
 
           <p className="mt-2 text-xs font-medium text-muted-foreground/80">
             {fortbildung.schularten.map(schulartLabel).join(" · ")}
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground/80">
+            {kennzeichnungen.join(" · ")}
           </p>
         </div>
 

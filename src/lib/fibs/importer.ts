@@ -6,6 +6,7 @@ import path from "node:path";
 import { prisma } from "@/lib/prisma";
 import { bildeSlug } from "@/lib/queries";
 import { schlagwortSchluessel } from "@/lib/schlagwort";
+import { istSchuljahrAbgelaufen, schuljahrFuerDatum } from "@/lib/schuljahr";
 
 import { basisUrl, holeSuchergebnis, importAktiv } from "./client";
 import { mapFibsLehrgang, type GemappteFortbildung } from "./mapper";
@@ -18,6 +19,16 @@ import type {
 } from "./types";
 
 const MAX_TREFFER = 100;
+
+/** Reine Schutzregel, damit Vorschau und schreibender Import gleich entscheiden. */
+export function darfImportSchreiben(
+  beginn: Date,
+  bestehendeAufbewahrungsfrist: Date | null,
+  jetzt = new Date(),
+): boolean {
+  return !istSchuljahrAbgelaufen(beginn, jetzt) &&
+    (!bestehendeAufbewahrungsfrist || bestehendeAufbewahrungsfrist > jetzt);
+}
 
 /**
  * Führt einen FIBS-Import durch.
@@ -97,8 +108,17 @@ export async function runFibsImport(
             { fibsLehrgangsnummer: gemappt.daten.fibsLehrgangsnummer },
           ],
         },
-        select: { id: true, quelle: true, bezirkId: true },
+        select: { id: true, quelle: true, bezirkId: true, aufbewahrenBis: true, schuljahr: true },
       });
+
+      if (!darfImportSchreiben(gemappt.daten.beginn, bestehend?.aufbewahrenBis ?? null)) {
+        uebersprungen += 1;
+        const hinweis = istSchuljahrAbgelaufen(gemappt.daten.beginn)
+          ? "Termin liegt in einem abgelaufenen Schuljahr"
+          : "Abgelaufener Datensatz bleibt archiviert";
+        zeilen.push(vorschau(gemappt.daten, "uebersprungen", hinweis));
+        continue;
+      }
 
       if (bestehend && (bestehend.quelle === "MANUELL" || bestehend.bezirkId !== bezirk.id)) {
         uebersprungen += 1;
@@ -112,8 +132,19 @@ export async function runFibsImport(
         continue;
       }
 
+      if (bestehend && bestehend.schuljahr !== schuljahrFuerDatum(gemappt.daten.beginn)) {
+        uebersprungen += 1;
+        zeilen.push(vorschau(gemappt.daten, "uebersprungen", "Termin läge in einem anderen Schuljahr — bestehender Datensatz bleibt unverändert"));
+        continue;
+      }
+
       if (!dryRun) {
-        await schreibe(gemappt.daten, bestehend?.id ?? null, bezirk.id);
+        const geschrieben = await schreibe(gemappt.daten, bestehend?.id ?? null, bezirk.id);
+        if (!geschrieben) {
+          uebersprungen += 1;
+          zeilen.push(vorschau(gemappt.daten, "uebersprungen", "Datensatz ist während des Imports abgelaufen und bleibt archiviert"));
+          continue;
+        }
       }
 
       if (bestehend) {
@@ -209,7 +240,9 @@ async function beispielSeite(): Promise<string> {
 }
 
 /** Legt an oder aktualisiert — ohne die redaktionellen Felder anzutasten. */
-async function schreibe(daten: GemappteFortbildung, id: string | null, bezirkId: string): Promise<void> {
+async function schreibe(daten: GemappteFortbildung, id: string | null, bezirkId: string): Promise<boolean> {
+  // Diese zweite Prüfung schützt auch Aufrufer innerhalb eines langen Imports.
+  if (!darfImportSchreiben(daten.beginn, null)) return false;
   const ortId = await findeOrt(daten);
 
   const basis = {
@@ -230,8 +263,14 @@ async function schreibe(daten: GemappteFortbildung, id: string | null, bezirkId:
   };
 
   if (id) {
-    await prisma.fortbildung.update({ where: { id }, data: basis });
-    return;
+    // CAS auf der Aufbewahrungsfrist: Ein Import darf einen zwischen Lesen
+    // und Schreiben abgelaufenen Datensatz niemals mit einem neuen Termin
+    // wiederbeleben.
+    const aktualisiert = await prisma.fortbildung.updateMany({
+      where: { id, schuljahr: schuljahrFuerDatum(daten.beginn), aufbewahrenBis: { gt: new Date() } },
+      data: basis,
+    });
+    return aktualisiert.count === 1;
   }
 
   const angelegt = await prisma.fortbildung.create({
@@ -253,6 +292,7 @@ async function schreibe(daten: GemappteFortbildung, id: string | null, bezirkId:
     where: { id: angelegt.id },
     data: { slug: bildeSlug(daten.titel, daten.beginn, angelegt.id) },
   });
+  return true;
 }
 
 /** Ordnet den FIBS-Ortsnamen einem gepflegten Veranstaltungsort zu. */

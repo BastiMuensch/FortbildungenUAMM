@@ -16,24 +16,31 @@ import { SESSION_COOKIE } from "@/constants/session";
 export async function proxy(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
 
-  if (!token || !(await tokenGueltig(token))) {
+  const tokenDaten = token ? await tokenGueltig(token) : null;
+  if (!tokenDaten) {
     const ziel = new URL("/login", request.url);
     ziel.searchParams.set("weiter", request.nextUrl.pathname);
     return NextResponse.redirect(ziel);
   }
 
+  // Eine Passwort-Sitzung ohne eingerichtete MFA darf ausschließlich die
+  // Einrichtung öffnen. Die verbindliche Prüfung bleibt in requireUser().
+  if (tokenDaten.mfaBestaetigt === false && request.nextUrl.pathname !== "/admin/konto") {
+    return NextResponse.redirect(new URL("/admin/konto", request.url));
+  }
+
   return NextResponse.next();
 }
 
-async function tokenGueltig(token: string): Promise<boolean> {
+async function tokenGueltig(token: string): Promise<{ mfaBestaetigt: boolean } | null> {
   const secret = process.env.JWT_SECRET;
-  if (!secret) return false;
+  if (!secret) return null;
 
   try {
-    await jwtVerify(token, new TextEncoder().encode(secret));
-    return true;
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
+    return payload.typ === "session" ? { mfaBestaetigt: payload.mf === true } : null;
   } catch {
-    return false;
+    return null;
   }
 }
 

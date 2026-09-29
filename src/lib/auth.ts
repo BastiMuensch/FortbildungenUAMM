@@ -5,6 +5,7 @@ import { SignJWT, jwtVerify } from "jose";
 
 import { prisma } from "@/lib/prisma";
 import { fortbildungScope } from "@/lib/berechtigungsScope";
+import { istPrivilegierteRolle } from "@/lib/mfa";
 import type { Rolle } from "@/constants/fortbildung";
 import {
   liesSessionVersion,
@@ -16,6 +17,7 @@ import {
 export { SESSION_COOKIE };
 
 const SESSION_DAUER = `${SESSION_DAUER_SEKUNDEN}s`;
+export const MFA_ANMELDE_COOKIE = "mfa_anmeldung";
 
 function secret(): Uint8Array {
   const wert = process.env.JWT_SECRET;
@@ -37,6 +39,8 @@ export interface SessionUser {
   /** Bezirke, für die dieses Konto organisatorisch zuständig ist. */
   bezirkIds: string[];
   bezirke: Array<{ id: string; name: string }>;
+  mfaBestaetigt: boolean;
+  mfaEinrichtungErforderlich: boolean;
 }
 
 /** Redaktion und BdBs; ihre Abfragen bleiben auf die zugeordneten Bezirke begrenzt. */
@@ -48,8 +52,9 @@ export const ERFASSER: Rolle[] = ["RVS", "ADMIN", "REDAKTEUR", "REFERENT"];
 export async function signToken(
   userId: string,
   sessionVersion: number,
+  mfaBestaetigt = true,
 ): Promise<string> {
-  return new SignJWT({ sub: userId, sv: sessionVersion })
+  return new SignJWT({ sub: userId, sv: sessionVersion, mf: mfaBestaetigt, typ: "session" })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(SESSION_DAUER)
@@ -59,6 +64,7 @@ export async function signToken(
 export interface VerifiziertesToken {
   userId: string;
   sessionVersion: number | null;
+  mfaBestaetigt: boolean;
 }
 
 export async function verifyToken(
@@ -66,7 +72,7 @@ export async function verifyToken(
 ): Promise<VerifiziertesToken | null> {
   try {
     const { payload } = await jwtVerify(token, secret());
-    if (typeof payload.sub !== "string") return null;
+    if (typeof payload.sub !== "string" || payload.typ !== "session") return null;
 
     return {
       userId: payload.sub,
@@ -74,6 +80,7 @@ export async function verifyToken(
       // weiter akzeptiert: Ein erneuter Login ist sicherer als eine
       // unkontrollierbare Alt-Sitzung.
       sessionVersion: liesSessionVersion(payload.sv),
+      mfaBestaetigt: payload.mf === true,
     };
   } catch {
     return null;
@@ -100,13 +107,36 @@ export async function clearSessionCookie(): Promise<void> {
   store.delete(SESSION_COOKIE);
 }
 
+/** Kurzlebiger, ausschließlich für die zweite Anmeldephase gültiger Nachweis. */
+export async function setzeMfaAnmeldeCookie(userId: string, sessionVersion: number): Promise<void> {
+  const token = await new SignJWT({ sub: userId, sv: sessionVersion, typ: "mfa" })
+    .setProtectedHeader({ alg: "HS256" }).setIssuedAt().setExpirationTime("5m").sign(secret());
+  (await cookies()).set(MFA_ANMELDE_COOKIE, token, {
+    httpOnly: true, sameSite: "strict", secure: sitzungsCookieSicher(process.env.SESSION_COOKIE_SECURE, process.env.NODE_ENV === "production"), path: "/mfa", maxAge: 5 * 60,
+  });
+}
+
+export async function liesMfaAnmeldung(): Promise<{ userId: string; sessionVersion: number } | null> {
+  const token = (await cookies()).get(MFA_ANMELDE_COOKIE)?.value;
+  if (!token) return null;
+  try {
+    const { payload } = await jwtVerify(token, secret());
+    if (payload.typ !== "mfa" || typeof payload.sub !== "string" || liesSessionVersion(payload.sv) === null) return null;
+    return { userId: payload.sub, sessionVersion: payload.sv as number };
+  } catch { return null; }
+}
+
+export async function loescheMfaAnmeldeCookie(): Promise<void> {
+  (await cookies()).set(MFA_ANMELDE_COOKIE, "", { path: "/mfa", maxAge: 0, httpOnly: true, sameSite: "strict", secure: sitzungsCookieSicher(process.env.SESSION_COOKIE_SECURE, process.env.NODE_ENV === "production") });
+}
+
 /**
  * Die angemeldete Person, oder null.
  *
  * Liest bewusst gegen die Datenbank statt nur das Token auszuwerten: so wirkt
  * ein deaktivierter Zugang sofort und nicht erst nach Ablauf des Tokens.
  */
-export async function getSessionUser(): Promise<SessionUser | null> {
+export async function getSessionUser(optionen: { mfaEinrichtungErlauben?: boolean } = {}): Promise<SessionUser | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
 
@@ -122,6 +152,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       role: true,
       isActive: true,
       sessionVersion: true,
+      mfaAktiviertAm: true,
       bezirke: { where: { aktiv: true }, select: { id: true, name: true }, orderBy: { name: "asc" } },
       referent: {
         select: {
@@ -149,6 +180,10 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   // Session verwenden wir sie verbindlich, damit ein BdB einem Referenten
   // keinen Bezirk über ein separates Benutzerfeld unterschieben kann.
   const bezirke = user.role === "REFERENT" ? (user.referent?.bezirke ?? []) : user.bezirke;
+  const mfaEinrichtungErforderlich = istPrivilegierteRolle(user.role) && !user.mfaAktiviertAm;
+  const mfaBestaetigt = !istPrivilegierteRolle(user.role) || (Boolean(user.mfaAktiviertAm) && tokenDaten.mfaBestaetigt);
+  // Unvollständige Sitzungen dürfen niemals Download- oder Fachzugriff erhalten.
+  if (!mfaBestaetigt && !(optionen.mfaEinrichtungErlauben && mfaEinrichtungErforderlich)) return null;
   return {
     id: user.id,
     email: user.email,
@@ -157,6 +192,8 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     referentId: user.referent?.id ?? null,
     bezirkIds: bezirke.map((bezirk) => bezirk.id),
     bezirke,
+    mfaBestaetigt,
+    mfaEinrichtungErforderlich,
   };
 }
 
@@ -170,6 +207,17 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 export async function requireUser(): Promise<SessionUser> {
   const user = await getSessionUser();
   if (!user) throw new AuthError("Nicht angemeldet.");
+  if (!user.mfaBestaetigt) throw new AuthError(user.mfaEinrichtungErforderlich
+    ? "Für dieses Konto muss zuerst die Zwei-Faktor-Authentifizierung eingerichtet werden."
+    : "Die Zwei-Faktor-Authentifizierung wurde noch nicht bestätigt.");
+  return user;
+}
+
+/** Ausschließlich für die MFA-Einrichtung eines bereits per Passwort bestätigten Kontos. */
+export async function requireMfaEinrichtungUser(): Promise<SessionUser> {
+  const user = await getSessionUser({ mfaEinrichtungErlauben: true });
+  if (!user) throw new AuthError("Nicht angemeldet.");
+  if (!user.mfaEinrichtungErforderlich) throw new AuthError("Für dieses Konto ist keine MFA-Einrichtung offen.");
   return user;
 }
 

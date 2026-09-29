@@ -8,6 +8,11 @@ import { htmlZuText } from "@/lib/sanitize";
 import { bestimmeFibsAnmeldestatus } from "@/lib/fibs/status";
 import { ladeOeffentlichenBezirk } from "@/lib/schulamtStartseite";
 import { bereichsPfad } from "@/lib/oeffentlicherBereich";
+import {
+  organisationsKennzeichnungen,
+  oeffentlicherReferentSelect,
+  oeffentlicherReferentWhere,
+} from "@/lib/namensfreigabe";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +25,8 @@ export const dynamic = "force-dynamic";
  * auch hier, ein Abo lässt sich also z. B. auf "nur Grundschule" begrenzen.
  *
  * Öffentlich zugänglich, aber ausschließlich mit Daten, die auch auf der
- * Webseite stehen — Referentennamen sind bewusst nicht enthalten.
+ * Webseite stehen. Namen erscheinen nur bei gültiger elektronischer
+ * Namensfreigabe; Kontakte, Organisation und Rollen bleiben ausgeschlossen.
  */
 export async function GET(request: NextRequest) {
   const schulamt = await ladeSchulamt();
@@ -58,7 +64,12 @@ export async function GET(request: NextRequest) {
       organisationsform: true,
       inFibs: true,
       fibsUrl: true,
+      bezirk: { select: { name: true } },
       veranstaltungsort: { select: { name: true, ort: true, istOnline: true } },
+      referenten: {
+        where: { referent: oeffentlicherReferentWhere },
+        select: { referent: { select: oeffentlicherReferentSelect } },
+      },
     },
   });
 
@@ -83,6 +94,10 @@ export async function GET(request: NextRequest) {
           .join(", ");
 
     const anmeldestatus = bestimmeFibsAnmeldestatus(f);
+    const kennzeichnungen = organisationsKennzeichnungen(f.bezirk.name);
+    const leitung = f.referenten
+      .map(({ referent }) => `${referent.vorname} ${referent.nachname}`)
+      .join(", ");
     const anmeldehinweis =
       anmeldestatus === "FIBS_OFFEN"
         ? `Anmeldung über FIBS: ${f.fibsUrl}`
@@ -95,6 +110,8 @@ export async function GET(request: NextRequest) {
     const beschreibung = [
       htmlZuText(f.beschreibungHtml),
       "",
+      ...kennzeichnungen,
+      ...(leitung ? [`Leitung: ${leitung}`] : []),
       `Details: ${detailBasis}/${f.slug}`,
       anmeldehinweis,
     ].join("\n");
@@ -126,9 +143,9 @@ export async function GET(request: NextRequest) {
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
       "Content-Disposition": `${slug ? "attachment" : "inline"}; filename="${dateiname}"`,
-      // Kalender-Clients fragen den Feed regelmäßig ab; eine Stunde Cache
-      // entlastet den Server, ohne dass Änderungen lange unsichtbar bleiben.
-      "Cache-Control": slug ? "no-store" : "public, max-age=3600",
+      // Ein Widerruf der Namensfreigabe muss bei Kalender-Clients ohne
+      // zwischengespeicherte personenbezogene Daten wirksam werden.
+      "Cache-Control": "no-store",
     },
   });
 }

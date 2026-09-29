@@ -10,6 +10,7 @@ import { auditLog } from "@/lib/audit";
 import { sanitizeBeschreibung, htmlZuText } from "@/lib/sanitize";
 import { bildeSlug } from "@/lib/queries";
 import { normalisiereSchlagwortListe, schlagwortSchluessel } from "@/lib/schlagwort";
+import { istSchuljahrAbgelaufen, operativeFortbildungWhere, schuljahrFuerDatum } from "@/lib/schuljahr";
 import {
   STATUS_FUER_REFERENTEN,
   darfFreigeben,
@@ -56,6 +57,9 @@ export async function saveFortbildung(
   }
 
   const daten = geparst.data;
+  if (!id && istSchuljahrAbgelaufen(daten.beginn)) {
+    return { fehler: { beginn: "Für ein abgelaufenes Schuljahr können keine neuen Fortbildungen angelegt werden." } };
+  }
   try {
     await pruefeBezirk(user, daten.bezirkId);
   } catch (error) {
@@ -177,31 +181,38 @@ export async function saveFortbildung(
   if (id) {
     const bestehend = await prisma.fortbildung.findUnique({
       where: { id, AND: [fortbildungScope(user)] },
-      select: { id: true, titel: true, beginn: true, slug: true, status: true },
+      select: { id: true, titel: true, beginn: true, slug: true, status: true, schuljahr: true },
     });
     if (!bestehend) return { fehler: { _: "Diese Fortbildung existiert nicht mehr." } };
+    if (bestehend.schuljahr !== schuljahrFuerDatum(daten.beginn)) {
+      return { fehler: { beginn: "Der Termin kann nicht in ein anderes Schuljahr verschoben werden. Bitte für die neue Planung eine Kopie anlegen." } };
+    }
 
-    // Verknüpfungen komplett ersetzen: Die Auswahl im Formular ist der neue
-    // Sollzustand, ein Diff wäre hier nur mehr Code ohne Gewinn.
-    await prisma.$transaction([
-      prisma.fortbildungSchlagwort.deleteMany({ where: { fortbildungId: id } }),
-      prisma.fortbildungKompetenz.deleteMany({ where: { fortbildungId: id } }),
-      prisma.fortbildungReferent.deleteMany({ where: { fortbildungId: id } }),
-      prisma.fortbildung.update({
-        where: { id, AND: [fortbildungScope(user)] },
+    // Die bedingte Aktualisierung ist der verbindliche Frist-Check. Sie
+    // verhindert, dass ein zwischen Formularaufruf und Speichern abgelaufener
+    // Datensatz durch einen neuen Termin wieder operativ wird.
+    const gespeichert = await prisma.$transaction(async (tx) => {
+      const aktualisiert = await tx.fortbildung.updateMany({
+        where: { AND: [{ id, schuljahr: bestehend.schuljahr }, fortbildungScope(user), operativeFortbildungWhere()] },
         data: {
           ...basisDaten,
           ...statusMetadaten(bestehend.status, daten.status, user),
-          // Slug nur nachziehen, wenn sich Titel oder Datum geändert haben —
-          // sonst würden bereits geteilte Links ins Leere laufen.
-          ...(bestehend.titel !== daten.titel ||
-          bestehend.beginn.getTime() !== daten.beginn.getTime()
-            ? { slug: bildeSlug(daten.titel, daten.beginn, bestehend.id) }
-            : {}),
-          ...verknuepfungen,
+          ...(bestehend.titel !== daten.titel || bestehend.beginn.getTime() !== daten.beginn.getTime()
+            ? { slug: bildeSlug(daten.titel, daten.beginn, bestehend.id) } : {}),
         },
-      }),
-    ]);
+      });
+      if (aktualisiert.count !== 1) return false;
+      // Verknüpfungen erst nach dem erfolgreichen, fristgebundenen Update
+      // ersetzen, damit ein abgelaufener Datensatz unverändert bleibt.
+      await tx.fortbildungSchlagwort.deleteMany({ where: { fortbildungId: id } });
+      await tx.fortbildungKompetenz.deleteMany({ where: { fortbildungId: id } });
+      await tx.fortbildungReferent.deleteMany({ where: { fortbildungId: id } });
+      await tx.fortbildungSchlagwort.createMany({ data: schlagwortIds.map((schlagwortId) => ({ fortbildungId: id, schlagwortId })) });
+      await tx.fortbildungKompetenz.createMany({ data: daten.kompetenzen.map((kompetenzCode) => ({ fortbildungId: id, kompetenzCode })) });
+      await tx.fortbildungReferent.createMany({ data: referentIds.map((referentId) => ({ fortbildungId: id, referentId })) });
+      return true;
+    });
+    if (!gespeichert) return { fehler: { _: "Diese Fortbildung ist inzwischen abgelaufen und kann nicht mehr geändert werden." } };
 
     fortbildungId = id;
     await auditLog({
@@ -302,6 +313,7 @@ export async function duplizieren(id: string) {
     include: { schlagworte: true, kompetenzen: true, referenten: true },
   });
   if (!quelle) return;
+  if (istSchuljahrAbgelaufen(quelle.beginn)) return;
   await pruefeBezirk(user, quelle.bezirkId);
   const referentIds = await pruefeReferenten(quelle.referenten.map((r) => r.referentId), quelle.bezirkId);
 

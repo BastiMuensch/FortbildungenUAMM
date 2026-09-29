@@ -1,6 +1,11 @@
 import type { Prisma } from "@prisma/client";
 import { STATUS_OEFFENTLICH } from "@/constants/fortbildung";
 import { berlinIsoDatum } from "@/lib/datetime";
+import { operativeFortbildungWhere } from "@/lib/schuljahr";
+import {
+  oeffentlicherReferentSelect,
+  oeffentlicherReferentWhere,
+} from "@/lib/namensfreigabe";
 
 /**
  * Filter für alles, was Lehrkräfte zu sehen bekommen.
@@ -11,17 +16,15 @@ import { berlinIsoDatum } from "@/lib/datetime";
  * und damit ein Entwurf öffentlich.
  */
 export function oeffentlicheFortbildungWhere(bezirkId?: string): Prisma.FortbildungWhereInput {
-  return { status: { in: STATUS_OEFFENTLICH }, ...(bezirkId ? { bezirkId } : {}) };
+  return { AND: [operativeFortbildungWhere(), { status: { in: STATUS_OEFFENTLICH }, ...(bezirkId ? { bezirkId } : {}) }] };
 }
 
 /**
  * Auswahl für öffentliche Ansichten.
  *
- * DSGVO: Von Referentinnen und Referenten werden hier nur Name und
- * Organisation geladen, und nur wenn sie der Veröffentlichung zugestimmt
- * haben. E-Mail, Telefon und interne Notizen verlassen den Redaktionsbereich
- * damit gar nicht erst — auch nicht versehentlich über die Serialisierung
- * einer Server Component.
+ * Nur Vor- und Nachname von Referentinnen und Referenten mit gültiger
+ * elektronischer Namensfreigabe werden geladen. Organisation, Rolle,
+ * Kontaktdaten, interne Notizen und IDs verlassen den Redaktionsbereich nicht.
  */
 export const oeffentlicheFortbildungSelect = {
   id: true,
@@ -56,12 +59,9 @@ export const oeffentlicheFortbildungSelect = {
     },
   },
   referenten: {
-    where: { referent: { oeffentlichSichtbar: true } },
+    where: { referent: oeffentlicherReferentWhere },
     select: {
-      rolle: true,
-      referent: {
-        select: { id: true, vorname: true, nachname: true, organisation: true },
-      },
+      referent: { select: oeffentlicherReferentSelect },
     },
   },
 } satisfies Prisma.FortbildungSelect;

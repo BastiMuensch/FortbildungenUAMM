@@ -1,9 +1,9 @@
 import type { Prisma } from "@prisma/client";
+import { parseSchuljahr, schuljahrWhere } from "@/lib/schuljahr";
 
 import {
   formatDatum,
   fromDatetimeLocalValue,
-  schuljahrZeitraum,
 } from "@/lib/datetime";
 import {
   FORMAT_VALUES,
@@ -73,7 +73,7 @@ export function leseFilter(params: SuchParameter): FortbildungFilter {
       "schilf-nachtrag",
       "erledigt",
     ]),
-    schuljahr: /^\d{4}\/\d{4}$/.test(einzeln("schuljahr") ?? "")
+    schuljahr: parseSchuljahr(einzeln("schuljahr")) !== null
       ? einzeln("schuljahr")
       : undefined,
     bezirk: einzeln("bezirk"),
@@ -136,9 +136,8 @@ export function filterZuWhere(filter: FortbildungFilter): Prisma.FortbildungWher
   }
 
   if (filter.schuljahr) {
-    const { start, ende: schluss } = schuljahrZeitraum(filter.schuljahr);
-    // Ein Termin gehört zum Schuljahr, wenn er darin beginnt.
-    und.push({ beginn: { gte: start, lte: schluss } });
+    const jahr = parseSchuljahr(filter.schuljahr);
+    if (jahr !== null) und.push(schuljahrWhere(jahr));
   }
 
   if (filter.fibs === "offen") und.push({ inFibs: false });
@@ -186,9 +185,8 @@ export function suchbegriffe(eingabe: string | undefined): string[] {
 /** "2026-09-15" aus einem <input type="date"> zu Berliner Tagesgrenze. */
 function tagesGrenze(wert: string | undefined, kante: "start" | "ende"): Date | null {
   if (!wert || !/^\d{4}-\d{2}-\d{2}$/.test(wert)) return null;
-  return fromDatetimeLocalValue(
-    `${wert}T${kante === "start" ? "00:00" : "23:59"}`,
-  );
+  const datum = fromDatetimeLocalValue(`${wert}T${kante === "start" ? "00:00" : "23:59"}`);
+  return datum && kante === "ende" ? new Date(datum.getTime() + 59_999) : datum;
 }
 
 /** Zählt die aktiven Filter — für den "Filter zurücksetzen"-Hinweis. */

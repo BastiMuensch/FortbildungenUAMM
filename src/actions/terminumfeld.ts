@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { ERFASSER, requireRole } from "@/lib/auth";
 import { organisationsformKurz } from "@/constants/fortbildung";
 import { berlinIsoDatum, formatDatum, formatZeit } from "@/lib/datetime";
+import { operativeFortbildungWhere } from "@/lib/schuljahr";
 
 /**
  * Terminumfeld für die Planung.
@@ -80,7 +81,7 @@ export async function ladeTerminumfeld(eingabe: {
 
   const treffer = await prisma.fortbildung.findMany({
     where: {
-      AND: [relevant, { beginn: { lte: monatsEnde } }, { ende: { gte: monatsStart } }],
+      AND: [operativeFortbildungWhere(), relevant, { beginn: { lte: monatsEnde } }, { ende: { gte: monatsStart } }],
     },
     orderBy: { beginn: "asc" },
     select: {

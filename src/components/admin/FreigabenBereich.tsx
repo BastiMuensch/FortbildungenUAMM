@@ -3,7 +3,9 @@ import { CheckCircle2, Clock, Globe, MapPin } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import { requireRole, fortbildungScope } from "@/lib/auth";
-import { formatDatumZeit, formatZeitraum } from "@/lib/datetime";
+import { aktuellesSchuljahr, formatDatumZeit, formatZeitraum } from "@/lib/datetime";
+import { parseSchuljahr, schuljahrWhere } from "@/lib/schuljahr";
+import { type SuchParameter } from "@/lib/filter";
 import {
   formatLabel,
   niveaustufeLabel,
@@ -11,6 +13,7 @@ import {
   schulartLabel,
 } from "@/constants/fortbildung";
 import { FreigabeLeiste } from "@/components/admin/FreigabeLeiste";
+import { SchuljahrWahl } from "@/components/admin/SchuljahrWahl";
 
 /**
  * Alle zur administrativen Prüfung eingereichten Fortbildungen.
@@ -22,13 +25,21 @@ import { FreigabeLeiste } from "@/components/admin/FreigabeLeiste";
  */
 export async function FreigabenBereich({
   eingebettet = false,
+  params = {},
 }: {
   eingebettet?: boolean;
+  params?: SuchParameter;
 }) {
   const user = await requireRole("RVS", "ADMIN");
+  const schuljahrParam = Array.isArray(params.schuljahr) ? params.schuljahr[0] : params.schuljahr;
+  const laufendes = aktuellesSchuljahr();
+  const schuljahr = schuljahrParam === "alle" ? null : parseSchuljahr(schuljahrParam) ?? parseSchuljahr(laufendes)!;
+  const schuljahrText = schuljahr ? `${schuljahr}/${schuljahr + 1}` : "alle Schuljahre";
+  const scope = fortbildungScope(user);
 
-  const eingereicht = await prisma.fortbildung.findMany({
-    where: { status: "EINGEREICHT", AND: [fortbildungScope(user)] },
+  const [eingereicht, vorhandeneJahre] = await Promise.all([
+    prisma.fortbildung.findMany({
+    where: { status: "EINGEREICHT", AND: [scope, ...(schuljahr ? [schuljahrWhere(schuljahr)] : [])] },
     // Am längsten wartende zuerst — niemand soll übersehen werden.
     orderBy: [{ eingereichtAm: "asc" }, { beginn: "asc" }],
     select: {
@@ -51,7 +62,15 @@ export async function FreigabenBereich({
       },
       _count: { select: { kompetenzen: true } },
     },
-  });
+    }),
+    prisma.fortbildung.findMany({
+      where: scope,
+      distinct: ["schuljahr"],
+      orderBy: { schuljahr: "desc" },
+      select: { schuljahr: true },
+    }),
+  ]);
+  const jahrgaenge = [...new Set([laufendes, ...vorhandeneJahre.map((f) => `${f.schuljahr}/${f.schuljahr + 1}`)])].sort().reverse();
 
   const einleitung = eingebettet
     ? "Zur Prüfung eingereichte Fortbildungen direkt bearbeiten."
@@ -85,6 +104,10 @@ export async function FreigabenBereich({
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground text-pretty">
           {einleitung}
         </p>
+        <div className="mt-3">
+          <SchuljahrWahl params={params} jahrgaenge={jahrgaenge} aktuell={laufendes} />
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">Angezeigt: {schuljahrText}.</p>
       </div>
 
       {eingereicht.length === 0 ? (

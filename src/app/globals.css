@@ -144,6 +144,7 @@
 .etikett { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.045em; line-height: 1.25; }
 .zahl { font-variant-numeric: tabular-nums; letter-spacing: -0.015em; }
 .zeile { transition: background-color 140ms ease, border-color 140ms ease; }
+summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; border-radius: var(--radius-sm); }
 .anmeldestatus { display: inline-flex; align-items: center; gap: 0.4rem; border: 1px solid currentColor; border-radius: 0.375rem; font-size: 0.75rem; line-height: 1.25; }
 .anmeldestatus-offen { color: oklch(0.38 0.11 150); background: oklch(0.95 0.04 150); }
 .anmeldestatus-hinweis { color: oklch(0.43 0.09 75); background: var(--ferien-weich); }

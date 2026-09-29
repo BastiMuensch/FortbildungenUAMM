@@ -302,6 +302,6 @@ export function schuljahrZeitraum(schuljahr: string): { start: Date; ende: Date 
   const start = Number(schuljahr.slice(0, 4));
   return {
     start: berlinNachUtc(start, 8, 1, 0, 0),
-    ende: berlinNachUtc(start + 1, 7, 31, 23, 59),
+    ende: new Date(berlinNachUtc(start + 1, 8, 1, 0, 0).getTime() - 1),
   };
 }

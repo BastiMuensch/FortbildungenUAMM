@@ -44,11 +44,10 @@ interface Zeile extends ZeitAenderung {
 
 export function FortbildungTabelle({ fortbildungen, zeigeZeitAenderungen = false }: { fortbildungen: Zeile[]; zeigeZeitAenderungen?: boolean }) {
   return (
-    <>
-      {/* Unterhalb der Desktopbreite sind Karten besser lesbar als eine
-          zusammengequetschte Tabelle. Sie enthalten dieselben Arbeitshinweise
-          wie die sechs Spalten der großen Ansicht. */}
-      <div className="grid gap-3 xl:hidden">
+    <div className="@container">
+      {/* Entscheidend ist der Platz neben der Seitenleiste, nicht die Fensterbreite.
+          Die Karten enthalten dieselben Arbeitshinweise wie die Tabelle. */}
+      <div className="grid gap-3 @[72rem]:hidden">
         {fortbildungen.map((f) => {
           const ebene = ebeneKlassen(f.organisationsform);
           return (
@@ -100,7 +99,7 @@ export function FortbildungTabelle({ fortbildungen, zeigeZeitAenderungen = false
                   )}
                   <span>
                     {f.veranstaltungsort.name}
-                    {f.veranstaltungsort.ort ? `, ${f.veranstaltungsort.ort}` : ""}
+                    {zusaetzlicherOrt(f.veranstaltungsort) ? `, ${f.veranstaltungsort.ort}` : ""}
                   </span>
                 </p>
                 <p>
@@ -119,13 +118,13 @@ export function FortbildungTabelle({ fortbildungen, zeigeZeitAenderungen = false
         })}
       </div>
 
-      <div className="hidden overflow-hidden rounded-2xl border bg-card shadow-sm xl:block">
+      <div className="hidden overflow-hidden rounded-2xl border bg-card shadow-sm @[72rem]:block">
       <Table className="table-fixed">
         <TableHeader>
           <TableRow>
             <TableHead className="w-[14%] whitespace-normal">Termin</TableHead>
             <TableHead className="w-[28%] whitespace-normal">Fortbildung</TableHead>
-            <TableHead className="w-[20%] whitespace-normal">Ort &amp; Leitung</TableHead>
+            <TableHead className="w-[24%] whitespace-normal">Ort &amp; Leitung</TableHead>
             <TableHead
               className="w-[9%] whitespace-normal text-right"
               title="Tatsächliche Teilnehmerzahl von geplanten Plätzen"
@@ -139,7 +138,7 @@ export function FortbildungTabelle({ fortbildungen, zeigeZeitAenderungen = false
 
         <TableBody>
           {fortbildungen.map((f) => (
-            <TableRow key={f.id}>
+            <TableRow key={f.id} className="[&>td]:align-top">
               <TableCell className="zahl whitespace-normal py-5">
                 {formatDatumZeit(f.beginn)}
                 <span className="zahl block text-xs text-muted-foreground">
@@ -185,16 +184,21 @@ export function FortbildungTabelle({ fortbildungen, zeigeZeitAenderungen = false
                   )}
                   <span className="min-w-0 break-words [overflow-wrap:anywhere]">
                     {f.veranstaltungsort.name}
-                    {f.veranstaltungsort.ort ? `, ${f.veranstaltungsort.ort}` : ""}
+                    {zusaetzlicherOrt(f.veranstaltungsort) ? (
+                      <span className="mt-0.5 block text-xs text-muted-foreground">
+                        {f.veranstaltungsort.ort}
+                      </span>
+                    ) : null}
                   </span>
                 </div>
-                <p className="mt-1 break-words text-xs leading-snug text-muted-foreground [overflow-wrap:anywhere]">
+                <div className="mt-2 space-y-0.5 pl-5 break-words text-xs leading-snug text-muted-foreground [overflow-wrap:anywhere]">
                   {f.referenten.length === 0
                     ? "Keine Referent:innen hinterlegt"
                     : f.referenten
-                        .map((r) => `${r.referent.vorname} ${r.referent.nachname}`)
-                        .join(", ")}
-                </p>
+                        .map((r, index) => (
+                          <p key={index}>{r.referent.vorname} {r.referent.nachname}</p>
+                        ))}
+                </div>
               </TableCell>
 
               <TableCell className="zahl whitespace-normal py-5 text-right">
@@ -233,6 +237,15 @@ export function FortbildungTabelle({ fortbildungen, zeigeZeitAenderungen = false
         </TableBody>
       </Table>
       </div>
-    </>
+    </div>
   );
+}
+
+/** Den Ortsnamen nur ergänzen, wenn er nicht schon im Schulnamen vorkommt. */
+function zusaetzlicherOrt({ name, ort }: Zeile["veranstaltungsort"]): boolean {
+  if (!ort?.trim()) return false;
+  const normalisiere = (wert: string) => wert.toLocaleLowerCase("de-DE")
+    .replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  const ortNormalisiert = normalisiere(ort);
+  return ortNormalisiert.length > 0 && !` ${normalisiere(name)} `.includes(` ${ortNormalisiert} `);
 }

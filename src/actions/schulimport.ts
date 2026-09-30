@@ -14,7 +14,7 @@ function auswahl(user: SessionUser) {
 function pruefsumme(plan: SchulimportPlan): string { return createHash("sha256").update(JSON.stringify(plan)).digest("hex"); }
 
 export async function pruefeSchulimport(_bisher: SchulimportStand, formData: FormData): Promise<SchulimportStand> {
-  const user = await requireRole("RVS", "ADMIN", "REDAKTEUR");
+  const user = await requireRole("RVS", "ADMIN");
   const datei = formData.get("datei");
   if (!(datei instanceof File) || !datei.size) return { fehler: "Bitte eine befüllte CSV-Datei auswählen." };
   if (datei.size > SCHULIMPORT_MAX_BYTES) return { fehler: "Die CSV-Datei darf höchstens 128 KB groß sein." };
@@ -27,7 +27,7 @@ export async function pruefeSchulimport(_bisher: SchulimportStand, formData: For
 }
 
 export async function uebernehmeSchulimport(_bisher: SchulimportStand, formData: FormData): Promise<SchulimportStand> {
-  const user = await requireRole("RVS", "ADMIN", "REDAKTEUR");
+  const user = await requireRole("RVS", "ADMIN");
   const csv = formData.get("csv");
   const gepruefteSumme = formData.get("pruefsumme");
   if (typeof csv !== "string" || typeof gepruefteSumme !== "string" || new TextEncoder().encode(csv).byteLength > SCHULIMPORT_MAX_BYTES) return { fehler: "Bitte die Datei erneut prüfen." };

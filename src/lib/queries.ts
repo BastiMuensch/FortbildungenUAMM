@@ -24,7 +24,7 @@ export function oeffentlicheFortbildungWhere(bezirkId?: string): Prisma.Fortbild
  *
  * Nur Vor- und Nachname von Referentinnen und Referenten mit gültiger
  * elektronischer Namensfreigabe werden geladen. Organisation, Rolle,
- * Kontaktdaten, interne Notizen und IDs verlassen den Redaktionsbereich nicht.
+ * Kontaktdaten, interne Notizen und IDs verlassen den Verwaltungsbereich nicht.
  */
 export const oeffentlicheFortbildungSelect = {
   id: true,

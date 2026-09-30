@@ -6,7 +6,7 @@ import { CalendarDays, ListFilter, LogIn } from "lucide-react";
 const NAVIGATION = [
   { href: "/fortbildungen", label: "Alle Fortbildungen", icon: ListFilter },
   { href: "/kalender", label: "Kalender", icon: CalendarDays },
-  { href: "/login", label: "Redaktion", icon: LogIn, hervorheben: true },
+  { href: "/login", label: "Verwaltung", icon: LogIn, hervorheben: true },
 ];
 
 export async function OeffentlicherRahmen({

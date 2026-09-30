@@ -53,7 +53,7 @@ export async function speichereNamensfreigabe(
   return ergebnis;
 }
 
-/** Redaktion darf die Anzeige stoppen, aber niemals stellvertretend zustimmen. */
+/** Die Verwaltung darf die Anzeige stoppen, aber niemals stellvertretend zustimmen. */
 export async function stoppeNamensfreigabe(
   referentId: string,
   _bisher: FormularState,
@@ -61,7 +61,7 @@ export async function stoppeNamensfreigabe(
 ): Promise<FormularState> {
   let user;
   try {
-    user = await requireRole("RVS", "ADMIN", "REDAKTEUR");
+    user = await requireRole("RVS", "ADMIN");
   } catch (fehler) {
     if (fehler instanceof AuthError) return { fehler: { _: fehler.message } };
     throw fehler;

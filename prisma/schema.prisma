@@ -19,7 +19,7 @@ datasource db {
 }
 
 // ---------------------------------------------------------------------------
-// Redaktion / Zugang
+// Verwaltung / Zugang
 // ---------------------------------------------------------------------------
 
 model User {
@@ -30,7 +30,7 @@ model User {
   /// wurde. Eine Anmeldung ist dann nicht möglich.
   passwordHash   String?
   name           String?
-  role           String // RVS | ADMIN | REDAKTEUR | REFERENT
+  role           String // RVS | ADMIN | REFERENT
   isActive       Boolean   @default(true)
   /// Wird bei einem Passwortwechsel erhöht. JWTs mit einer älteren Version
   /// verlieren dadurch beim nächsten serverseitigen Zugriff ihre Gültigkeit.
@@ -65,7 +65,7 @@ model User {
   abgelegteDatensicherungen          Datensicherung[]               @relation("DatensicherungAblage")
   /// Gesetzt, wenn dieses Konto zu einer Referentin oder einem Referenten gehört
   referent                            Referent?
-  /// Zuständigkeiten von BdBs und Redaktionskonten. RvS ist global.
+  /// Zuständigkeiten von BdBs. RvS ist global.
   bezirke                             Bezirk[]
 }
 

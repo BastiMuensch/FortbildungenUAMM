@@ -82,5 +82,5 @@ export function hasheWiederherstellungscode(code: string): string {
   return createHash("sha256").update(code.replace(/[\s-]/g, "").toUpperCase()).digest("hex");
 }
 export function istPrivilegierteRolle(rolle: string): boolean {
-  return ["RVS", "ADMIN", "REDAKTEUR"].includes(rolle);
+  return ["RVS", "ADMIN"].includes(rolle);
 }

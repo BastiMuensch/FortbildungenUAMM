@@ -19,6 +19,7 @@
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
     "test:mfa:db": "node scripts/mfaDatenbankPruefungen.cjs",
+    "test:rollen:db": "node scripts/rollenPruefungen.cjs",
     "test:backup": "node scripts/backupPruefungen.cjs",
     "test:datensicherung": "node scripts/datensicherungPruefungen.cjs",
     "test:importfristen": "node scripts/importFristPruefungen.cjs",

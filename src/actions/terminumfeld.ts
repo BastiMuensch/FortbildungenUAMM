@@ -104,7 +104,7 @@ export async function ladeTerminumfeld(eingabe: {
   const eigener = (f: (typeof treffer)[number]) =>
     user.role === "RVS" ||
     (f.bezirk.aktiv && user.bezirkIds.includes(f.bezirkId) &&
-      (user.role === "ADMIN" || user.role === "REDAKTEUR" ||
+      (user.role === "ADMIN" ||
         f.createdById === user.id ||
         (user.referentId !== null && f.referenten.some((r) => r.referentId === user.referentId))));
 

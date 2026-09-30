@@ -36,7 +36,7 @@ und Berichte.
   schulinterne Organisation bei SchiLf
 - Kalender-Abo (ICS) unter `/api/ics`
 
-**Für das Medienteam** (Redaktionsbereich unter `/admin`):
+**Für das Medienteam** (Verwaltungsbereich unter `/admin`):
 
 - **Wizard** zum Anlegen: sechs geprüfte Schritte, damit keine Angabe liegen
   bleibt. Bearbeitet wird danach in einer Reiteransicht
@@ -59,9 +59,14 @@ und Berichte.
 
 | Rolle | Darf |
 |---|---|
-| `ADMIN` | alles, inkl. Benutzerzugänge, Rollenhochsetzung, Löschen, Rechtstexte, FIBS-Übernahme und Versandbestätigungen |
-| `REDAKTEUR` | Fortbildungen und Stammdaten pflegen, FIBS-Trockenlauf |
+| `RVS` (Regierung) | bezirksübergreifende Verwaltung, BdB-Zugänge, Freigaben, FIBS-Import, Rechtstexte und Betriebsfunktionen; MFA verpflichtend |
+| `ADMIN` (BdB) | Fortbildungen und Stammdaten in zugeordneten Bezirken verwalten, veröffentlichen und nachbereiten; MFA verpflichtend |
 | `REFERENT` | **nur eigene** Fortbildungen anlegen und **zur Freigabe einreichen**, Teilnehmerzahlen nur für eigene oder zugeordnete SchiLf nachtragen |
+
+Referenten benötigen keine MFA. Die frühere Rolle `REDAKTEUR` entfällt.
+Beim Update werden solche Konten automatisch zu BdB-Konten; Bezirkszuordnungen,
+Kontostatus und eingerichtete MFA bleiben erhalten. Betroffene Konten müssen
+sich anschließend neu anmelden. Referentenkonten werden nicht umgestellt.
 
 ### Freigabe und FIBS-Status
 
@@ -73,7 +78,7 @@ Entwurf  →  Zur Freigabe eingereicht  →  Veröffentlicht  →  Archiviert
    └── zurückgewiesen ──┘                  Abgesagt
 ```
 
-Referent:innen und Redaktion kommen im Freigabeprozess nur bis **Eingereicht** —
+Referent:innen kommen im Freigabeprozess nur bis **Eingereicht** —
 veröffentlicht wird ausschließlich durch die Administration. Eine bereits
 freigegebene Ausschreibung können sie nicht ohne neue administrative Prüfung
 ändern. Referent:innen tragen die Teilnehmerzahl weiterhin bei eigenen oder
@@ -158,7 +163,7 @@ nie, der lässt sich beliebig oft parallel belegen.
 
 Für den Zugang gibt es zwei Wege: Bereits im Verzeichnis angelegte Personen
 bekommen einen persönlichen, einmalig verwendbaren Einladungslink mit 14 Tagen
-Laufzeit. Für neue Personen kann die Redaktion einen allgemeinen Link erzeugen,
+Laufzeit. Für neue Personen kann die Verwaltung einen allgemeinen Link erzeugen,
 der 30 Tage gültig und wiederverwendbar ist. Darüber werden ausschließlich
 Konten mit der Rolle `REFERENT` angelegt; selbst registrierte Namen sind nicht
 automatisch öffentlich sichtbar. Klartext-Tokens liegen nie in der Datenbank,
@@ -186,14 +191,13 @@ Administration trägt Teilnehmerzahlen für alle Organisationsformen ein,
 vermerkt dort den FIBS-Nachtrag einer SchiLf und bestätigt anschließend
 getrennt den FIBS-Versand an Referent:innen und Teilnehmende.
 Referent:innen sehen dort ausschließlich eigene oder zugeordnete SchiLf und
-können nur deren Teilnehmerzahl nachtragen. Redaktion hat auf diese
-Nachbereitungsaktionen keinen Zugriff.
+können deren Teilnehmerzahl nachtragen und die tatsächliche Endzeit korrigieren.
 
 Unter `/admin/auswertung` steht eine Fortbildungsbilanz mit Schuljahres-,
 Zeitraum-, Referenten-, Format- und Organisationsformfilter bereit. Sie zeigt
 Veranstaltungen und Teilnahmen je Referent und Termin sowie Verteilungen nach
-Monat, Fortbildungsart, Format und DigCompEdu-Niveaustufe. Administration und
-Redaktion sehen alle Veranstaltungen, Referenten nur ihren bestehenden
+Monat, Fortbildungsart, Format und DigCompEdu-Niveaustufe. Die Regierung sieht
+alle Bezirke, BdBs ihre zugeordneten Bezirke und Referenten ihren bestehenden
 Zugriffsbereich. Derselbe Umfang gilt für den Excel-Auswertungsbogen; eine
 Druckansicht ermöglicht auch das Speichern als PDF über den Browser.
 
@@ -250,7 +254,7 @@ npm run db:seed
 npm run dev
 ```
 
-Die Anwendung läuft dann auf <http://localhost:3000>, der Redaktionsbereich
+Die Anwendung läuft dann auf <http://localhost:3000>, der Verwaltungsbereich
 unter `/admin` (Anmeldung mit den Seed-Zugangsdaten — **Passwort danach
 ändern**).
 
@@ -350,7 +354,7 @@ zugeordnet. Leere optionale Felder löschen keine Angaben. Stillgelegte Orte
 bleiben stillgelegt, fehlende CSV-Zeilen werden nicht gelöscht. Änderungen
 gelten auch für verknüpfte Veranstaltungen; deren Anzahl erscheint in der
 Vorschau. Die Übernahme prüft Datei und Bestand erneut und erfolgt in einer
-Transaktion. Administration und Redaktion können importieren; Referenten
+Transaktion. Regierung und BdBs können importieren; Referenten
 haben keinen Zugriff. Die Schulamtskonfiguration ist ausschließlich für
 Administratoren zugänglich.
 
@@ -424,7 +428,7 @@ So funktioniert es:
    **Entwurf**, nicht direkt im Frontend.
 
 Schutzregeln: Deduplizierung über die Lehrgangsnummer; ein Datensatz, den die
-Redaktion selbst angelegt hat (`quelle = MANUELL`), wird **nie** überschrieben;
+Verwaltung selbst angelegt hat (`quelle = MANUELL`), wird **nie** überschrieben;
 jeder Lauf wird protokolliert.
 
 > **Rechtlicher Hinweis.** Automatisiertes Auslesen von FIBS kann den
@@ -454,7 +458,7 @@ Die Anwendung ist auf Datensparsamkeit ausgelegt:
   Analytics, keine CDNs, keine eingebetteten Inhalte. Durchgesetzt über die
   Content-Security-Policy in `next.config.ts` (`default-src 'self'`).
 - **Kein Cookie-Banner nötig** — es gibt nur ein technisch notwendiges
-  Sitzungs-Cookie für den Redaktionsbereich.
+  Sitzungs-Cookie für den Verwaltungsbereich.
 - **Löschkonzept** (`src/lib/retention.ts`): Fortbildungen nach zwei Jahren
   archiviert, Referentenzuordnungen nach fünf Jahren aufgelöst, Protokolle nach
   zwölf Monaten gelöscht. Läuft automatisch (`src/lib/scheduler.ts`), Zeitpunkt

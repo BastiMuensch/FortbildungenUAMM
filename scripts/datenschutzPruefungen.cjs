@@ -28,7 +28,7 @@ const login = async (user, mf = true) => setSessionCookie(await signToken(user.i
  try {
   for (const name of ['A','B']) bezirke.push(await prisma.bezirk.create({ data: { name: `${prefix}-${name}` } }));
   ort = await prisma.veranstaltungsort.create({ data: { name: `${prefix}-Online`, istOnline: true } });
-  for (const role of ['ADMIN','RVS','REDAKTEUR']) users.push(await prisma.user.create({ data: { email: `${prefix}-${role}@test.invalid`, role, mfaAktiviertAm: new Date(), bezirke: { connect: { id: bezirke[0].id } } } }));
+  for (const role of ['ADMIN','RVS']) users.push(await prisma.user.create({ data: { email: `${prefix}-${role}@test.invalid`, role, mfaAktiviertAm: new Date(), bezirke: { connect: { id: bezirke[0].id } } } }));
   const erstellen = (name, beginn, bezirk = bezirke[0], extra = {}) => prisma.fortbildung.create({ data: { titel: `${prefix}-${name}`, slug: `${prefix}-${name}`, beschreibungHtml: '<p>Planung</p>', beschreibungText: 'Planung', organisationsform:'SCHILF', format:'ESESSION', maxTn:20, tnTatsaechlich:7, beginn:new Date(beginn), ende:new Date(new Date(beginn).getTime()+3600000), veranstaltungsortId:ort.id, bezirkId:bezirk.id, status:'VEROEFFENTLICHT', schularten:['GRUNDSCHULE'], ...extra } });
   // Die DB muss dieselben Berliner Grenzen berechnen wie die Anwendung,
   // insbesondere kurz vor/nach Mitternacht am Schuljahreswechsel.
@@ -73,8 +73,8 @@ const login = async (user, mf = true) => setSessionCookie(await signToken(user.i
   await prisma.user.update({where:{id:users[0].id},data:{mfaAktiviertAm:null}});
   await login(users[0],false); assert.equal(await getSessionUser(),null);
   assert.ok((await getSessionUser({mfaEinrichtungErlauben:true})).mfaEinrichtungErforderlich);
-  await login(users[2]); assert.ok(await getSessionUser());
-  await prisma.user.update({where:{id:users[2].id},data:{sessionVersion:{increment:1}}});
+  await login(users[1]); assert.ok(await getSessionUser());
+  await prisma.user.update({where:{id:users[1].id},data:{sessionVersion:{increment:1}}});
   assert.equal(await getSessionUser(),null);
   console.log('Datenschutz: Berliner DB-Grenzen, unveränderliche Fristen, Bezirkszugriff, RvS, Kalenderausnahme, Auswertung, Excel und MFA-Downloads bestanden.');
  } finally {

@@ -69,8 +69,8 @@ export default async function ReferentenRegistrierungSeite({
             <AlertCircle className="mx-auto mb-4 size-7 text-muted-foreground" aria-hidden />
             <h1 className="text-xl font-semibold tracking-tight">Dieser Link ist nicht mehr gültig</h1>
             <p className="mt-2 text-sm text-muted-foreground text-pretty">
-              Der Registrierungslink wurde ersetzt oder ist abgelaufen. Bitte bei der
-              Redaktion einen aktuellen Link anfordern.
+              Der Registrierungslink wurde ersetzt oder ist abgelaufen. Bitte beim
+              zuständigen BdB einen aktuellen Link anfordern.
             </p>
             <p className="mt-8">
               <Link href="/login" className="text-sm underline underline-offset-4 hover:text-foreground">

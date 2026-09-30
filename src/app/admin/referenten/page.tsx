@@ -8,7 +8,7 @@ import { NAMENSFREIGABE_VERSION } from "@/constants/fortbildung";
 export const metadata = { title: "Referenten" };
 
 export default async function ReferentenPage() {
-  const user = await requireRole("RVS", "ADMIN", "REDAKTEUR");
+  const user = await requireRole("RVS", "ADMIN");
 
   const [referenten, bezirke] = await Promise.all([prisma.referent.findMany({
     where: referentScope(user),
@@ -59,7 +59,7 @@ export default async function ReferentenPage() {
         <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
           E-Mail-Adresse und Notizen sind reine Innendaten und
           erscheinen nie im öffentlichen Bereich. Über die öffentliche Namensanzeige
-          entscheidet die Person selbst unter „Eigenes Konto“. Die Redaktion kann
+          entscheidet die Person selbst unter „Eigenes Konto“. Der BdB kann
           sie bei Bedarf portalweit stoppen, aber keine Zustimmung erteilen.
         </p>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">

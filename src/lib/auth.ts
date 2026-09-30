@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { fortbildungScope } from "@/lib/berechtigungsScope";
 import { istPrivilegierteRolle } from "@/lib/mfa";
 import type { Rolle } from "@/constants/fortbildung";
+import { RolleSchema } from "@/lib/validation/rolle";
 import {
   liesSessionVersion,
   SESSION_COOKIE,
@@ -43,11 +44,11 @@ export interface SessionUser {
   mfaEinrichtungErforderlich: boolean;
 }
 
-/** Redaktion und BdBs; ihre Abfragen bleiben auf die zugeordneten Bezirke begrenzt. */
-export const REDAKTION: Rolle[] = ["RVS", "ADMIN", "REDAKTEUR"];
+/** Regierung und BdBs; BdB-Abfragen bleiben auf die zugeordneten Bezirke begrenzt. */
+export const VERWALTUNG: Rolle[] = ["RVS", "ADMIN"];
 
 /** Alle, die überhaupt Fortbildungen erfassen dürfen. */
-export const ERFASSER: Rolle[] = ["RVS", "ADMIN", "REDAKTEUR", "REFERENT"];
+export const ERFASSER: Rolle[] = ["RVS", "ADMIN", "REFERENT"];
 
 export async function signToken(
   userId: string,
@@ -164,8 +165,10 @@ export async function getSessionUser(optionen: { mfaEinrichtungErlauben?: boolea
     },
   });
 
+  const rolle = RolleSchema.safeParse(user?.role);
   if (
     !user ||
+    !rolle.success ||
     !user.isActive ||
     tokenDaten.sessionVersion !== user.sessionVersion
   ) {
@@ -188,7 +191,7 @@ export async function getSessionUser(optionen: { mfaEinrichtungErlauben?: boolea
     id: user.id,
     email: user.email,
     name: user.name,
-    role: user.role as Rolle,
+    role: rolle.data,
     referentId: user.referent?.id ?? null,
     bezirkIds: bezirke.map((bezirk) => bezirk.id),
     bezirke,
@@ -233,7 +236,7 @@ export async function requireRole(...rollen: Rolle[]): Promise<SessionUser> {
 /**
  * Einschränkung, welche Fortbildungen eine Person sehen und bearbeiten darf.
  *
- * Die RvS sieht alles, BdBs und Redaktion nur ihre zugeordneten Bezirke.
+ * Die RvS sieht alles, BdBs nur ihre zugeordneten Bezirke.
  * Referierende benötigen zusätzlich die eigene Veranstaltungszuordnung.
  * Diese eine Funktion wird überall verwendet, damit die Regel nicht an jeder
  * Abfrage neu formuliert — und irgendwann vergessen — wird.

@@ -5,7 +5,7 @@ Stand: 24. September 2026. Dieser Baustein ist implementiert; die weiteren Maßn
 - Registrierung und „Eigenes Konto“ bieten dieselbe freiwillige Auswahl. Ohne Zustimmung bleiben die Referentennamen intern.
 - Öffentlich werden ausschließlich Vor- und Nachname aus dem Referentenprofil ausgegeben. Beide Organisationskennzeichnungen bleiben unabhängig davon sichtbar.
 - Die eigene Zustimmung wird mit Text, Version, Zeitpunkt und Konto in `NamensfreigabeNachweis` dokumentiert. Ein Widerruf oder redaktioneller Stopp wird ebenfalls nachgewiesen. Die Nachweise sind vom allgemeinen Audit-Log getrennt.
-- Server Actions binden die Zustimmung an das angemeldete eigene Konto. Bezirksberechtigte Redaktion kann nur stoppen. Eine Namensänderung stoppt eine bestehende Freigabe.
+- Server Actions binden die Zustimmung an das angemeldete eigene Konto. Bezirksberechtigte BdBs können nur stoppen. Eine Namensänderung stoppt eine bestehende Freigabe.
 - Transaktionssperre und Änderungsstand verhindern, dass ein altes offenes Formular einen späteren Widerruf mit einer veralteten Zustimmung überschreibt.
 - Der öffentliche Selektor prüft zusätzlich aktive Person, aktives Konto sowie aktuelle Textversion und Zustimmungszeitpunkt. Änderungen invalidieren den Anwendungscache; ICS und Aushang verwenden `no-store`.
 

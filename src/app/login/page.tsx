@@ -32,7 +32,7 @@ export default async function LoginPage({
           >
             F
           </span>
-          <h1 className="text-xl font-semibold tracking-tight">Redaktionsbereich</h1>
+          <h1 className="text-xl font-semibold tracking-tight">Verwaltungsbereich</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Fortbildungen · {schulamt.kurzname}
           </p>

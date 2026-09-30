@@ -18,7 +18,7 @@ import {
 export const metadata = { title: "Schlagworte" };
 
 export default async function SchlagwortePage() {
-  const user = await requireRole("RVS", "ADMIN", "REDAKTEUR");
+  const user = await requireRole("RVS", "ADMIN");
 
   const schlagworte = await prisma.schlagwort.findMany({
     orderBy: [{ istPflicht: "desc" }, { name: "asc" }],

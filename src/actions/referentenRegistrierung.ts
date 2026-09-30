@@ -69,7 +69,7 @@ export async function generiereReferentenRegistrierungslink(
 ): Promise<ReferentenRegistrierungslinkState> {
   let user;
   try {
-    user = await requireRole("RVS", "ADMIN", "REDAKTEUR");
+    user = await requireRole("RVS", "ADMIN");
   } catch (error) {
     if (error instanceof AuthError) return { fehler: { _: error.message } };
     throw error;
@@ -237,7 +237,7 @@ export async function registriereReferent(
     if (ergebnis.art === "emailBelegt") {
       return {
         fehler: {
-          email: "Für diese E-Mail-Adresse besteht bereits ein Eintrag. Bitte an die Redaktion wenden.",
+          email: "Für diese E-Mail-Adresse besteht bereits ein Eintrag. Bitte an den zuständigen BdB wenden.",
         },
       };
     }
@@ -265,7 +265,7 @@ export async function registriereReferent(
     ) {
       return {
         fehler: {
-          email: "Für diese E-Mail-Adresse besteht bereits ein Eintrag. Bitte an die Redaktion wenden.",
+          email: "Für diese E-Mail-Adresse besteht bereits ein Eintrag. Bitte an den zuständigen BdB wenden.",
         },
       };
     }

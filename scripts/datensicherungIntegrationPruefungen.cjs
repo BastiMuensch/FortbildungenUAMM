@@ -78,7 +78,7 @@ function prozess(befehl, args, optionen = {}) {
   const toolAnfrage = () => new NextRequest("http://localhost/api/admin/datensicherung/werkzeuge?datei=windows");
   assert.equal((await download.GET(anfrage())).status, 403);
   assert.equal((await werkzeuge.GET(toolAnfrage())).status, 403);
-  for (const rolle of ["ADMIN", "REDAKTEUR", "REFERENT"]) {
+  for (const rolle of ["ADMIN", "REFERENT"]) {
     await prisma.user.update({ where: { id: rvs.id }, data: { role: rolle } });
     await login(rvs);
     assert.equal((await download.GET(anfrage())).status, 403, `${rolle} darf kein bezirksübergreifendes Backup laden`);

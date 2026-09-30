@@ -45,7 +45,7 @@ Je nach Aufgabe und erforderlichem Umfang:
 - Name und dienstliche Zuordnung, gegebenenfalls Organisation/Dienststelle;
 - dienstliche E-Mail-Adresse;
 - Referentenrolle, Zuständigkeit für Schulamtsbezirke und Zuordnung zu Fortbildungen;
-- Kontoangaben, Passwort-Hash, Kontostatus und erforderliche Anmelde-/Sicherheitsdaten; für RvS-, Administrations- und Redaktionskonten verschlüsseltes TOTP-Geheimnis, Hashes der Wiederherstellungscodes sowie Einrichtungs- und Rücksetzzeitpunkte;
+- Kontoangaben, Passwort-Hash, Kontostatus und erforderliche Anmelde-/Sicherheitsdaten; für RvS- und BdB-Konten verschlüsseltes TOTP-Geheimnis, Hashes der Wiederherstellungscodes sowie Einrichtungs- und Rücksetzzeitpunkte;
 - Fortbildungsinhalte, Termine, Orte und organisatorische Angaben;
 - aggregierte Teilnehmerzahlen, Bearbeitungsstände und erforderliche Nachbereitungsangaben;
 - erforderliche Nachweise über Änderungen, Rollenvergabe, Exporte und Archivübergaben;
@@ -66,7 +66,7 @@ Diese Informationen werden auch Personen ohne eigenes Benutzerkonto bereitgestel
 
 ## 5 Wer intern Zugriff erhält
 
-BdBs und berechtigte Redaktionskonten greifen auf die ihnen zugewiesenen Schulamtsbezirke zu. Referenten greifen auf eigene oder ihnen zugeordnete Veranstaltungen innerhalb ihrer Zuständigkeit zu. Ausdrücklich berechtigte RvS-Konten können bezirksübergreifend arbeiten und auswerten. Eine zusätzliche reine Berichtsrolle wird nur eingesetzt, wenn sie beschlossen und im Rechtekonzept beschrieben ist.
+BdBs greifen auf die ihnen zugewiesenen Schulamtsbezirke zu. Referenten greifen auf eigene oder ihnen zugeordnete Veranstaltungen innerhalb ihrer Zuständigkeit zu. Ausdrücklich berechtigte RvS-Konten können bezirksübergreifend arbeiten und auswerten. Eine zusätzliche reine Berichtsrolle wird nur eingesetzt, wenn sie beschlossen und im Rechtekonzept beschrieben ist.
 
 **Ausnahme für den internen Planungskalender:** Zur Abstimmung des Fortbildungsangebots und zur Vermeidung zeitlicher, räumlicher und thematischer Überschneidungen sehen angemeldete planungsberechtigte Personen bezirksübergreifend Titel, Beschreibung, Datum, Uhrzeit, Ort, Veranstaltungsform und Planungsstatus. Dies umfasst auch noch nicht veröffentlichte Entwürfe. Die Ausnahme eröffnet keine Bearbeitung fremder Veranstaltungen und keinen Zugriff auf fremde Auswertungen, tatsächliche Teilnehmerzahlen, Nachbereitungsnotizen oder persönliche Referentenkontakte. Referentennamen werden nicht als eigenes Kalenderfeld angezeigt; Freitexte sind auf erforderliche Planungsinhalte zu beschränken. Die Ausnahme gilt für die interne Planung, nicht für die öffentliche Anzeige.
 

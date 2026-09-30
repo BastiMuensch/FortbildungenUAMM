@@ -150,7 +150,7 @@ def startseite(dokument, kurz):
         ["Schutz für die Betroffenen", "Was bereits erreicht ist"],
         ["Auswertungen bleiben im zuständigen Bezirk", "**Im Tool umgesetzt.** BdBs sehen ihre zugewiesenen Bezirke; nur ausdrücklich berechtigte Regierungskonten haben fachlichen Gesamtzugriff. Auch Downloads prüfen die Rechte."],
         ["Öffentliche Namen bleiben freiwillig", "**Im Tool umgesetzt.** Ohne eigene Zustimmung keine Namensanzeige im Referentenfeld. Zustimmung und Widerruf werden dokumentiert und bei neuen Abrufen berücksichtigt."],
-        ["Verwaltungskonten sind zusätzlich geschützt", "**Im Tool umgesetzt.** Für Regierungs-, BdB-/Verwaltungs- und Redaktionskonten ist neben dem Passwort ein zweiter Anmeldefaktor erforderlich."],
+        ["Verwaltungskonten sind zusätzlich geschützt", "**Im Tool umgesetzt.** Für Regierungs- und BdB-Konten ist neben dem Passwort ein zweiter Anmeldefaktor erforderlich."],
         ["Schuljahre werden getrennt behandelt", "**Im Tool umgesetzt.** Nach 400 Tagen ab Schuljahresende endet der reguläre Zugriff. Ein begrenztes Archivpaket und die bestätigte Übergabe bereiten die Löschung vor."],
         ["Weniger Weitergabe beim Seitenaufruf", "**Im Tool umgesetzt.** Keine eingebundenen fremden Analysewerkzeuge, Schriftarten oder Inhalte; öffentliche Referentenfelder sind auf freigegebene Namen begrenzt."],
         ["Betrieb und Ablagen sind bestimmt", "**Für den Betrieb festgelegt.** Server bei netcup in Nürnberg; tägliche verschlüsselte Vollsicherung wird durch RvS mit MFA auf das Regierungslaufwerk übernommen; gesondertes Archiv bei Regierung beziehungsweise Schulamt. HTTPS ist laut Betreiber vorhanden."],

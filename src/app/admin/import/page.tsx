@@ -94,7 +94,7 @@ export default async function ImportSeite() {
         </div>
       </section>
 
-      <FibsImportFormular bezirke={bezirke} darfUebernehmen />
+      <FibsImportFormular bezirke={bezirke} />
 
       <section>
         <h2 className="mb-3 text-sm font-semibold">Letzte Läufe</h2>

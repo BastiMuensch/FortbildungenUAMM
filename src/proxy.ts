@@ -5,7 +5,7 @@ import { jwtVerify } from "jose";
 import { SESSION_COOKIE } from "@/constants/session";
 
 /**
- * Vorgelagerte Prüfung für den Redaktionsbereich (in Next 16 heißt die frühere
+ * Vorgelagerte Prüfung für den Verwaltungsbereich (in Next 16 heißt die frühere
  * Middleware "Proxy", siehe node_modules/next/dist/docs/01-app/01-getting-started/16-proxy.md).
  *
  * Das ist ausdrücklich NUR eine Bequemlichkeit: Wer kein gültiges Cookie hat,

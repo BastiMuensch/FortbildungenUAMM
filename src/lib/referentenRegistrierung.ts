@@ -99,7 +99,7 @@ export async function pruefeReferentenRegistrierungslink(
   );
 }
 
-/** Vollständiger Link für die Weitergabe durch Redaktion oder Administration. */
+/** Vollständiger Link für die Weitergabe durch Regierung oder BdB. */
 export function referentenRegistrierungsLink(token: string): string {
   const basis = process.env.APP_BASE_URL ?? "http://localhost:3000";
   return `${basis.replace(/\/+$/, "")}/referenten-registrierung?token=${encodeURIComponent(token)}`;

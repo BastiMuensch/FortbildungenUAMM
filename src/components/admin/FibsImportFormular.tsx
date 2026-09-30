@@ -19,10 +19,9 @@ import {
 } from "@/components/ui/table";
 
 export function FibsImportFormular({
-  bezirke,  darfUebernehmen,
+  bezirke,
 }: {
   bezirke: { id: string; name: string }[];
-  darfUebernehmen: boolean;
 }) {
   const [state, formAction] = useActionState<ImportState, FormData>(
     starteFibsImport,
@@ -40,25 +39,18 @@ export function FibsImportFormular({
           </select>
         </label>
 
-        {darfUebernehmen ? (
-          <label className="mt-4 flex items-start gap-2.5">
-            <Checkbox name="uebernehmen" className="mt-0.5" />
-            <span className="text-sm">
-              Treffer wirklich übernehmen
-              <span className="block text-xs text-muted-foreground">
-                Ohne Häkchen läuft nur ein Trockenlauf: Die Vorschau zeigt, was
-                passieren würde, es wird nichts gespeichert. Übernommene
-                Lehrgänge landen als Entwurf und müssen noch veröffentlicht
-                werden.
-              </span>
+        <label className="mt-4 flex items-start gap-2.5">
+          <Checkbox name="uebernehmen" className="mt-0.5" />
+          <span className="text-sm">
+            Treffer wirklich übernehmen
+            <span className="block text-xs text-muted-foreground">
+              Ohne Häkchen läuft nur ein Trockenlauf: Die Vorschau zeigt, was
+              passieren würde, es wird nichts gespeichert. Übernommene
+              Lehrgänge landen als Entwurf und müssen noch veröffentlicht
+              werden.
             </span>
-          </label>
-        ) : (
-          <p className="mt-3 text-sm text-muted-foreground">
-            Als Redaktion können Sie einen Trockenlauf starten. Das Übernehmen
-            der Treffer ist der Administration vorbehalten.
-          </p>
-        )}
+          </span>
+        </label>
 
         <div className="mt-4">
           <StartKnopf />

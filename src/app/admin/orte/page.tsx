@@ -19,7 +19,7 @@ import {
 export const metadata = { title: "Veranstaltungsorte" };
 
 export default async function OrtePage() {
-  const user = await requireRole("RVS", "ADMIN", "REDAKTEUR");
+  const user = await requireRole("RVS", "ADMIN");
 
   const orte = await prisma.veranstaltungsort.findMany({
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],

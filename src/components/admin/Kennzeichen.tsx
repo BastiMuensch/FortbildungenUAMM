@@ -4,7 +4,7 @@ import { statusLabel } from "@/constants/fortbildung";
 import { cn } from "@/lib/utils";
 
 /**
- * Die beiden Kennzeichen, an denen im Redaktionsbereich alles hängt:
+ * Die beiden Kennzeichen, an denen im Verwaltungsbereich alles hängt:
  * Wo steht die Fortbildung im Freigabeprozess, und ist sie in FIBS?
  *
  * Bewusst als eigene Bausteine, damit sie in Tabelle, Detailseite und

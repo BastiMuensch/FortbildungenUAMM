@@ -1,7 +1,7 @@
 # Betrieb für Schwaben
 
 Die Anwendung verwaltet einen gemeinsamen öffentlichen Kalender. Jede Fortbildung
-hat genau einen Ausschreibungsbezirk. BdBs (`ADMIN`) und Redaktionskonten sehen
+hat genau einen Ausschreibungsbezirk. BdBs (`ADMIN`) sehen
 nur ihre zugeordneten Bezirke. Referentinnen und Referenten können nur für die
 an ihrem Referenteneintrag zugeordneten Bezirke ausschreiben. Die RvS (`RVS`)
 hat den Gesamtzugriff und verwaltet Bezirke sowie BdB-Zuständigkeiten.
@@ -11,7 +11,7 @@ hat den Gesamtzugriff und verwaltet Bezirke sowie BdB-Zuständigkeiten.
 Die Migration `20260922090000_bezirke` legt den festen Legacy-Bezirk
 `00000000-0000-4000-8000-000000000001` mit dem Namen
 „Memmingen-Unterallgäu“ an. Bestehende Fortbildungen, Referenten,
-Registrierungslinks sowie ADMIN- und REDAKTEUR-Konten werden diesem Bezirk
+Registrierungslinks sowie ADMIN- und damalige REDAKTEUR-Konten werden diesem Bezirk
 zugeordnet. Die Pflichtschlagworte aus dem bisherigen Schulamtsprofil werden übernommen;
 ohne gespeichertes Profil gelten `UAMM` und `Medienteam-UAMM` als Ausgangswerte.
 
@@ -21,6 +21,10 @@ geprüft werden, ob dieses älteste Konto tatsächlich die RvS-Verantwortung
 übernehmen soll; bei abweichendem Bedarf ist die Rolle nach der Migration in
 der Datenbank gezielt zu korrigieren. Der Seed-Zugang wird ebenfalls als RvS
 angelegt.
+
+Die Migration `20260930160000_redaktion_zu_bdb` führt bestehende Redaktionskonten
+in die BdB-Rolle (`ADMIN`) über. Bezirkszuordnungen, Kontostatus und MFA-Daten
+bleiben erhalten; bestehende Sitzungen enden und erfordern eine neue Anmeldung.
 
 ## Einladungen
 
@@ -60,7 +64,7 @@ normale Adresse `/` zeigt weiterhin das gemeinsame Schwaben-Angebot. Ein sichtba
 Link führt aus jedem Schulamtsbereich dorthin zurück. Unbekannte oder deaktivierte
 Schulämter liefern eine Nicht-gefunden-Seite.
 
-BdBs und Redaktionskonten finden die Startseiten ihrer aktiven, zugeordneten
+BdBs finden die Startseiten ihrer aktiven, zugeordneten
 Schulämter im Menü unter **Schulamts-Startseiten**; bei mehreren Zuständigkeiten
 erscheinen mehrere Links. Die RvS sieht dort alle aktiven Schulämter.
 

@@ -17,7 +17,7 @@ export type SchulamtsStartseite = {
 
 /** Öffentliche Startseiten, die in der Administration verlinkt werden dürfen. */
 export async function ladeSchulamtsStartseiten(user: SessionUser): Promise<SchulamtsStartseite[]> {
-  if (!["RVS", "ADMIN", "REDAKTEUR"].includes(user.role)) return [];
+  if (!["RVS", "ADMIN"].includes(user.role)) return [];
 
   return prisma.bezirk.findMany({
     where: { AND: [bezirkScope(user), { aktiv: true }] },

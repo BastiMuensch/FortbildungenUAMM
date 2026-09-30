@@ -263,7 +263,7 @@ Danach gesicherte und protokollierte Migration, fachlicher Abgleich, Wiederherst
 | --- | --- | --- |
 | Verzeichnis der Verarbeitungstätigkeiten VVT | Zwecke, Betroffene, Datenarten, Empfänger, Verantwortlichkeit, Rechtsgrundlagen ergänzend, Drittlandbezug, Fristen und TOM-Verweis; Portal, Netzwerkverwaltung und Aufbewahrung fachlich unterscheidbar | Verantwortliche Stelle mit Datenschutzberatung |
 | Technische und organisatorische Maßnahmen TOM | Zutritt, Zugang/MFA, Berechtigungen, Übertragung, Verschlüsselung/Schlüssel, Nachvollziehbarkeit, Verfügbarkeit/Backup, Wiederherstellung, Trennung, Auftragskontrolle, Datenminimierung, Löschung und regelmäßige Wirksamkeitsprüfung | IT und Entwicklung |
-| Rollen- und Berechtigungskonzept | RvS, BdB, Redaktion, Referent, gegebenenfalls Berichtsempfänger; Bezirk, Schuljahr, Archivzugriff, Vertretung und Rechteentzug | Fachverantwortung |
+| Rollen- und Berechtigungskonzept | RvS, BdB, Referent, gegebenenfalls Berichtsempfänger; Bezirk, Schuljahr, Archivzugriff, Vertretung und Rechteentzug | Fachverantwortung |
 | Lösch- und Aufbewahrungskonzept | 400-Tage-Regel, getrennte Datenarten, Ausnahmen, Archivfristen, endgültige Vernichtung und Backup-Nachlauf | Fachstelle und Registratur/Archivstelle |
 | Archiv- und Exportkonzept | Paketinhalt, Formate, Versionen, Integrität, Übernahmebeleg, Zielsystem, Herausgabe und Löschung | Registratur/Archivstelle und IT |
 | Datenschutzhinweise nach Art. 13/14 | Website, Konten/Referenten und importierte Bestandsdaten; Herkunft, Empfänger, Rechte, Fristen und Kontakte | Verantwortliche Stelle |

@@ -55,7 +55,7 @@ const form = (daten) => { const f = new FormData(); Object.entries(daten).forEac
     process.env.JWT_SECRET = geheimnis;
     assert.ok(await pruefeZugangstoken(token), "Schlüsselwechsel verändert die Token-Prüfung nicht");
 
-    for (const rolle of ["ADMIN", "REDAKTEUR", "REFERENT"]) {
+    for (const rolle of ["ADMIN", "REFERENT"]) {
       const fremd = await prisma.user.create({ data: { email: `${prefix}-${rolle}@example.test`, role: rolle } });
       await anmelden(fremd);
       await assert.rejects(ladeBdbsMitEinladung);

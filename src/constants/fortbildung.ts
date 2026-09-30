@@ -217,11 +217,6 @@ export const ROLLEN = [
     beschreibung: "Verwaltet die zugeordneten Schulamtsbezirke.",
   },
   {
-    value: "REDAKTEUR",
-    label: "Redaktion",
-    beschreibung: "Darf Fortbildungen, Referenten, Orte und Schlagworte pflegen.",
-  },
-  {
     value: "REFERENT",
     label: "Referent",
     beschreibung:

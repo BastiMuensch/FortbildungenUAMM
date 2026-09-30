@@ -12,8 +12,8 @@ Fortbildungsportal Schwaben · Stand 24. September 2026 · zu Version 1.0
 | Behördenkontakt | Fronhof 10, 86152 Augsburg; poststelle@reg-schw.bayern.de; veröffentlichter Datenschutzkontakt in TOM/VVT | Offizielle Behördenangaben |
 | Hosting und Ablagearten | netcup VPS 1000 G12.5, Nürnberg; Regierung mietet und schließt AVV. Tägliche verschlüsselte Vollsicherung wird durch RvS mit MFA auf Regierungslaufwerk übernommen; fachliches Archiv bei RvS oder zuständigem Schulamt | Portalablauf vorhanden; konkrete Vertrags- und Betriebsbelege noch ergänzen |
 | Zweck und Datenarten | Dienstliche Fortbildungsplanung, Bewerbung, Nachbereitung und Auswertung; Referenten- und Veranstaltungsdaten; keine personenbezogenen Teilnehmerlisten vorgesehen | Datenmodell und beschriebenes Nutzungskonzept |
-| Zugriffsrechte | BdB/Redaktion im zugewiesenen Bezirk, Referenten bei eigenen Veranstaltungen, RvS mit fachlichem Gesamtzugriff. Eng begrenzte Ausnahme für den internen Planungskalender | Serverseitige Rechteprüfung |
-| Zweiter Anmeldefaktor | Für Regierung, BdB/Verwaltung und Redaktion im Code verpflichtend; BdB entspricht der technischen Rolle ADMIN | Anmeldung und Rechteprüfung im Projekt |
+| Zugriffsrechte | BdB im zugewiesenen Bezirk, Referenten bei eigenen Veranstaltungen, RvS mit fachlichem Gesamtzugriff. Eng begrenzte Ausnahme für den internen Planungskalender | Serverseitige Rechteprüfung |
+| Zweiter Anmeldefaktor | Für Regierung und BdB im Code verpflichtend; BdB entspricht der technischen Rolle ADMIN | Anmeldung und Rechteprüfung im Projekt |
 | Öffentliche Namen | Freiwillige eigene Zustimmung, zunächst ausgeschaltet; nur Vor- und Nachname bei eigenen zugeordneten Veranstaltungen, einschließlich künftiger eigener Veranstaltungen; Widerruf im Konto | Namensfreigabe und öffentliche Datenauswahl |
 | Schuljahre und operative Frist | 1. August bis 31. Juli; 400 volle Kalendertage ab folgendem 1. August. Für 2026/2027 Sperre ab 04.09.2028, 00:00 Uhr | Fristberechnung und vorhandene Prüfungen; die abweichende Berechnung in der vorgelegten Nachricht trifft nicht zu |
 | Anmeldung und Links | Sitzung acht Stunden; MFA-Anmeldecookie fünf Minuten; Einladungs-/Rücksetzlinks maximal 14 Tage und einmalig. Kein eigener E-Mail-Versand | Aktuelle Anwendung |
@@ -54,7 +54,7 @@ Ein gemeinsames kurzes Inbetriebnahmeprotokoll mit Datum, Ergebnis und zuständi
 
 ### Serverzugänge prüfen und ergänzen
 
-**Bereits aus dem Projekt bekannt:** Die Datenbank hat in der bereitgestellten Docker-Konfiguration keinen veröffentlichten Port. Der Anwendungsport ist nur lokal auf dem Server erreichbar; der HTTPS-Zugang wird davor eingerichtet. Die Anwendung läuft im Container ohne Root-Rechte. BdB-, Regierungs- und Redaktionskonten benötigen den zweiten Anmeldefaktor.
+**Bereits aus dem Projekt bekannt:** Die Datenbank hat in der bereitgestellten Docker-Konfiguration keinen veröffentlichten Port. Der Anwendungsport ist nur lokal auf dem Server erreichbar; der HTTPS-Zugang wird davor eingerichtet. Die Anwendung läuft im Container ohne Root-Rechte. BdB- und Regierungskonten benötigen den zweiten Anmeldefaktor.
 
 **Tatsächlich prüfen:** Entspricht der Server dieser Konfiguration? Sind HTTPS und die automatische Zertifikatserneuerung wirksam? Wer besitzt Hoster- und SSH-Zugänge, wie sind diese geschützt, und sind Datenbank sowie Verwaltungszugänge auch über IPv6 abgeschirmt? Bei einer HTTP-Weiterleitung oder Zertifikatsvalidierung kann Port 80 erforderlich sein; die Prüfung berücksichtigt das eingerichtete Verfahren.
 

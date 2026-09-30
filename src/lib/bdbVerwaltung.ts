@@ -10,7 +10,7 @@ import { entschluesseleZugangslinkToken } from "@/lib/zugangslinkSpeicher";
 export async function ladeBdbsMitEinladung() {
   await requireRole("RVS");
   const bdbs = await prisma.user.findMany({
-    where: { role: { in: ["ADMIN", "REDAKTEUR"] } },
+    where: { role: "ADMIN" },
     select: {
       id: true, name: true, email: true, role: true, isActive: true,
       bezirke: { select: { id: true, name: true }, orderBy: { name: "asc" } },
@@ -19,7 +19,7 @@ export async function ladeBdbsMitEinladung() {
         select: { tokenVerschluesselt: true, expiresAt: true, createdAt: true, usedAt: true, zweck: true },
       },
     },
-    orderBy: [{ role: "asc" }, { name: "asc" }, { email: "asc" }],
+    orderBy: [{ name: "asc" }, { email: "asc" }],
   });
   const jetzt = new Date();
   return bdbs.map(({ zugangstoken, ...bdb }) => {

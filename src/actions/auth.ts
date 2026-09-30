@@ -15,6 +15,7 @@ import {
   signToken,
 } from "@/lib/auth";
 import { istPrivilegierteRolle } from "@/lib/mfa";
+import { RolleSchema } from "@/lib/validation/rolle";
 import { createRateLimiter, getClientIp } from "@/lib/rateLimit";
 
 /**
@@ -91,7 +92,7 @@ export async function login(
     "$2b$12$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidinv";
   const passt = await bcrypt.compare(passwort, user?.passwordHash ?? ersatzHash);
 
-  if (!user || !user.passwordHash || !passt || !user.isActive) {
+  if (!user || !user.passwordHash || !passt || !user.isActive || !RolleSchema.safeParse(user.role).success) {
     await auditLog({
       userId: user?.id ?? null,
       aktion: "LOGIN_FAILED",

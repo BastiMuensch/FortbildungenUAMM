@@ -92,6 +92,7 @@ export async function speichereBdb(
     ziel = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
     if (!ziel) return { fehler: { _: "Dieses Konto existiert nicht mehr." } };
     if (ziel.role === "RVS") return { fehler: { _: "Ein RvS-Konto darf hier nicht zum BdB herabgestuft werden." } };
+    if (ziel.role !== "ADMIN") return { fehler: { _: "Hier können nur bestehende BdB-Konten bearbeitet werden." } };
   }
   let konto;
   try {
@@ -118,7 +119,7 @@ export async function erzeugeBdbZugangslink(userId: string): Promise<FormularSta
     throw error;
   }
   const ziel = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, role: true, isActive: true, passwordHash: true } });
-  if (!ziel || !["ADMIN", "REDAKTEUR"].includes(ziel.role) || !ziel.isActive) return { fehler: { _: "Für dieses Konto kann kein Zugangslink erzeugt werden." } };
+  if (!ziel || ziel.role !== "ADMIN" || !ziel.isActive) return { fehler: { _: "Für dieses Konto kann kein Zugangslink erzeugt werden." } };
   await erzeugeZugangstoken(ziel.id, ziel.passwordHash ? "PASSWORT_RESET" : "EINLADUNG", { wiederAnzeigen: true });
   await auditLog({ userId: rvs.id, aktion: "CREATE", entitaet: "Zugang", entitaetId: ziel.id, details: { rolle: ziel.role } });
   revalidatePath("/admin/bezirke");

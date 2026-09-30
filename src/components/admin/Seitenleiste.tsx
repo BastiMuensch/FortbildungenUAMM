@@ -26,8 +26,8 @@ import { logout } from "@/actions/auth";
 import { rolleLabel, type Rolle } from "@/constants/fortbildung";
 import { cn } from "@/lib/utils";
 
-const ALLE: Rolle[] = ["RVS", "ADMIN", "REDAKTEUR", "REFERENT"];
-const REDAKTION: Rolle[] = ["RVS", "ADMIN", "REDAKTEUR"];
+const ALLE: Rolle[] = ["RVS", "ADMIN", "REFERENT"];
+const VERWALTUNG: Rolle[] = ["RVS", "ADMIN"];
 const NUR_RVS: Rolle[] = ["RVS"];
 
 interface Eintrag {
@@ -51,9 +51,9 @@ const GRUPPEN: Array<{ titel: string; eintraege: Eintrag[] }> = [
   {
     titel: "Stammdaten",
     eintraege: [
-      { href: "/admin/referenten", label: "Referenten", icon: Users, rollen: REDAKTION },
-      { href: "/admin/schlagworte", label: "Schlagworte", icon: Tags, rollen: REDAKTION },
-      { href: "/admin/orte", label: "Orte", icon: MapPin, rollen: REDAKTION },
+      { href: "/admin/referenten", label: "Referenten", icon: Users, rollen: VERWALTUNG },
+      { href: "/admin/schlagworte", label: "Schlagworte", icon: Tags, rollen: VERWALTUNG },
+      { href: "/admin/orte", label: "Orte", icon: MapPin, rollen: VERWALTUNG },
     ],
   },
   {
@@ -216,7 +216,7 @@ export function Seitenleiste({ name, rolle, schulamtName, schulamtsStartseiten }
                 {schulamtsStartseiten.map((schulamt) => (
                   <li key={schulamt.kuerzel}>
                     <Punkt
-                      eintrag={{ href: `/${schulamt.kuerzel}`, label: schulamt.name, icon: ExternalLink, rollen: REDAKTION }}
+                      eintrag={{ href: `/${schulamt.kuerzel}`, label: schulamt.name, icon: ExternalLink, rollen: VERWALTUNG }}
                       onNavigate={() => setOffen(false)}
                     />
                   </li>

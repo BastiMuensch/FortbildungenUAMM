@@ -78,7 +78,7 @@ jobs:
         run: npm run test:mfa && npm run test:importfristen && npm run test:backup
 
       - name: Datenschutz und Archiv mit Datenbank pruefen
-        run: npm run test:datenschutz && npm run test:archiv && npm run test:mfa:db
+        run: npm run test:rollen:db && npm run test:datenschutz && npm run test:archiv && npm run test:mfa:db
 
       - name: Vollbackup verschluesseln und wirklich wiederherstellen
         run: npm run test:datensicherung && npm run test:vollbackup:betrieb && npm run test:datensicherung:db

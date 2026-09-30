@@ -15,7 +15,7 @@ export function MfaEinrichtungsFormular() {
   const fehler = bestaetigung.fehler ?? start.fehler;
   if (bestaetigung.wiederherstellungscodes) return <Codes codes={bestaetigung.wiederherstellungscodes} />;
   return <section className="space-y-4 border bg-card p-5">
-    <div><h2 className="font-semibold tracking-tight">Zwei-Faktor-Authentifizierung einrichten</h2><p className="mt-1 text-sm text-muted-foreground">Für dieses Konto ist eine Authenticator-App erforderlich. Bis zur Bestätigung bleibt der übrige Redaktionsbereich gesperrt.</p></div>
+    <div><h2 className="font-semibold tracking-tight">Zwei-Faktor-Authentifizierung einrichten</h2><p className="mt-1 text-sm text-muted-foreground">Für dieses Konto ist eine Authenticator-App erforderlich. Bis zur Bestätigung bleibt der übrige Verwaltungsbereich gesperrt.</p></div>
     {!start.geheimnis ? <form action={startAction}><Senden label="Einrichtung starten" /></form> : <>
       <div className="space-y-3">
         <p className="text-sm">Öffnen Sie Ihre Authenticator-App, fügen Sie ein Konto hinzu und scannen Sie diesen QR-Code.</p>

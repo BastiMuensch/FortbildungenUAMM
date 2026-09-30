@@ -68,7 +68,7 @@ function BdbZeile({ bdb, bezirke }: { bdb: Bdb; bezirke: Bezirk[] }) {
   const [linkState, linkAction, linkPending] = useActionState(() => erzeugeBdbZugangslink(bdb.id), {});
   const zugeordnet = new Set(bdb.bezirke.map((bezirk) => bezirk.id));
   return <details className="py-3 text-sm">
-    <summary className="cursor-pointer"><span className="font-medium">{bdb.name ?? bdb.email}</span> · {bdb.role === "ADMIN" ? "BdB" : "Redaktion"}{!bdb.isActive ? " · deaktiviert" : ""} · {einladungsKurzstatus(bdb.einladung)}<span className="text-muted-foreground"> · {bdb.bezirke.map((bezirk) => bezirk.name).join(", ") || "ohne Bezirk"}</span></summary>
+    <summary className="cursor-pointer"><span className="font-medium">{bdb.name ?? bdb.email}</span> · BdB{!bdb.isActive ? " · deaktiviert" : ""} · {einladungsKurzstatus(bdb.einladung)}<span className="text-muted-foreground"> · {bdb.bezirke.map((bezirk) => bezirk.name).join(", ") || "ohne Bezirk"}</span></summary>
     <form action={action} className="mt-3 space-y-2">
       <Input name="name" required defaultValue={bdb.name ?? ""} aria-label={`Name von ${bdb.email}`} />
       <Input name="email" required type="email" defaultValue={bdb.email} aria-label={`E-Mail von ${bdb.email}`} />

@@ -50,13 +50,13 @@ Der Anbieter verantwortet die vereinbarte Infrastruktur. Betriebssystem, Anwendu
 
 **Im Tool umgesetzt:** Passwörter werden nicht im Klartext gespeichert. Sitzungen laufen nach acht Stunden ab und sind im Browser gegen JavaScript-Zugriff geschützt. Der Server weist gesperrte Konten und alte Sitzungen ab. Anmeldeversuche werden je Konto und IP begrenzt. Das erschwert automatisierte Passwortangriffe im vorgesehenen Betrieb mit einer Anwendungsinstanz.
 
-Regierungs-, BdB-/Verwaltungs- und Redaktionskonten benötigen zusätzlich zum Passwort einen wechselnden Code aus einer Authenticator-App. Die Grundlage für diese Codes wird verschlüsselt gespeichert; Notfallcodes werden nur als Prüfinformation gespeichert und bei Einrichtung oder kontrollierter Rücksetzung einmal angezeigt. Ein gestohlenes Passwort reicht dadurch allein nicht aus. BdB-Konten fallen unter die technische Rolle ADMIN und sind damit bereits von dieser Pflicht erfasst.
+Regierungs- und BdB-Konten benötigen zusätzlich zum Passwort einen wechselnden Code aus einer Authenticator-App. Die Grundlage für diese Codes wird verschlüsselt gespeichert; Notfallcodes werden nur als Prüfinformation gespeichert und bei Einrichtung oder kontrollierter Rücksetzung einmal angezeigt. Ein gestohlenes Passwort reicht dadurch allein nicht aus. BdB-Konten fallen unter die technische Rolle ADMIN und sind damit bereits von dieser Pflicht erfasst.
 
 **Noch zu bestätigen:** Dienstliche Identität und Rolle vor Freischaltung prüfen, keine geteilten Konten. Hosterverwaltung und Administratorzugänge ebenfalls mit Mehrfaktor-Anmeldung sichern. Schlüsselablage, Schlüsselwechsel, Notfallrücksetzung und Supportzugriffe dokumentieren. Bei Ausscheiden oder Rollenwechsel Konten unverzüglich prüfen und nötigenfalls sperren; die Berechtigungen zusätzlich im jährlichen Betriebscheck prüfen.
 
 ### TOM 02 Bezirksrechte und Auswertungen
 
-**Im Tool umgesetzt:** Rechte werden auf dem Server geprüft, auch für Downloads. RvS-Konten können bezirksübergreifend arbeiten. BdB- und Redaktionskonten sehen nur zugewiesene Bezirke. Referenten brauchen zusätzlich eine eigene Veranstaltungszuordnung. Das schützt vor dem Zugriff auf fremde Auswertungen durch veränderte Adressen oder Oberflächen.
+**Im Tool umgesetzt:** Rechte werden auf dem Server geprüft, auch für Downloads. RvS-Konten können bezirksübergreifend arbeiten. BdB-Konten sehen nur zugewiesene Bezirke. Referenten brauchen zusätzlich eine eigene Veranstaltungszuordnung. Das schützt vor dem Zugriff auf fremde Auswertungen durch veränderte Adressen oder Oberflächen.
 
 **Bewusst geregelte Ausnahme – interner Planungskalender:** Planungsberechtigte Personen dürfen bezirksübergreifend Titel, Beschreibung, Datum, Uhrzeit, Ort, Veranstaltungsform und Planungsstatus sehen, auch bei Entwürfen. Das dient Terminabstimmung und vermeidet Überschneidungen. Die Ausnahme erlaubt weder Bearbeitung fremder Veranstaltungen noch Zugriff auf fremde Auswertungen, Teilnehmerzahlen, Nachbereitungsnotizen oder Referentenkontakte. Referentennamen sind kein eigenes Kalenderfeld. Freitexte bleiben auf notwendige Planungsangaben beschränkt.
 

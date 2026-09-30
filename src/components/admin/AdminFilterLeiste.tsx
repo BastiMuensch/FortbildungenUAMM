@@ -15,7 +15,7 @@ import {
 } from "@/constants/fortbildung";
 
 /**
- * Filterleiste des Redaktionsbereichs.
+ * Filterleiste des Verwaltungsbereichs.
  *
  * Schreibt ausschließlich in die URL — die Liste selbst rendert der Server neu.
  * Dadurch gibt es keine zweite Wahrheit über den aktuellen Filterzustand.

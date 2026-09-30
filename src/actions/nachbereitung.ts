@@ -36,7 +36,6 @@ const NACHBEREITUNGS_STATUS = new Set(["VEROEFFENTLICHT", "ARCHIVIERT"]);
  *
  * Ausschließlich die Administration sowie Referentinnen und Referenten für
  * eigene beziehungsweise zugeordnete SchiLf dürfen Teilnehmerzahlen melden.
- * Redaktion hat dafür bewusst keine Berechtigung.
  */
 export async function meldeTeilnehmerzahl(
   id: string,

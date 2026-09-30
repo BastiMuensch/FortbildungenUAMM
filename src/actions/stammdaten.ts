@@ -19,7 +19,7 @@ import { sperreNamensfreigabe, schreibeNamensfreigabe } from "@/lib/namensfreiga
  */
 
 async function rolle() {
-  return requireRole("RVS", "ADMIN", "REDAKTEUR");
+  return requireRole("RVS", "ADMIN");
 }
 
 function alsFehler(error: unknown): FormularState | null {
@@ -89,7 +89,7 @@ export async function speichereReferent(
         select: { vorname: true, nachname: true, oeffentlichSichtbar: true },
       });
       if (!vorhanden) return false;
-      // Der Redaktion übermittelte Sichtbarkeitswerte werden niemals übernommen.
+      // Der Verwaltung übermittelte Sichtbarkeitswerte werden niemals übernommen.
       await tx.referent.update({
         where: { id: referentId, AND: [referentScope(user)] },
         data: {

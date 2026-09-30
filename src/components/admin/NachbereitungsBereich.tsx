@@ -5,9 +5,10 @@ import { prisma } from "@/lib/prisma";
 import { fortbildungScope, requireRole } from "@/lib/auth";
 import { TeilnehmerMeldung } from "@/components/admin/TeilnehmerMeldung";
 import { aktuellesSchuljahr } from "@/lib/datetime";
-import { baueUrl, type SuchParameter } from "@/lib/filter";
+import { leseFilter, type SuchParameter } from "@/lib/filter";
 import { parseSchuljahr, schuljahrWhere } from "@/lib/schuljahr";
-import { SchuljahrWahl } from "@/components/admin/SchuljahrWahl";
+import { FortbildungsNavigation } from "@/components/admin/FortbildungsNavigation";
+import { adminBereichUrl } from "@/lib/adminNavigation";
 
 /**
  * Arbeitsbereich für die Nachbereitung vergangener Fortbildungen.
@@ -28,6 +29,9 @@ export async function NachbereitungsBereich({
   const laufendes = aktuellesSchuljahr();
   const schuljahr = schuljahrParam === "alle" ? null : parseSchuljahr(schuljahrParam) ?? parseSchuljahr(laufendes)!;
   const schuljahrText = schuljahr ? `${schuljahr}/${schuljahr + 1}` : "alle Schuljahre";
+  const filter = leseFilter(params);
+  const bezirkFilter = filter.bezirk ? { bezirkId: filter.bezirk } : {};
+  const rueckkehrUrl = adminBereichUrl("/admin/nachbereitung", params);
 
   const jetzt = new Date();
 
@@ -42,6 +46,7 @@ export async function NachbereitungsBereich({
   const vergangen = {
     AND: [
       bereich,
+      bezirkFilter,
       ...(schuljahr ? [schuljahrWhere(schuljahr)] : []),
       { ende: { lt: jetzt } },
       // Nur tatsächlich veröffentlichte oder inzwischen archivierte Termine
@@ -51,7 +56,7 @@ export async function NachbereitungsBereich({
     ],
   };
 
-  const [offen, gemeldet, vorhandeneJahre] = await Promise.all([
+  const [offen, gemeldet] = await Promise.all([
     prisma.fortbildung.findMany({
       where: {
         AND: [
@@ -95,14 +100,7 @@ export async function NachbereitungsBereich({
       take: 50,
       select: auswahl,
     }),
-    prisma.fortbildung.findMany({
-      where: bereich,
-      distinct: ["schuljahr"],
-      orderBy: { schuljahr: "desc" },
-      select: { schuljahr: true },
-    }),
   ]);
-  const jahrgaenge = [...new Set([laufendes, ...vorhandeneJahre.map((f) => `${f.schuljahr}/${f.schuljahr + 1}`)])].sort().reverse();
 
   return (
     <section
@@ -133,11 +131,10 @@ export async function NachbereitungsBereich({
             ? " Sie können ausschließlich für Ihre eigenen oder zugeordneten SchiLf Teilnehmerzahlen nachtragen. Die Dauer anderer eigener oder zugeordneter Fortbildungen ändern Sie direkt in der jeweiligen Fortbildung."
             : ""}
         </p>
-        <div className="mt-3">
-          <SchuljahrWahl params={params} jahrgaenge={jahrgaenge} aktuell={laufendes} />
-        </div>
         <p className="mt-2 text-xs text-muted-foreground">Angezeigt: {schuljahrText}.</p>
       </div>
+
+      {!eingebettet ? <FortbildungsNavigation params={params} aktiveAnsicht="nachbereitung" darfFreigeben={istAdmin} darfNachbereiten /> : null}
 
       <section aria-labelledby="nachbereitung-offen">
         {eingebettet ? (
@@ -172,6 +169,7 @@ export async function NachbereitungsBereich({
                 key={fortbildung.id}
                 fortbildung={fortbildung}
                 darfBestaetigungen={istAdmin}
+                rueckkehrUrl={rueckkehrUrl}
               />
             ))}
           </div>
@@ -198,6 +196,7 @@ export async function NachbereitungsBereich({
                 key={fortbildung.id}
                 fortbildung={fortbildung}
                 darfBestaetigungen={istAdmin}
+                rueckkehrUrl={rueckkehrUrl}
               />
             ))}
           </div>
@@ -207,8 +206,8 @@ export async function NachbereitungsBereich({
       <p className="text-xs text-muted-foreground">
         Angezeigt werden vergangene Veranstaltungen aus {schuljahrText}.
         Weitere Daten lassen sich über die{" "}
-        <Link href={baueUrl("/admin", params, {})} className="underline underline-offset-4">
-          Fortbildungsübersicht
+        <Link href={adminBereichUrl("/admin/fortbildungen", params)} className="underline underline-offset-4">
+          Fortbildungsliste
         </Link>{" "}
         aufrufen.
       </p>

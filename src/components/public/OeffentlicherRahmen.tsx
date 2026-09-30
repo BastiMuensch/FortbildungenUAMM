@@ -2,6 +2,8 @@ import { bereichsPfad, bereichsKalenderAbo, type OeffentlicherBezirk } from "@/l
 import { ladeSchulamt } from "@/lib/schulamt";
 import Link from "next/link";
 import { CalendarDays, ListFilter, LogIn } from "lucide-react";
+import { Marke } from "@/components/Marke";
+import { fortbildungsZusatz } from "@/lib/marke";
 
 const NAVIGATION = [
   { href: "/fortbildungen", label: "Alle Fortbildungen", icon: ListFilter },
@@ -27,26 +29,17 @@ export async function OeffentlicherRahmen({
       </a>
 
       <header className="sticky top-0 z-40 border-b border-border/80 bg-background/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-6xl items-stretch gap-x-1 px-3 sm:gap-x-6 sm:px-4">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-stretch gap-x-1 px-3 sm:flex-nowrap sm:gap-x-6 sm:px-4">
           <Link
             href={basis || "/"}
-            aria-label={bezirk ? `${bezirk.name} – Startseite` : "Fortbildungen – Startseite"}
-            className="flex min-w-0 items-center gap-2 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring sm:gap-3"
+            aria-label={bezirk ? `${bezirk.name} – Startseite` : "weiter.bilden – Startseite"}
+            className="flex min-w-0 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <span
-              aria-hidden
-              className="flex size-8 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground shadow-sm sm:size-9 sm:rounded-xl"
-            >
-              F
-            </span>
-            <span className="leading-tight">
-              <span className="hidden text-sm font-semibold tracking-tight text-foreground min-[360px]:block">
-                Fortbildungen
-              </span>
-              <span className="hidden max-w-56 truncate text-xs text-muted-foreground min-[420px]:block">
-                {bezirk?.name ?? schulamt.kurzname}
-              </span>
-            </span>
+            <Marke
+              kompakt
+              zusatz={bezirk ? `Fortbildungen · ${bezirk.name}` : fortbildungsZusatz(schulamt.kurzname)}
+              className="max-w-[12rem]"
+            />
           </Link>
 
           <nav className="ml-auto flex items-stretch">
@@ -62,7 +55,7 @@ export async function OeffentlicherRahmen({
                 }
               >
                 <Icon className="size-4" aria-hidden />
-            <span className={hervorheben ? "inline" : "sr-only sm:not-sr-only"}>
+            <span className={hervorheben ? "sr-only min-[420px]:not-sr-only" : "sr-only sm:not-sr-only"}>
                   {label}
                 </span>
               </Link>

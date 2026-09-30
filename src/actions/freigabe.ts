@@ -19,7 +19,7 @@ import type { FormularState } from "@/lib/validation/fortbildung";
  */
 
 function alleFrischMachen() {
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   revalidatePath("/admin/freigaben");
   revalidatePath("/fortbildungen");
   revalidatePath("/kalender");
@@ -179,6 +179,6 @@ export async function fibsStatusSetzen(id: string, inFibs: boolean): Promise<voi
     details: { inFibs },
   });
 
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   revalidatePath(`/admin/fortbildungen/${id}`);
 }

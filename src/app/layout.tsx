@@ -1,6 +1,7 @@
 import { ladeSchulamt } from "@/lib/schulamt";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { fortbildungsZusatz } from "@/lib/marke";
 import "./globals.css";
 
 // Die OFL-lizenzierten Dateien liegen im Repository. next/font/local erzeugt
@@ -34,8 +35,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const schulamt = await ladeSchulamt();
   return {
     title: {
-      default: `Fortbildungen — ${schulamt.kurzname}`,
-      template: `%s — ${schulamt.kurzname}`,
+      default: `weiter.bilden — ${fortbildungsZusatz(schulamt.kurzname)}`,
+      template: `%s — weiter.bilden · ${fortbildungsZusatz(schulamt.kurzname)}`,
     },
     description: schulamt.startText,
     robots: { index: true, follow: true },

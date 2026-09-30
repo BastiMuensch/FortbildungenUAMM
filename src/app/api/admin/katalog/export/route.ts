@@ -1,12 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import ExcelJS from "exceljs";
 
-import { getSessionUser } from "@/lib/auth";
+import { ERFASSER, getSessionUser } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 import { ladeBezirksUeberschrift } from "@/lib/bezirke";
 import { berlinIsoDatum, formatDatum, formatZeit } from "@/lib/datetime";
-import { leseFilter, type SuchParameter } from "@/lib/filter";
-import { katalogKurzbeschreibung, ladeKatalog } from "@/lib/katalog";
+import { type SuchParameter } from "@/lib/filter";
+import { katalogKurzbeschreibung, ladeKatalog, leseKatalogFilter } from "@/lib/katalog";
 import {
   formatLabel,
   niveaustufeLabel,
@@ -19,9 +19,12 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
+  if (!ERFASSER.includes(user.role)) {
+    return NextResponse.json({ error: "Keine Berechtigung." }, { status: 403 });
+  }
 
-  const params: SuchParameter = Object.fromEntries(request.nextUrl.searchParams.entries());
-  const filter = leseFilter(params);
+  const params = sucheParameter(request);
+  const filter = leseKatalogFilter(params);
   const [eintraege, bereich] = await Promise.all([
     ladeKatalog(user, filter),
     ladeBezirksUeberschrift(user, filter.bezirk),
@@ -153,4 +156,14 @@ function zelle(wert: string): string {
 function excelDatum(datum: Date): Date {
   const [jahr, monat, tag] = berlinIsoDatum(datum).split("-").map(Number);
   return new Date(Date.UTC(jahr!, monat! - 1, tag!, 12));
+}
+
+/** Wiederholte Parameter werden wie in der Server-Seite mit dem ersten Wert gelesen. */
+function sucheParameter(request: NextRequest): SuchParameter {
+  const params: SuchParameter = {};
+  request.nextUrl.searchParams.forEach((wert, name) => {
+    const bisher = params[name];
+    params[name] = bisher === undefined ? wert : Array.isArray(bisher) ? [...bisher, wert] : [bisher, wert];
+  });
+  return params;
 }

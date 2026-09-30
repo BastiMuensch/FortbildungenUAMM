@@ -50,7 +50,7 @@ export async function starteFibsImport(
   });
 
   if (uebernehmen) {
-    revalidatePath("/admin");
+    revalidatePath("/admin", "layout");
     revalidatePath("/fortbildungen");
   }
 

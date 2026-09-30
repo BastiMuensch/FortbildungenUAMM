@@ -51,6 +51,7 @@ export function FortbildungForm({
   schlagwortVorschlaege,
   bezirke,
   darfVeroeffentlichen,
+  rueckkehrUrl,
 }: {
   fortbildung?: FortbildungWerte;
   orte: OrtOption[];
@@ -59,6 +60,7 @@ export function FortbildungForm({
   schlagwortVorschlaege: string[];
   bezirke: BezirkOption[];
   darfVeroeffentlichen: boolean;
+  rueckkehrUrl?: string;
 }) {
   const action = saveFortbildung.bind(null, fortbildung?.id ?? null);
   const [state, formAction] = useActionState<FormularState, FormData>(action, {});
@@ -90,6 +92,7 @@ export function FortbildungForm({
       {/* Werte aus dem State, die kein sichtbares Formularfeld haben. */}
       <input type="hidden" name="beschreibungHtml" value={zustand.beschreibung} />
       <input type="hidden" name="niveaustufe" value={zustand.niveaustufe} />
+      {rueckkehrUrl ? <input type="hidden" name="rueckkehr" value={rueckkehrUrl} /> : null}
 
       <FehlerUebersicht fehler={fehler} onAbschnitt={(abschnitt) => setTab(abschnitt)} />
 
@@ -138,7 +141,7 @@ export function FortbildungForm({
         <Button
           nativeButton={false}
           variant="ghost"
-          render={<Link href="/admin">Abbrechen</Link>}
+          render={<Link href={rueckkehrUrl ?? "/admin/fortbildungen"}>Abbrechen</Link>}
         />
       </div>
     </form>

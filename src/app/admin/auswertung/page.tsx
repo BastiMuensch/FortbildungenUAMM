@@ -3,13 +3,15 @@ import { BarChart3, FileSpreadsheet } from "lucide-react";
 import { ERFASSER, requireRole } from "@/lib/auth";
 import { AUSWERTUNGS_HINWEISE, auswertungsProzent, auswertungsZahl, istAuswertbar, leseAuswertungsFilter } from "@/lib/auswertung";
 import { ladeAuswertung, ladeAuswertungsAuswahl } from "@/lib/auswertungDaten";
-import { ladeBezirke, ladeBezirksUeberschrift } from "@/lib/bezirke";
-import { aktuellesSchuljahr, formatDatum, formatDatumZeit } from "@/lib/datetime";
+import { ladeBezirksUeberschrift } from "@/lib/bezirke";
+import { formatDatum, formatDatumZeit } from "@/lib/datetime";
 import { baueUrl, type SuchParameter } from "@/lib/filter";
+import { adminBereichUrl } from "@/lib/adminNavigation";
 import { ORGANISATIONSFORMEN, VERANSTALTUNGSFORMATE, formatLabel, organisationsformKurz, statusLabel } from "@/constants/fortbildung";
 import { Button } from "@/components/ui/button";
 import { AuswertungsTabelle } from "@/components/admin/AuswertungsTabelle";
 import { AuswertungDrucken } from "@/components/admin/AuswertungDrucken";
+import { BerichteNavigation } from "@/components/admin/BerichteNavigation";
 
 export const metadata = { title: "Auswertung" };
 export const dynamic = "force-dynamic";
@@ -21,22 +23,17 @@ export default async function AuswertungsSeite({ searchParams }: { searchParams:
   try {
     filter = leseAuswertungsFilter(params);
   } catch (fehler) {
-    return <div className="space-y-4"><h1 className="text-3xl font-semibold">Auswertung</h1><p role="alert">{(fehler as Error).message}</p><Link className="underline" href="/admin/auswertung">Filter zurücksetzen</Link></div>;
+    return <div className="space-y-4"><BerichteNavigation aktiveSeite="auswertung" rolle={user.role} params={params} /><h1 className="text-3xl font-semibold">Auswertung</h1><p role="alert">{(fehler as Error).message}</p><Link className="underline" href={adminBereichUrl("/admin/auswertung", { bezirk: params.bezirk })}>Filter zurücksetzen</Link></div>;
   }
-  const [auswertung, auswahl, bezirke, ueberschrift] = await Promise.all([ladeAuswertung(user, filter), ladeAuswertungsAuswahl(user), ladeBezirke(user), ladeBezirksUeberschrift(user, filter.bezirk)]);
+  const [auswertung, auswahl, ueberschrift] = await Promise.all([ladeAuswertung(user, filter), ladeAuswertungsAuswahl(user), ladeBezirksUeberschrift(user, filter.bezirk)]);
   const { gesamt } = auswertung;
-  const aktuell = aktuellesSchuljahr();
-  const jahre = new Set([aktuell, ...(filter.schuljahr ? [filter.schuljahr] : [])]);
-  if (auswahl.erster && auswahl.letzter) {
-    const von = Number(aktuellesSchuljahr(auswahl.erster.beginn).slice(0, 4));
-    const bis = Number(aktuellesSchuljahr(auswahl.letzter.beginn).slice(0, 4));
-    for (let jahr = von; jahr <= bis; jahr++) jahre.add(`${jahr}/${jahr + 1}`);
-  }
   const exportParams: SuchParameter = { schuljahr: filter.schuljahr ?? "alle", von: filter.von, bis: filter.bis, organisationsform: filter.organisationsform, format: filter.format, referent: filter.referent, bezirk: filter.bezirk };
   const referentName = auswahl.referenten.find((referent) => referent.id === filter.referent);
   const eingabeKlasse = "mt-1 block h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  const kontextUrl = adminBereichUrl("/admin/auswertung", params);
 
   return <div className="auswertung space-y-8">
+    <BerichteNavigation aktiveSeite="auswertung" rolle={user.role} params={params} />
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p className="etikett text-primary">{ueberschrift} · {filter.schuljahr ?? "Alle Schuljahre"}</p>
@@ -51,21 +48,21 @@ export default async function AuswertungsSeite({ searchParams }: { searchParams:
     </div>
 
     <form action="/admin/auswertung" method="get" className="rounded-2xl border bg-card p-4 print:hidden" aria-label="Auswertung filtern">
+      <input type="hidden" name="schuljahr" value={filter.schuljahr ?? "alle"} />
+      <input type="hidden" name="bezirk" value={filter.bezirk ?? ""} />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <label className="text-sm font-medium">Schuljahr<select name="schuljahr" defaultValue={filter.schuljahr ?? "alle"} className={eingabeKlasse}><option value="alle">Alle Schuljahre</option>{[...jahre].sort().reverse().map((jahr) => <option key={jahr}>{jahr}</option>)}</select></label>
         <label className="text-sm font-medium">Von<input type="date" name="von" defaultValue={filter.von} className={eingabeKlasse} /></label>
         <label className="text-sm font-medium">Bis<input type="date" name="bis" defaultValue={filter.bis} className={eingabeKlasse} /></label>
         <label className="text-sm font-medium">Fortbildungsart<select name="organisationsform" defaultValue={filter.organisationsform ?? ""} className={eingabeKlasse}><option value="">Alle Arten</option>{ORGANISATIONSFORMEN.map((art) => <option key={art.value} value={art.value}>{art.label}</option>)}</select></label>
         <label className="text-sm font-medium">Format<select name="format" defaultValue={filter.format ?? ""} className={eingabeKlasse}><option value="">Alle Formate</option>{VERANSTALTUNGSFORMATE.map((format) => <option key={format.value} value={format.value}>{format.label}</option>)}</select></label>
         <label className="text-sm font-medium">Referent/in<select name="referent" defaultValue={filter.referent ?? ""} className={eingabeKlasse}><option value="">Alle zugeordneten Referenten</option>{filter.referent && !referentName ? <option value={filter.referent}>Nicht verfügbar</option> : null}{auswahl.referenten.map((referent) => <option key={referent.id} value={referent.id}>{referent.nachname}, {referent.vorname}</option>)}</select></label>
-        <label className="text-sm font-medium">Schulamt<select name="bezirk" defaultValue={filter.bezirk ?? ""} className={eingabeKlasse}><option value="">Alle sichtbaren Schulämter</option>{bezirke.map((bezirk) => <option key={bezirk.id} value={bezirk.id}>{bezirk.name}</option>)}</select></label>
       </div>
-      <div className="mt-4 flex flex-wrap items-center gap-3"><Button type="submit">Auswerten</Button><Link className="text-sm underline underline-offset-4" href="/admin/auswertung">Zurücksetzen</Link><p className="text-xs text-muted-foreground">Von/bis grenzt das gewählte Schuljahr zusätzlich ein.</p></div>
+      <div className="mt-4 flex flex-wrap items-center gap-3"><Button type="submit">Auswerten</Button><Link className="text-sm underline underline-offset-4" href={kontextUrl}>Zurücksetzen</Link><p className="text-xs text-muted-foreground">Von/bis grenzt das gewählte Schuljahr zusätzlich ein. Schulamtsbezirk und Schuljahr wählen Sie oben im Arbeitsbereich.</p></div>
     </form>
 
     <p className="text-sm text-muted-foreground">Auswahl: {filter.schuljahr ?? "Alle Schuljahre"} · {filter.von ?? "offener Beginn"} bis {filter.bis ?? "offenes Ende"} · {filter.organisationsform ? organisationsformKurz(filter.organisationsform) : "alle Arten"} · {filter.format ? formatLabel(filter.format) : "alle Formate"} · {filter.referent ? (referentName ? `${referentName.vorname} ${referentName.nachname}` : "Referent/in nicht verfügbar") : "alle Referenten"}</p>
 
-    <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 xl:grid-cols-4">
       <Kennzahl titel="Veranstaltungen" wert={auswertungsZahl(gesamt.veranstaltungen)} text={`${gesamt.beendet} beendet · ${gesamt.geplant} anstehend / laufend`} />
       <Kennzahl titel="Gemeldete Teilnahmen" wert={auswertungsZahl(gesamt.teilnahmen)} text={`aus ${gesamt.gemeldet} Veranstaltungen mit Meldung`} />
       <Kennzahl titel="Auslastung" wert={auswertungsProzent(gesamt.auslastung)} text={`Ø ${auswertungsZahl(gesamt.durchschnitt, 1)} Teilnahmen je gemeldeter Veranstaltung`} />
@@ -85,7 +82,7 @@ export default async function AuswertungsSeite({ searchParams }: { searchParams:
       </div>
       <section id="veranstaltungen" className="scroll-mt-6 space-y-3">
         <div><h2 className="text-lg font-semibold">Teilnehmerzahlen nach Veranstaltung</h2><p className="mt-1 text-sm text-muted-foreground">Neueste Termine zuerst. „Offen“ bedeutet: Termin beendet, Teilnehmerzahl noch nicht gemeldet.</p></div>
-        <div className="overflow-x-auto rounded-xl border bg-card print:overflow-visible"><table className="auswertung-tabelle w-full text-sm">
+        <div className="overflow-x-auto rounded-xl border bg-card print:overflow-visible"><table className="auswertung-tabelle min-w-[48rem] w-full text-sm">
           <caption className="sr-only">Teilnehmerzahlen nach Veranstaltung</caption>
           <thead><tr><th scope="col" className="text-left">Veranstaltung</th><th scope="col" className="text-left">Referenten</th><th scope="col">Geplante Plätze</th><th scope="col">Teilnahmen</th><th scope="col">Auslastung</th></tr></thead>
           <tbody>{auswertung.termine.map((termin) => {
@@ -105,5 +102,5 @@ export default async function AuswertungsSeite({ searchParams }: { searchParams:
 }
 
 function Kennzahl({ titel, wert, text }: { titel: string; wert: string; text: string }) {
-  return <div className="rounded-2xl border bg-card p-5"><p className="text-sm text-muted-foreground">{titel}</p><p className="zahl mt-3 text-3xl font-semibold tracking-tight text-primary">{wert}</p><p className="mt-2 text-xs text-muted-foreground">{text}</p></div>;
+  return <div className="min-w-0 break-words rounded-2xl border bg-card p-5"><p className="text-sm text-muted-foreground">{titel}</p><p className="zahl mt-3 text-3xl font-semibold tracking-tight text-primary">{wert}</p><p className="mt-2 text-xs text-muted-foreground">{text}</p></div>;
 }

@@ -7,16 +7,19 @@ import { ERFASSER, requireRole } from "@/lib/auth";
 import { berlinIsoDatum, formatMonatJahr } from "@/lib/datetime";
 import { Planungskalender } from "@/components/admin/Planungskalender";
 import { Button } from "@/components/ui/button";
+import { baueUrl, type SuchParameter } from "@/lib/filter";
+import { adminBereichUrl } from "@/lib/adminNavigation";
 
 export const metadata: Metadata = { title: "Planungskalender" };
 
 export default async function PlanungskalenderSeite({
   searchParams,
 }: {
-  searchParams: Promise<{ monat?: string }>;
+  searchParams: Promise<SuchParameter>;
 }) {
   const user = await requireRole(...ERFASSER);
-  const { monat } = await searchParams;
+  const params = await searchParams;
+  const monat = Array.isArray(params.monat) ? params.monat[0] : params.monat;
   const { jahr, monatsIndex } = leseMonat(monat);
   const anker = new Date(Date.UTC(jahr, monatsIndex, 15, 12));
 
@@ -54,7 +57,7 @@ export default async function PlanungskalenderSeite({
             size="sm"
             render={
               <Link
-                href={`/admin/kalender?monat=${vorheriger}`}
+                href={baueUrl("/admin/kalender", params, { monat: vorheriger })}
                 aria-label="Vorheriger Monat"
               >
                 <ChevronLeft className="size-4" aria-hidden />
@@ -66,7 +69,7 @@ export default async function PlanungskalenderSeite({
             nativeButton={false}
             variant="outline"
             size="sm"
-            render={<Link href="/admin/kalender">Heute</Link>}
+            render={<Link href={adminBereichUrl("/admin/kalender", params)}>Heute</Link>}
           />
           <Button
             nativeButton={false}
@@ -74,7 +77,7 @@ export default async function PlanungskalenderSeite({
             size="sm"
             render={
               <Link
-                href={`/admin/kalender?monat=${naechster}`}
+                href={baueUrl("/admin/kalender", params, { monat: naechster })}
                 aria-label="Nächster Monat"
               >
                 Weiter

@@ -1,38 +1,26 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { istEinrichtungOffen } from "@/lib/schulamt";
 import {
   CalendarDays,
   CalendarPlus,
-  ChevronDown,
-  CheckCircle2,
   ClipboardCheck,
-  Download,
   FileSpreadsheet,
-  FileText,
   Globe2,
-  PencilLine,
-  Send,
   ShieldCheck,
 } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import { ERFASSER, fortbildungScope, requireRole } from "@/lib/auth";
-import { ladeBezirke } from "@/lib/bezirke";
-import {
-  darfFreigeben,
-} from "@/constants/fortbildung";
-import { baueUrl, filterZuWhere, leseFilter, type SuchParameter } from "@/lib/filter";
-import { aktuellesSchuljahr } from "@/lib/datetime";
+import { istEinrichtungOffen } from "@/lib/schulamt";
+import { darfFreigeben } from "@/constants/fortbildung";
+import { baueUrl, leseFilter, type SuchParameter } from "@/lib/filter";
+import { adminBereichUrl, adminSchuljahr } from "@/lib/adminNavigation";
 import { parseSchuljahr, schuljahrWhere } from "@/lib/schuljahr";
+import { formatDatum } from "@/lib/datetime";
 import { Button } from "@/components/ui/button";
-import { AdminFilterLeiste } from "@/components/admin/AdminFilterLeiste";
-import { FortbildungTabelle } from "@/components/admin/FortbildungTabelle";
-import { FreigabenBereich } from "@/components/admin/FreigabenBereich";
-import { NachbereitungsBereich } from "@/components/admin/NachbereitungsBereich";
-import { SchuljahrWahl } from "@/components/admin/SchuljahrWahl";
 
-export const metadata = { title: "Fortbildungen verwalten" };
+export const metadata = { title: "Arbeitsübersicht" };
+export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard({
   searchParams,
@@ -41,356 +29,120 @@ export default async function AdminDashboard({
 }) {
   const user = await requireRole(...ERFASSER);
   if (user.role === "RVS" && await istEinrichtungOffen()) redirect("/admin/einrichtung");
-  const params = await searchParams;
-  const filter = leseFilter(params);
-  const schuljahrParam = Array.isArray(params.schuljahr) ? params.schuljahr[0] : params.schuljahr;
-  const laufendes = aktuellesSchuljahr();
-  const gewaehltesSchuljahr = schuljahrParam === "alle"
-    ? null
-    : parseSchuljahr(filter.schuljahr) ?? parseSchuljahr(laufendes)!;
-  const kennzahlJahr = gewaehltesSchuljahr ? `${gewaehltesSchuljahr}/${gewaehltesSchuljahr + 1}` : null;
-  const paramsMitSchuljahr: SuchParameter = schuljahrParam === "alle"
-    ? params
-    : { ...params, schuljahr: kennzahlJahr! };
-  const scope = fortbildungScope(user);
   const istAdmin = darfFreigeben(user.role);
-  const darfNachbereiten = (user.role === "RVS" || user.role === "ADMIN") || user.role === "REFERENT";
-  const bereichParam = Array.isArray(params.bereich) ? params.bereich[0] : params.bereich;
-  const aktiverBereich =
-    bereichParam === "freigaben" && istAdmin
-      ? "freigaben"
-      : bereichParam === "nachbereitung" && darfNachbereiten
-        ? "nachbereitung"
-        : null;
-  const fibsAktiv =
-    aktiverBereich === null &&
-    filter.status === "VEROEFFENTLICHT" &&
-    filter.fibs === "offen-ausschreibung";
-  const freigabenUrl = `${baueUrl("/admin", paramsMitSchuljahr, { bereich: "freigaben" })}#arbeitsbereich`;
-  const nachbereitungUrl = `${baueUrl("/admin", paramsMitSchuljahr, { bereich: "nachbereitung" })}#arbeitsbereich`;
-  const fibsUrl = `${baueUrl(
-    "/admin",
-    paramsMitSchuljahr,
-    fibsAktiv
-      ? { status: undefined, fibs: undefined }
-      : {
-          status: "VEROEFFENTLICHT",
-          fibs: "offen-ausschreibung",
-          bereich: undefined,
-        },
-  )}#fortbildungslisten`;
-  const uebersichtUrl = baueUrl(
-    "/admin",
-    paramsMitSchuljahr,
-    fibsAktiv
-      ? { bereich: undefined, status: undefined, fibs: undefined }
-      : { bereich: undefined },
-  );
-  const uebersichtAktiv = aktiverBereich === null && !fibsAktiv;
-  const where = {
-    AND: [
-      scope,
-      filterZuWhere(filter),
-      ...(gewaehltesSchuljahr ? [schuljahrWhere(gewaehltesSchuljahr)] : []),
-    ],
-  };
+  const darfNachbereiten = istAdmin || user.role === "REFERENT";
+  const params = await searchParams;
+  const bereich = Array.isArray(params.bereich) ? params.bereich[0] : params.bereich;
+  const lokaleFilter = ["q", "von", "bis", "organisationsform", "format", "schulart", "niveaustufe", "kb", "schlagwort", "status", "fibs"];
+  if (lokaleFilter.some((name) => {
+    const wert = params[name];
+    return Array.isArray(wert) ? Boolean(wert[0]) : Boolean(wert);
+  })) redirect(baueUrl("/admin/fortbildungen", params, { bereich: undefined }));
+  if (bereich === "freigaben" && istAdmin) redirect(baueUrl("/admin/freigaben", params, { bereich: undefined }));
+  if (bereich === "nachbereitung" && darfNachbereiten) redirect(baueUrl("/admin/nachbereitung", params, { bereich: undefined }));
+
   const jetzt = new Date();
+  const filter = leseFilter(params);
+  const schuljahrRoh = Array.isArray(params.schuljahr) ? params.schuljahr[0] : params.schuljahr;
+  const schuljahr = adminSchuljahr(schuljahrRoh);
+  const schuljahrFilter = schuljahr === "alle" ? {} : schuljahrWhere(parseSchuljahr(schuljahr)!);
+  const scope = fortbildungScope(user);
+  const kontextFilter = filter.bezirk ? { bezirkId: filter.bezirk } : {};
+  const basis = { AND: [scope, kontextFilter, schuljahrFilter] };
+  const nachbereitungBereich = istAdmin ? scope : { AND: [scope, { organisationsform: "SCHILF" }] };
 
-  const [fortbildungen, schlagworte, kennzahlen, bezirke] = await Promise.all([
-    prisma.fortbildung.findMany({
-      where,
-      orderBy: { beginn: "desc" },
-      take: 300,
-      select: {
-        id: true,
-        slug: true,
-        titel: true,
-        kurztitel: true,
-        organisationsform: true,
-        format: true,
-        beginn: true,
-        ende: true,
-        dauerKorrigiertAm: true,
-        endeVorKorrektur: true,
-        maxTn: true,
-        tnTatsaechlich: true,
-        status: true,
-        inFibs: true,
-        fibsLehrgangsnummer: true,
-        quelle: true,
-        bezirk: { select: { name: true } },
-        veranstaltungsort: { select: { name: true, ort: true, istOnline: true } },
-        referenten: { select: { referent: { select: { vorname: true, nachname: true } } } },
-      },
+  const [freigaben, fibs, nachbereitungen, naechsterTermin] = await Promise.all([
+    istAdmin ? prisma.fortbildung.count({ where: { AND: [basis, { status: "EINGEREICHT" }] } }) : Promise.resolve(0),
+    istAdmin ? prisma.fortbildung.count({
+      where: { AND: [basis, { status: "VEROEFFENTLICHT" }, { organisationsform: { not: "SCHILF" } }, { inFibs: false }, { ende: { gte: jetzt } }] },
+    }) : Promise.resolve(0),
+    darfNachbereiten
+      ? prisma.fortbildung.count({
+          where: {
+            AND: [
+              nachbereitungBereich,
+              kontextFilter,
+              schuljahrFilter,
+              { ende: { lt: jetzt } },
+              { status: { in: ["VEROEFFENTLICHT", "ARCHIVIERT"] } },
+              istAdmin
+                ? { OR: [{ tnTatsaechlich: null }, { organisationsform: "SCHILF", inFibs: false }, { teilnahmebestaetigungenReferentenVersandtAm: null }, { teilnahmebestaetigungenTeilnehmendeVersandtAm: null }] }
+                : { tnTatsaechlich: null },
+            ],
+          },
+        })
+      : Promise.resolve(0),
+    prisma.fortbildung.findFirst({
+      where: { AND: [basis, { beginn: { gte: jetzt } }, { status: "VEROEFFENTLICHT" }] },
+      orderBy: { beginn: "asc" },
+      select: { id: true, titel: true, beginn: true, bezirk: { select: { name: true } } },
     }),
-    prisma.schlagwort.findMany({ orderBy: { name: "asc" }, select: { name: true } }),
-    Promise.all([
-      prisma.fortbildung.count({ where }),
-      prisma.fortbildung.count({ where: { AND: [scope, { status: "EINGEREICHT" }, ...(gewaehltesSchuljahr ? [schuljahrWhere(gewaehltesSchuljahr)] : [])] } }),
-      prisma.fortbildung.count({
-        where: {
-          AND: [
-            scope,
-            { status: "VEROEFFENTLICHT" },
-            ...(gewaehltesSchuljahr ? [schuljahrWhere(gewaehltesSchuljahr)] : []),
-            { organisationsform: { not: "SCHILF" } },
-            { inFibs: false },
-            { ende: { gte: jetzt } },
-          ],
-        },
-      }),
-      darfNachbereiten
-        ? prisma.fortbildung.count({
-            where: {
-              AND: [
-                scope,
-                ...(gewaehltesSchuljahr ? [schuljahrWhere(gewaehltesSchuljahr)] : []),
-                ...(user.role === "REFERENT"
-                  ? [{ organisationsform: "SCHILF" }]
-                  : []),
-                { ende: { lt: jetzt } },
-                { status: { in: ["VEROEFFENTLICHT", "ARCHIVIERT"] } },
-                (user.role === "RVS" || user.role === "ADMIN")
-                  ? {
-                      OR: [
-                        { tnTatsaechlich: null },
-                        { teilnahmebestaetigungenReferentenVersandtAm: null },
-                        { teilnahmebestaetigungenTeilnehmendeVersandtAm: null },
-                        { organisationsform: "SCHILF", inFibs: false },
-                      ],
-                    }
-                  : { tnTatsaechlich: null },
-              ],
-            },
-          })
-        : Promise.resolve(0),
-      Promise.all([
-        prisma.fortbildung.findFirst({ where: scope, orderBy: { beginn: "asc" }, select: { beginn: true } }),
-        prisma.fortbildung.findFirst({ where: scope, orderBy: { beginn: "desc" }, select: { beginn: true } }),
-      ]).then(([erste, letzte]) => vorhandeneSchuljahre(erste?.beginn, letzte?.beginn, laufendes)),
-    ]),
-    ladeBezirke(user),
   ]);
-
-  const [imSchuljahr, zurFreigabe, ohneFibs, offeneMeldungen, jahrgaenge] = kennzahlen;
-  const gruppen = gruppiereFortbildungen(fortbildungen);
-  const geaenderteZeiten = fortbildungen.filter((f) => f.dauerKorrigiertAm !== null).length;
+  const freigabenUrl = adminBereichUrl("/admin/freigaben", params);
+  const fibsUrl = baueUrl("/admin/fortbildungen", params, { ansicht: "fibs", bereich: undefined, status: undefined, fibs: undefined });
+  const nachbereitungUrl = adminBereichUrl("/admin/nachbereitung", params);
+  const katalogUrl = adminBereichUrl("/admin/katalog", params);
 
   return (
     <div className="space-y-7">
-      <div className="flex flex-wrap items-end justify-between gap-5">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-muted-foreground">Verwaltung · {kennzahlJahr ?? "alle Schuljahre"}</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">
-            {user.role === "REFERENT" ? "Meine Fortbildungen" : "Fortbildungen"}
-          </h1>
-          <p className="mt-2 max-w-xl text-sm text-muted-foreground">Planen, freigeben und nachbereiten – alles an einem Ort.</p>
-          <div className="mt-3"><SchuljahrWahl params={params} jahrgaenge={jahrgaenge} aktuell={laufendes} /></div>
+          <p className="etikett text-primary">Arbeitsübersicht</p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">Was steht an?</h1>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Offene Arbeit im gewählten Bereich und Schuljahr.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button nativeButton={false} render={<Link href="/admin/fortbildungen/neu"><CalendarPlus className="size-4" aria-hidden />Neue Fortbildung</Link>} />
-          <details className="group relative">
-            <summary className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-medium shadow-xs transition-colors hover:bg-accent [&::-webkit-details-marker]:hidden">
-              <Download className="size-4" aria-hidden />Export<ChevronDown className="size-3.5 transition-transform group-open:rotate-180" aria-hidden />
-            </summary>
-            <div className="absolute right-0 z-10 mt-2 grid min-w-48 gap-1 rounded-xl border bg-popover p-1.5 text-sm shadow-lg">
-              <a className="flex items-center gap-2 rounded-lg px-2.5 py-2 hover:bg-accent" href={baueUrl("/api/admin/export", paramsMitSchuljahr, {})}><FileSpreadsheet className="size-4" aria-hidden />Excel exportieren</a>
-              <a className="flex items-center gap-2 rounded-lg px-2.5 py-2 hover:bg-accent" title="Bericht nach SchiLf, RLFB und ALP gegliedert" href={baueUrl("/api/admin/export/pdf", paramsMitSchuljahr, {})}><FileText className="size-4" aria-hidden />PDF-Bericht</a>
-            </div>
-          </details>
-        </div>
+        <Button nativeButton={false} render={<Link href={adminBereichUrl("/admin/fortbildungen/neu", params)}><CalendarPlus className="size-4" aria-hidden />Neue Fortbildung</Link>} />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 min-[381px]:grid-cols-2 lg:grid-cols-4">
-        <Kachel
-          wert={imSchuljahr}
-          label={kennzahlJahr ? `Termine im Schuljahr ${kennzahlJahr}` : "Termine in allen Schuljahren"}
-          icon={CalendarDays}
-          href={uebersichtUrl}
-          aktiv={uebersichtAktiv}
-        />
-        {istAdmin ? (
-          <Kachel
-            wert={zurFreigabe}
-            label="Freigaben offen"
-            icon={ShieldCheck}
-            hervorheben={zurFreigabe > 0}
-            aktiv={aktiverBereich === "freigaben"}
-            href={freigabenUrl}
-          />
-        ) : null}
-        <Kachel
-          wert={ohneFibs}
-          label="FIBS-Ausschreibung offen"
-          icon={Globe2}
-          hervorheben={ohneFibs > 0}
-          aktiv={fibsAktiv}
-          href={fibsUrl}
-        />
-        {darfNachbereiten ? (
-          <Kachel
-            wert={offeneMeldungen}
-            label={
-              (user.role === "RVS" || user.role === "ADMIN")
-                ? "Nachbereitungen offen"
-                : "SchiLf-Zahlen offen"
-            }
-            icon={ClipboardCheck}
-            hervorheben={offeneMeldungen > 0}
-            aktiv={aktiverBereich === "nachbereitung"}
-            href={nachbereitungUrl}
-          />
-        ) : null}
-      </div>
+      <section aria-labelledby="aufgaben" className="overflow-hidden rounded-xl border bg-card">
+        <h2 id="aufgaben" className="sr-only">Offene Aufgaben</h2>
+        {istAdmin ? <Arbeitszeile icon={ShieldCheck} anzahl={freigaben} titel="Freigaben prüfen" text="Eingereichte Ausschreibungen bearbeiten" href={freigabenUrl} /> : null}
+        {istAdmin ? <Arbeitszeile icon={Globe2} anzahl={fibs} titel="In FIBS ausschreiben" text="Offene RLFB- und ALP-Ausschreibungen" href={fibsUrl} /> : null}
+        {darfNachbereiten ? <Arbeitszeile icon={ClipboardCheck} anzahl={nachbereitungen} titel={istAdmin ? "Fortbildungen nachbereiten" : "SchiLf-Zahlen nachtragen"} text={istAdmin ? "Teilnehmerzahlen, Bestätigungen und SchiLf-Nachträge" : "Vergangene eigene oder zugeordnete SchiLf"} href={nachbereitungUrl} letzte /> : null}
+      </section>
 
-      <WorkflowHinweis istAdmin={istAdmin} freigabenUrl={freigabenUrl} />
-
-      {aktiverBereich ? (
-        <section id="arbeitsbereich" className="scroll-mt-6 space-y-3" aria-label="Arbeitsbereich">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-2">
-            <p className="etikett text-primary">Arbeitsbereich</p>
-            <Button nativeButton={false} size="sm" variant="outline" render={<Link href={uebersichtUrl}>Zur Fortbildungsübersicht</Link>} />
-          </div>
-          {aktiverBereich === "freigaben" ? <FreigabenBereich eingebettet params={params} /> : <NachbereitungsBereich eingebettet params={params} />}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <section className="rounded-xl border bg-card p-5">
+          <p className="etikett text-primary">Jahreskatalog</p>
+          <h2 className="mt-1 font-semibold">Katalog vorbereiten</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Gewählter Bezirk und Schuljahr werden übernommen.</p>
+          <Button className="mt-4" nativeButton={false} variant="outline" render={<Link href={katalogUrl}><FileSpreadsheet className="size-4" aria-hidden />Jahreskatalog öffnen</Link>} />
         </section>
-      ) : null}
-
-      <div id="fortbildungslisten" className="scroll-mt-6">
-        <AdminFilterLeiste params={paramsMitSchuljahr} schlagworte={schlagworte.map((s) => s.name)} bezirke={bezirke} />
+        <section className="rounded-xl border bg-card p-5">
+          <p className="etikett text-primary">Nächster Termin</p>
+          {naechsterTermin ? (
+            <Link href={`/admin/fortbildungen/${naechsterTermin.id}?zurueck=${encodeURIComponent(adminBereichUrl("/admin", params))}`} className="mt-2 block rounded-md outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
+              <p className="font-semibold">{naechsterTermin.titel}</p>
+              <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground"><CalendarDays className="size-4" aria-hidden />{formatDatum(naechsterTermin.beginn)} · {naechsterTermin.bezirk.name}</p>
+            </Link>
+          ) : <p className="mt-2 text-sm text-muted-foreground">Im gewählten Bereich steht kein weiterer veröffentlichter Termin an.</p>}
+        </section>
       </div>
-
-      {istAdmin && geaenderteZeiten > 0 ? (
-        <p role="status" className="rounded-xl border border-ferien/40 border-l-4 border-l-ferien bg-ferien/10 px-4 py-3 text-sm">
-          <strong>Zeit geändert:</strong> Bei {geaenderteZeiten} der angezeigten Fortbildungen wurde die Endzeit nachträglich korrigiert.
-          Die markierten Einträge zeigen in der Detailansicht die vorherige und die aktuelle Endzeit.
-        </p>
-      ) : null}
-
-      {fortbildungen.length === 0 ? (
-        <div className="border border-l-4 border-l-primary bg-card py-16 text-center">
-          <Download className="mx-auto mb-3 size-6 text-muted-foreground" aria-hidden />
-          <p className="text-sm text-muted-foreground">Keine Fortbildung gefunden. Filter anpassen oder <Link href="/admin/fortbildungen/neu" className="text-foreground underline underline-offset-4">neue Fortbildung anlegen</Link>.</p>
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {gruppen.map((gruppe) => (
-            <section key={gruppe.id} aria-labelledby={`gruppe-${gruppe.id}`}>
-              <div className="mb-3 flex flex-wrap items-end justify-between gap-2 border-b pb-2">
-                <div>
-                  <p className="etikett text-primary">{gruppe.eyebrow}</p>
-                  <h2 id={`gruppe-${gruppe.id}`} className="mt-0.5 text-lg font-semibold tracking-tight">
-                    {gruppe.titel}
-                    <span className="ml-2 inline-flex min-w-5 items-center justify-center rounded-full border border-border bg-muted px-1.5 py-0.5 align-middle text-xs font-medium leading-none text-muted-foreground">
-                      <span className="sr-only">Anzahl: </span>{gruppe.fortbildungen.length}
-                    </span>
-                  </h2>
-                  <p className="mt-0.5 text-sm text-muted-foreground">{gruppe.beschreibung}</p>
-                </div>
-                {gruppe.id === "eingereicht" && istAdmin ? <Button nativeButton={false} size="sm" render={<Link href={freigabenUrl}><ShieldCheck className="size-3.5" aria-hidden />Freigaben öffnen</Link>} /> : null}
-              </div>
-              <FortbildungTabelle fortbildungen={gruppe.fortbildungen} zeigeZeitAenderungen={istAdmin} />
-            </section>
-          ))}
-        </div>
-      )}
-
-      {fortbildungen.length === 300 ? <p className="text-xs text-muted-foreground">Es werden die 300 neuesten Treffer angezeigt. Für mehr bitte den Zeitraum eingrenzen oder den Excel-Export nutzen.</p> : null}
     </div>
   );
 }
 
-function WorkflowHinweis({ istAdmin, freigabenUrl }: { istAdmin: boolean; freigabenUrl: string }) {
-  const schritte = [
-    { icon: PencilLine, titel: "Entwurf", text: "Fortbildung ausarbeiten" },
-    { icon: Send, titel: "Einreichen", text: "zur Prüfung senden" },
-    { icon: ShieldCheck, titel: "Admin-Freigabe", text: "prüfen und veröffentlichen" },
-    { icon: Globe2, titel: "Öffentlich", text: "im Angebot sichtbar" },
-    { icon: CheckCircle2, titel: "FIBS", text: "Anmeldung oder SchiLf-Nachtrag" },
-  ];
-  return (
-    <details className="group rounded-2xl border bg-card px-4 py-3 shadow-sm" aria-labelledby="workflow-titel">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
-        <div><p className="text-sm font-semibold">Veröffentlichungsweg</p><p className="mt-0.5 text-xs text-muted-foreground">Vom Entwurf zur Anmeldung</p></div>
-        <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
-      </summary>
-      <div className="mt-4 border-t pt-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <h2 id="workflow-titel" className="text-sm font-semibold">Die fünf Schritte</h2>
-          {istAdmin ? <Button nativeButton={false} size="sm" render={<Link href={freigabenUrl}>Freigaben bearbeiten</Link>} /> : <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">Freigaben, Veröffentlichung und FIBS-Markierung übernimmt die Administration.</p>}
-        </div>
-        <ol className="mt-3 grid gap-2 sm:grid-cols-5">
-          {schritte.map(({ icon: Icon, titel, text }, index) => (
-            <li key={titel} className="flex gap-2 rounded-xl border bg-background p-2.5 sm:block">
-              <span className="zahl flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground sm:mb-2">{index + 1}</span>
-              <div><p className="flex items-center gap-1.5 text-xs font-semibold"><Icon className="size-3.5 shrink-0 text-primary" aria-hidden />{titel}</p><p className="mt-0.5 text-xs leading-snug text-muted-foreground">{text}</p></div>
-            </li>
-          ))}
-        </ol>
-        <p className="mt-3 text-xs text-muted-foreground">SchiLf wird üblicherweise erst nach dem Termin in FIBS nachgetragen.</p>
-      </div>
-    </details>
-  );
-}
-
-function gruppiereFortbildungen<
-  T extends { status: string; inFibs: boolean; organisationsform: string },
->(fortbildungen: T[]) {
-  return [
-    { id: "entwuerfe", eyebrow: "Vorbereitung", titel: "Entwürfe", beschreibung: "Noch in Bearbeitung.", fortbildungen: fortbildungen.filter((f) => f.status === "ENTWURF") },
-    { id: "eingereicht", eyebrow: "Nächster Schritt", titel: "Zur Freigabe", beschreibung: "Warten auf administrative Prüfung.", fortbildungen: fortbildungen.filter((f) => f.status === "EINGEREICHT") },
-    { id: "ohne-fibs", eyebrow: "Veröffentlichung", titel: "FIBS-Ausschreibung offen", beschreibung: "RLFB und ALP warten auf den FIBS-Schritt.", fortbildungen: fortbildungen.filter((f) => f.status === "VEROEFFENTLICHT" && !f.inFibs && f.organisationsform !== "SCHILF") },
-    { id: "schilf-nachtrag", eyebrow: "SchiLf", titel: "FIBS-Nachtrag", beschreibung: "Nach dem Termin in FIBS vermerken.", fortbildungen: fortbildungen.filter((f) => f.status === "VEROEFFENTLICHT" && !f.inFibs && f.organisationsform === "SCHILF") },
-    { id: "in-fibs", eyebrow: "FIBS", titel: "In FIBS eingetragen", beschreibung: "Ausschreibung oder Nachtrag erledigt.", fortbildungen: fortbildungen.filter((f) => f.status === "VEROEFFENTLICHT" && f.inFibs) },
-    { id: "abgeschlossen", eyebrow: "Abgeschlossen", titel: "Archiviert oder abgesagt", beschreibung: "Zur Dokumentation erhalten.", fortbildungen: fortbildungen.filter((f) => f.status === "ARCHIVIERT" || f.status === "ABGESAGT") },
-  ].filter((gruppe) => gruppe.fortbildungen.length > 0);
-}
-
-function Kachel({
-  wert,
-  label,
+function Arbeitszeile({
   icon: Icon,
-  hervorheben,
-  aktiv,
+  anzahl,
+  titel,
+  text,
   href,
+  letzte = false,
 }: {
-  wert: number;
-  label: string;
-  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
-  hervorheben?: boolean;
-  aktiv?: boolean;
-  href?: string;
+  icon: typeof ShieldCheck;
+  anzahl: number;
+  titel: string;
+  text: string;
+  href: string;
+  letzte?: boolean;
 }) {
-  const inhalt = (
-    <div className="grid h-[140px] grid-rows-[1.25rem_1fr_2.5rem] p-4 max-[380px]:flex max-[380px]:h-20 max-[380px]:items-center max-[380px]:gap-3 max-[380px]:p-4 sm:h-[160px] sm:p-5">
-      <div className="flex items-center justify-between gap-3 max-[380px]:w-5 max-[380px]:shrink-0 max-[380px]:[&>span]:hidden">
-        <Icon className={`size-5 shrink-0 ${aktiv ? "text-primary-foreground" : "text-primary"}`} aria-hidden />
-        {hervorheben && !aktiv ? <span className="size-2 shrink-0 rounded-full bg-ferien" aria-label="Offene Aufgabe" /> : null}
-      </div>
-      <p className={`zahl self-end text-3xl leading-none font-semibold max-[380px]:self-auto max-[380px]:text-[28px] sm:text-4xl ${aktiv ? "text-primary-foreground" : "text-foreground"}`}>{String(wert).padStart(2, "0")}</p>
-      <p className={`min-h-10 pt-2 text-sm leading-snug max-[380px]:min-h-0 max-[380px]:flex-1 max-[380px]:pt-0 ${aktiv ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{label}</p>
-    </div>
-  );
-  const klassen = `rounded-2xl border shadow-sm transition-colors ${aktiv ? "border-primary bg-primary shadow-md" : "border-border bg-card"}`;
-
-  return href ? (
-    <Link
-      href={href}
-      aria-current={aktiv ? "page" : undefined}
-      className={`${klassen} block ${aktiv ? "hover:bg-primary/90" : "hover:bg-accent"} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`}
-    >
-      {inhalt}
+  return (
+    <Link href={href} className={`flex items-center gap-3 p-4 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${letzte ? "" : "border-b"}`}>
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">{anzahl}</span>
+      <Icon className="size-4 shrink-0 text-primary" aria-hidden />
+      <span className="min-w-0 flex-1"><span className="block font-medium">{titel}</span><span className="block text-sm text-muted-foreground">{text}</span></span>
+      <span aria-hidden className="text-muted-foreground">→</span>
     </Link>
-  ) : (
-    <div className={klassen}>{inhalt}</div>
   );
-}
-
-function vorhandeneSchuljahre(erste: Date | undefined, letzte: Date | undefined, laufendes: string): string[] {
-  const jahre = new Set<string>([laufendes]);
-  if (erste && letzte) {
-    const von = Number(aktuellesSchuljahr(erste).slice(0, 4));
-    const bis = Number(aktuellesSchuljahr(letzte).slice(0, 4));
-    for (let jahr = von; jahr <= bis; jahr += 1) jahre.add(`${jahr}/${jahr + 1}`);
-  }
-  return [...jahre].sort().reverse();
 }

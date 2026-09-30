@@ -112,7 +112,7 @@ export async function meldeTeilnehmerzahl(
 
   revalidatePath("/admin/nachbereitung");
   revalidatePath(`/admin/fortbildungen/${id}`);
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
 
   const ueberbucht = geparst.data.tnTatsaechlich > fortbildung.maxTn;
 
@@ -160,7 +160,7 @@ export async function meldungZuruecknehmen(id: string): Promise<void> {
 
   revalidatePath("/admin/nachbereitung");
   revalidatePath(`/admin/fortbildungen/${id}`);
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
 }
 
 /**
@@ -218,7 +218,7 @@ export async function setzeSchilfFibsNachtrag(
 
   revalidatePath("/admin/nachbereitung");
   revalidatePath(`/admin/fortbildungen/${id}`);
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
 }
 
 /**
@@ -296,7 +296,7 @@ export async function setzeTeilnahmebestaetigungsVersand(
 
   revalidatePath("/admin/nachbereitung");
   revalidatePath(`/admin/fortbildungen/${id}`);
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
 }
 
 async function darfTeilnehmerzahlMelden(

@@ -25,11 +25,14 @@ export function AdminFilterLeiste({
   schlagworte,
   bezirke = [],
   ohne = [],
+  zeigeBezirk = true,
 }: {
   params: SuchParameter;
   schlagworte: string[];
   bezirke?: Array<{ id: string; name: string }>;
   ohne?: string[];
+  /** Der globale Verwaltungskontext wählt den Bezirk bereits aus. */
+  zeigeBezirk?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -56,7 +59,7 @@ export function AdminFilterLeiste({
     "status",
     "schlagwort",
     "fibs",
-    "bezirk",
+    ...(zeigeBezirk ? ["bezirk"] : []),
   ].some((name) => wert(name));
   const weitereFilterAktiv = [
     "von",
@@ -67,7 +70,7 @@ export function AdminFilterLeiste({
     "status",
     "schlagwort",
     "fibs",
-    "bezirk",
+    ...(zeigeBezirk ? ["bezirk"] : []),
   ].some((name) => wert(name));
 
   return (
@@ -121,7 +124,7 @@ export function AdminFilterLeiste({
                 status: undefined,
                 schlagwort: undefined,
                 fibs: undefined,
-                bezirk: undefined,
+                ...(zeigeBezirk ? { bezirk: undefined } : {}),
               })
             }
           >
@@ -138,7 +141,7 @@ export function AdminFilterLeiste({
           <span className="text-xs font-normal">{weitereFilterAktiv ? "aktiv" : "optional"}</span>
         </summary>
         <div className="mt-3 flex flex-wrap items-end gap-3 border-t pt-3">
-        {bezirke.length > 0 ? (
+        {zeigeBezirk && bezirke.length > 0 ? (
           <Liste
             label="Bezirk"
             wert={wert("bezirk")}

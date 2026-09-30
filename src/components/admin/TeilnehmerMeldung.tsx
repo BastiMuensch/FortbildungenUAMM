@@ -55,10 +55,12 @@ export interface MeldungsZeile extends ZeitAenderung {
 export function TeilnehmerMeldung({
   fortbildung,
   darfBestaetigungen,
+  rueckkehrUrl,
 }: {
   fortbildung: MeldungsZeile;
   /** Versandvermerke in FIBS sind ausschließlich Aufgabe der Administration. */
   darfBestaetigungen: boolean;
+  rueckkehrUrl?: string;
 }) {
   const action = meldeTeilnehmerzahl.bind(null, fortbildung.id);
   const [state, formAction] = useActionState<FormularState, FormData>(action, {});
@@ -98,7 +100,7 @@ export function TeilnehmerMeldung({
 
           <h3 className="font-medium">
             <Link
-              href={`/admin/fortbildungen/${fortbildung.id}`}
+              href={rueckkehrUrl ? `/admin/fortbildungen/${fortbildung.id}?zurueck=${encodeURIComponent(rueckkehrUrl)}` : `/admin/fortbildungen/${fortbildung.id}`}
               className="underline-offset-4 hover:underline"
             >
               {fortbildung.titel}

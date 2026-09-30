@@ -30,6 +30,8 @@ import { FreigabeLeiste } from "@/components/admin/FreigabeLeiste";
 import { Aenderungsverlauf } from "@/components/admin/Aenderungsverlauf";
 import { DauerKorrektur } from "@/components/admin/DauerKorrektur";
 import { ZeitAenderungsHinweis } from "@/components/admin/ZeitAenderungsHinweis";
+import { erlaubteAdminRueckkehr } from "@/lib/adminNavigation";
+import type { SuchParameter } from "@/lib/filter";
 
 export const metadata = { title: "Fortbildung bearbeiten" };
 
@@ -38,11 +40,13 @@ export default async function FortbildungBearbeitenPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ gespeichert?: string }>;
+  searchParams: Promise<SuchParameter>;
 }) {
   const user = await requireRole(...ERFASSER);
   const { id } = await params;
-  const { gespeichert } = await searchParams;
+  const suchparameter = await searchParams;
+  const gespeichert = Array.isArray(suchparameter.gespeichert) ? suchparameter.gespeichert[0] : suchparameter.gespeichert;
+  const rueckkehrUrl = erlaubteAdminRueckkehr(suchparameter.zurueck);
 
   const [fortbildung, daten] = await Promise.all([
     prisma.fortbildung.findFirst({
@@ -74,11 +78,11 @@ export default async function FortbildungBearbeitenPage({
   return (
     <div className="mx-auto max-w-4xl">
       <Link
-        href="/admin"
+        href={rueckkehrUrl ?? "/admin/fortbildungen"}
         className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ChevronLeft className="size-4" aria-hidden />
-        Zurück zur Übersicht
+        Zurück zur Liste
       </Link>
 
       {gespeichert ? (
@@ -219,6 +223,7 @@ export default async function FortbildungBearbeitenPage({
         <FortbildungForm
           {...daten}
           darfVeroeffentlichen={freigabeberechtigt}
+          rueckkehrUrl={rueckkehrUrl ?? undefined}
           fortbildung={{
           id: fortbildung.id,
           bezirkId: fortbildung.bezirkId,
@@ -260,7 +265,7 @@ export default async function FortbildungBearbeitenPage({
             className="mt-4"
             nativeButton={false}
             variant="outline"
-            render={<Link href="/admin/nachbereitung">Zur Nachbereitung</Link>}
+            render={<Link href={rueckkehrUrl?.startsWith("/admin/nachbereitung") ? rueckkehrUrl : "/admin/nachbereitung"}>Zur Nachbereitung</Link>}
           />
         </div>
       )}

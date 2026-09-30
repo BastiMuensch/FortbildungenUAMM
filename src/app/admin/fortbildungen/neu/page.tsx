@@ -5,22 +5,30 @@ import { ERFASSER, requireRole } from "@/lib/auth";
 import { darfFreigeben } from "@/constants/fortbildung";
 import { ladeFormularDaten } from "@/lib/formularDaten";
 import { FortbildungWizard } from "@/components/admin/FortbildungForm/Wizard";
+import { adminBereichUrl } from "@/lib/adminNavigation";
+import type { SuchParameter } from "@/lib/filter";
 
 export const metadata = { title: "Neue Fortbildung" };
 
-export default async function NeueFortbildungPage() {
+export default async function NeueFortbildungPage({
+  searchParams,
+}: {
+  searchParams: Promise<SuchParameter>;
+}) {
   const user = await requireRole(...ERFASSER);
+  const params = await searchParams;
   const daten = await ladeFormularDaten(user);
   const freigabeberechtigt = darfFreigeben(user.role);
+  const rueckkehrUrl = adminBereichUrl("/admin/fortbildungen", params);
 
   return (
     <div className="mx-auto max-w-4xl">
       <Link
-        href="/admin"
+        href={rueckkehrUrl}
         className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ChevronLeft className="size-4" aria-hidden />
-        Zurück zur Übersicht
+        Zurück zur Liste
       </Link>
 
       <h1 className="mb-1 text-2xl font-semibold tracking-tight">Neue Fortbildung</h1>
@@ -33,7 +41,7 @@ export default async function NeueFortbildungPage() {
           : " Zum Schluss wird die Fortbildung zur Freigabe eingereicht; veröffentlicht wird sie von der Administration."}
       </p>
 
-      <FortbildungWizard {...daten} darfVeroeffentlichen={freigabeberechtigt} />
+      <FortbildungWizard {...daten} darfVeroeffentlichen={freigabeberechtigt} rueckkehrUrl={rueckkehrUrl} />
     </div>
   );
 }

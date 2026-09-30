@@ -52,24 +52,24 @@
 }
 
 :root {
-  --background: #f6f7f5;
-  --foreground: #20333b;
+  --background: #f5f8fa;
+  --foreground: #191d20;
   --card: #ffffff;
   --card-foreground: var(--foreground);
   --popover: #ffffff;
   --popover-foreground: var(--foreground);
-  --primary: #173e50;
+  --primary: #146c9f;
   --primary-foreground: #ffffff;
-  --secondary: #eef2ee;
-  --secondary-foreground: #28404a;
-  --muted: #f0f3f1;
-  --muted-foreground: #65757a;
-  --accent: #dfeade;
-  --accent-foreground: #173e50;
+  --secondary: #eef4f7;
+  --secondary-foreground: #263c49;
+  --muted: #eef3f6;
+  --muted-foreground: #536570;
+  --accent: #e7f3fb;
+  --accent-foreground: #146c9f;
   --destructive: oklch(0.5 0.17 30);
-  --border: #dce4df;
-  --input: #cbd7d0;
-  --ring: #4c7782;
+  --border: #dbe5ec;
+  --input: #b9cad5;
+  --ring: #2589c7;
   --radius: 0.625rem;
 
   --sidebar: #ffffff;
@@ -95,25 +95,25 @@
 }
 
 .dark {
-  --background: #17242a;
-  --foreground: #eef3f0;
-  --card: #203238;
+  --background: #131a20;
+  --foreground: #f0f5f8;
+  --card: #1c252d;
   --card-foreground: var(--foreground);
-  --popover: #203238;
+  --popover: #1c252d;
   --popover-foreground: var(--foreground);
-  --primary: #a9c7cd;
-  --primary-foreground: #152b36;
-  --secondary: #2a3d42;
+  --primary: #76c6f3;
+  --primary-foreground: #112534;
+  --secondary: #263440;
   --secondary-foreground: var(--foreground);
-  --muted: #293b40;
-  --muted-foreground: #b7c4c3;
-  --accent: #354d45;
-  --accent-foreground: #eff5ef;
+  --muted: #24313b;
+  --muted-foreground: #acbeca;
+  --accent: #213f52;
+  --accent-foreground: #f0f5f8;
   --destructive: oklch(0.66 0.17 30);
   --border: rgb(255 255 255 / 14%);
   --input: rgb(255 255 255 / 20%);
-  --ring: #a9c7cd;
-  --sidebar: #1d2e34;
+  --ring: #76c6f3;
+  --sidebar: #1c252d;
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
@@ -141,6 +141,7 @@
 }
 
 .rauten { background-image: repeating-linear-gradient(45deg, color-mix(in oklch, var(--primary) 10%, transparent) 0 1px, transparent 1px 26px), repeating-linear-gradient(-45deg, color-mix(in oklch, var(--primary) 10%, transparent) 0 1px, transparent 1px 26px); }
+.text-markenblau { color: #2589c7; }
 .etikett { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.045em; line-height: 1.25; }
 .zahl { font-variant-numeric: tabular-nums; letter-spacing: -0.015em; }
 .zeile { transition: background-color 140ms ease, border-color 140ms ease; }

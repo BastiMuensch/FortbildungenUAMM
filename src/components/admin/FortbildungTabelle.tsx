@@ -42,7 +42,7 @@ interface Zeile extends ZeitAenderung {
   referenten: Array<{ referent: { vorname: string; nachname: string } }>;
 }
 
-export function FortbildungTabelle({ fortbildungen, zeigeZeitAenderungen = false }: { fortbildungen: Zeile[]; zeigeZeitAenderungen?: boolean }) {
+export function FortbildungTabelle({ fortbildungen, zeigeZeitAenderungen = false, rueckkehrUrl }: { fortbildungen: Zeile[]; zeigeZeitAenderungen?: boolean; rueckkehrUrl?: string }) {
   return (
     <div className="@container">
       {/* Entscheidend ist der Platz neben der Seitenleiste, nicht die Fensterbreite.
@@ -53,7 +53,7 @@ export function FortbildungTabelle({ fortbildungen, zeigeZeitAenderungen = false
           return (
             <Link
               key={f.id}
-              href={`/admin/fortbildungen/${f.id}`}
+              href={detailUrl(f.id, rueckkehrUrl)}
               className={cn(
                 "rounded-2xl border border-l-4 bg-card p-4 shadow-sm outline-none transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring",
                 ebene.kante,
@@ -148,7 +148,7 @@ export function FortbildungTabelle({ fortbildungen, zeigeZeitAenderungen = false
 
               <TableCell className="whitespace-normal py-5">
                 <Link
-                  href={`/admin/fortbildungen/${f.id}`}
+                  href={detailUrl(f.id, rueckkehrUrl)}
                   className="block min-w-0 break-words font-medium leading-snug [overflow-wrap:anywhere] underline-offset-4 hover:underline"
                 >
                   {f.titel}
@@ -225,7 +225,7 @@ export function FortbildungTabelle({ fortbildungen, zeigeZeitAenderungen = false
 
               <TableCell className="w-20 whitespace-normal px-3 py-5 text-right">
                 <Link
-                  href={`/admin/fortbildungen/${f.id}`}
+                  href={detailUrl(f.id, rueckkehrUrl)}
                   aria-label={`${f.titel} bearbeiten`}
                   className="ml-auto flex size-7 items-center justify-center text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
@@ -239,6 +239,12 @@ export function FortbildungTabelle({ fortbildungen, zeigeZeitAenderungen = false
       </div>
     </div>
   );
+}
+
+function detailUrl(id: string, rueckkehrUrl?: string) {
+  return rueckkehrUrl
+    ? `/admin/fortbildungen/${id}?zurueck=${encodeURIComponent(rueckkehrUrl)}`
+    : `/admin/fortbildungen/${id}`;
 }
 
 /** Den Ortsnamen nur ergänzen, wenn er nicht schon im Schulnamen vorkommt. */

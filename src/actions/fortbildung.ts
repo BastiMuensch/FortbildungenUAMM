@@ -11,6 +11,7 @@ import { sanitizeBeschreibung, htmlZuText } from "@/lib/sanitize";
 import { bildeSlug } from "@/lib/queries";
 import { normalisiereSchlagwortListe, schlagwortSchluessel } from "@/lib/schlagwort";
 import { istSchuljahrAbgelaufen, operativeFortbildungWhere, schuljahrFuerDatum } from "@/lib/schuljahr";
+import { erlaubteAdminRueckkehr } from "@/lib/adminNavigation";
 import {
   STATUS_FUER_REFERENTEN,
   darfFreigeben,
@@ -252,11 +253,15 @@ export async function saveFortbildung(
     });
   }
 
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   revalidatePath("/fortbildungen");
   revalidatePath("/kalender");
 
-  redirect(`/admin/fortbildungen/${fortbildungId}?gespeichert=1`);
+  const rueckkehrUrl = erlaubteAdminRueckkehr(formData.get("rueckkehr")?.toString());
+  const ziel = new URL(`/admin/fortbildungen/${fortbildungId}`, "https://intern.invalid");
+  ziel.searchParams.set("gespeichert", "1");
+  if (rueckkehrUrl) ziel.searchParams.set("zurueck", rueckkehrUrl);
+  redirect(`${ziel.pathname}${ziel.search}`);
 }
 
 /**
@@ -388,7 +393,7 @@ export async function loeschen(id: string) {
     details: { titel: fortbildung?.titel },
   });
 
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   redirect("/admin");
 }
 

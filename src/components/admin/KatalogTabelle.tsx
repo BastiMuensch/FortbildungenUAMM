@@ -11,7 +11,13 @@ import {
   schulartLabel,
 } from "@/constants/fortbildung";
 
-export function KatalogTabelle({ eintraege }: { eintraege: KatalogEintrag[] }) {
+export function KatalogTabelle({
+  eintraege,
+  rueckkehrUrl,
+}: {
+  eintraege: KatalogEintrag[];
+  rueckkehrUrl?: string;
+}) {
   return (
     <div className="divide-y border bg-card">
       {eintraege.map((eintrag) => {
@@ -28,7 +34,7 @@ export function KatalogTabelle({ eintraege }: { eintraege: KatalogEintrag[] }) {
         return (
           <Link
             key={eintrag.id}
-            href={`/admin/fortbildungen/${eintrag.id}`}
+            href={detailUrl(eintrag.id, rueckkehrUrl)}
             className="group block border-l-4 border-l-transparent p-4 transition-colors hover:border-l-primary hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <div className="flex flex-wrap items-start justify-between gap-x-5 gap-y-2">
@@ -52,22 +58,22 @@ export function KatalogTabelle({ eintraege }: { eintraege: KatalogEintrag[] }) {
                 </p>
               </div>
 
-              <div className="grid min-w-52 gap-1.5 text-sm text-muted-foreground sm:text-right">
-                <span className="flex items-center gap-1.5 sm:justify-end">
+              <div className="grid min-w-0 w-full gap-1.5 text-sm text-muted-foreground sm:min-w-52 sm:w-auto sm:text-right">
+                <span className="flex min-w-0 items-center gap-1.5 break-words [overflow-wrap:anywhere] sm:justify-end">
                   {eintrag.veranstaltungsort.istOnline ? <Globe className="size-3.5 shrink-0" aria-hidden /> : <MapPin className="size-3.5 shrink-0" aria-hidden />}
                   {eintrag.veranstaltungsort.name}
                   {eintrag.veranstaltungsort.ort ? `, ${eintrag.veranstaltungsort.ort}` : ""}
                 </span>
-                <span className="flex items-center gap-1.5 sm:justify-end">
+                <span className="flex min-w-0 items-center gap-1.5 break-words [overflow-wrap:anywhere] sm:justify-end">
                   <Building2 className="size-3.5 shrink-0" aria-hidden />
                   Schulamt {eintrag.bezirk.name}
                 </span>
-                <span className="flex items-center gap-1.5 sm:justify-end">
+                <span className="flex min-w-0 items-center gap-1.5 break-words [overflow-wrap:anywhere] sm:justify-end">
                   <BookOpen className="size-3.5 shrink-0" aria-hidden />
                   {formatLabel(eintrag.format)} · {eintrag.schularten.map(schulartLabel).join(", ")}
                 </span>
                 {referenten ? (
-                  <span className="flex items-center gap-1.5 sm:justify-end">
+                  <span className="flex min-w-0 items-center gap-1.5 break-words [overflow-wrap:anywhere] sm:justify-end">
                     <Users className="size-3.5 shrink-0" aria-hidden />
                     {referenten}
                   </span>
@@ -78,7 +84,7 @@ export function KatalogTabelle({ eintraege }: { eintraege: KatalogEintrag[] }) {
             {schlagworte.length > 0 ? (
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {schlagworte.map((schlagwort) => (
-                  <span key={schlagwort} className="bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">
+                  <span key={schlagwort} className="break-words bg-secondary px-2 py-0.5 text-xs text-secondary-foreground [overflow-wrap:anywhere]">
                     {schlagwort}
                   </span>
                 ))}
@@ -89,4 +95,10 @@ export function KatalogTabelle({ eintraege }: { eintraege: KatalogEintrag[] }) {
       })}
     </div>
   );
+}
+
+function detailUrl(id: string, rueckkehrUrl?: string): string {
+  return rueckkehrUrl
+    ? `/admin/fortbildungen/${id}?zurueck=${encodeURIComponent(rueckkehrUrl)}`
+    : `/admin/fortbildungen/${id}`;
 }

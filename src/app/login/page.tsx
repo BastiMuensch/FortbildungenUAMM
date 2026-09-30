@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 
 import { getSessionUser } from "@/lib/auth";
 import { LoginForm } from "@/components/admin/LoginForm";
+import { Marke } from "@/components/Marke";
+import { fortbildungsZusatz } from "@/lib/marke";
 
 export const metadata: Metadata = {
   title: "Anmeldung",
@@ -26,16 +28,9 @@ export default async function LoginPage({
     <main className="flex flex-1 items-center justify-center px-4 py-16 sm:py-24">
       <div className="w-full max-w-sm">
         <div className="mb-6 rounded-2xl border border-border bg-card px-6 py-7 text-center shadow-sm">
-          <span
-            aria-hidden
-            className="mx-auto mb-4 flex size-10 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground"
-          >
-            F
-          </span>
+          <Marke zusatz={fortbildungsZusatz(schulamt.kurzname)} className="mx-auto mb-5 w-fit text-left" />
           <h1 className="text-xl font-semibold tracking-tight">Verwaltungsbereich</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Fortbildungen · {schulamt.kurzname}
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">Anmeldung für die interne Verwaltung</p>
         </div>
 
         <LoginForm weiter={weiter} />

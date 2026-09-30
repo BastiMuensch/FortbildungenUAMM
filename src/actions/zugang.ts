@@ -124,7 +124,7 @@ export async function stufeReferentZuAdministrationHoch(
   });
 
   revalidatePath("/admin/referenten");
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   return {
     erfolg: true,
     meldung: `${ziel.email} ist jetzt als Administration eingestuft und muss sich erneut anmelden.`,

@@ -61,6 +61,7 @@ export function FortbildungWizard({
   schlagwortVorschlaege,
   bezirke,
   darfVeroeffentlichen,
+  rueckkehrUrl,
 }: {
   orte: OrtOption[];
   kompetenzBereiche: KompetenzBereichOption[];
@@ -68,6 +69,7 @@ export function FortbildungWizard({
   schlagwortVorschlaege: string[];
   bezirke: BezirkOption[];
   darfVeroeffentlichen: boolean;
+  rueckkehrUrl?: string;
 }) {
   const action = saveFortbildung.bind(null, null);
   const [state, formAction] = useActionState<FormularState, FormData>(action, {});
@@ -121,6 +123,7 @@ export function FortbildungWizard({
       {/* Eine gemeinsame Datumsprüfung statt nativer Prüfung versteckter Felder. */}
       <input type="hidden" name="beschreibungHtml" value={zustand.beschreibung} />
       <input type="hidden" name="niveaustufe" value={zustand.niveaustufe} />
+      {rueckkehrUrl ? <input type="hidden" name="rueckkehr" value={rueckkehrUrl} /> : null}
 
       <Fortschritt index={index} onSpringe={springe} />
 
@@ -212,7 +215,7 @@ export function FortbildungWizard({
         <Button
           nativeButton={false}
           variant="ghost"
-          render={<Link href="/admin">Abbrechen</Link>}
+          render={<Link href={rueckkehrUrl ?? "/admin/fortbildungen"}>Abbrechen</Link>}
         />
 
         <span className="ml-auto text-sm text-muted-foreground">

@@ -8,11 +8,11 @@ export function AuswertungsTabelle({ titel, zeilen, beschreibung }: { titel: str
         {beschreibung ? <p className="mt-1 text-sm text-muted-foreground">{beschreibung}</p> : null}
       </div>
       <div className="overflow-x-auto rounded-xl border bg-card print:overflow-visible">
-        <table className="auswertung-tabelle w-full text-sm">
+        <table className="auswertung-tabelle min-w-[52rem] w-full text-sm">
           <caption className="sr-only">{titel}</caption>
           <thead><tr>
             <th scope="col" className="text-left">{titel === "Referenten" ? "Referent/in" : "Gruppe"}</th>
-            <th scope="col">Veranstaltungen</th><th scope="col">Beendet</th><th scope="col">Meldungen</th><th scope="col">Offen</th><th scope="col">Teilnahmen</th><th scope="col">Ø je Meldung</th><th scope="col">Auslastung</th>
+            <th scope="col" className="whitespace-nowrap">Veranstaltungen</th><th scope="col" className="whitespace-nowrap">Beendet</th><th scope="col" className="whitespace-nowrap">Meldungen</th><th scope="col" className="whitespace-nowrap">Offen</th><th scope="col" className="whitespace-nowrap">Teilnahmen</th><th scope="col" className="whitespace-nowrap">Ø je Meldung</th><th scope="col" className="whitespace-nowrap">Auslastung</th>
           </tr></thead>
           <tbody>{zeilen.map((zeile) => <tr key={zeile.id}>
             <th scope="row" className="text-left font-medium">{zeile.name}</th>

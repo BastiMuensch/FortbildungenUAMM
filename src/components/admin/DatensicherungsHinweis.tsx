@@ -32,9 +32,11 @@ export function DatensicherungsHinweis() {
     return () => { aktiv = false; window.clearInterval(intervall); document.removeEventListener("visibilitychange", beiSichtbarkeit); window.removeEventListener("datensicherung-bestaetigt", beiSichtbarkeit); };
   }, [pfad]);
   if (pfad === "/admin/datensicherung" || !hinweis || hinweis.art === "erledigt") return null;
-  return <aside aria-label="Tägliche Datensicherung" className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
-    <p className="font-semibold">Tägliche Datensicherung der Regierung</p>
-    <p className="mt-1" role="status">{hinweis.text}</p>
-    <Link href="/admin/datensicherung" className="mt-2 inline-block font-medium underline underline-offset-4">Zur Datensicherung</Link>
+  return <aside aria-label="Tägliche Datensicherung" className="mb-6 flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+    <div className="min-w-0 flex-1 basis-64 break-words">
+      <p className="font-semibold">Datensicherung · gesamtes Portal</p>
+      <p className="mt-1 text-xs leading-relaxed" role="status">{hinweis.text}</p>
+    </div>
+    <Link href="/admin/datensicherung" className="inline-flex min-h-10 items-center font-medium underline underline-offset-4">Zur Datensicherung</Link>
   </aside>;
 }

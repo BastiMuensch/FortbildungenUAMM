@@ -6,6 +6,8 @@ import { formatDatumZeit } from "@/lib/datetime";
 import { schuljahrBeginn } from "@/lib/schuljahr";
 import { prisma } from "@/lib/prisma";
 import { ArchivuebergabeFormular } from "@/components/admin/ArchivuebergabeFormular";
+import { BerichteNavigation } from "@/components/admin/BerichteNavigation";
+import type { SuchParameter } from "@/lib/filter";
 
 export const metadata = { title: "Archivübergabe" };
 export const dynamic = "force-dynamic";
@@ -14,8 +16,9 @@ export const dynamic = "force-dynamic";
  * Eng begrenzte Verwaltungsansicht für fällige bzw. bereits vorbereitete
  * Kohorten. Sie ist kein Ersatz für die regulären Fortbildungslisten.
  */
-export default async function ArchivSeite() {
+export default async function ArchivSeite({ searchParams }: { searchParams: Promise<SuchParameter> }) {
   const user = await requireRole("RVS", "ADMIN");
+  const params = await searchParams;
   const jetzt = new Date();
   const letzterLoeschlauf = await letzterLauf();
   const loeschlaufUeberfaellig = !letzterLoeschlauf || jetzt.getTime() - letzterLoeschlauf.getTime() > 36 * 60 * 60 * 1000;
@@ -66,6 +69,7 @@ export default async function ArchivSeite() {
 
   return (
     <div className="max-w-4xl space-y-6">
+      <BerichteNavigation aktiveSeite="archiv" rolle={user.role} params={params} />
       <div>
         <p className="etikett text-primary">Getrennte Ablage</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">Archivübergabe</h1>

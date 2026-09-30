@@ -3,7 +3,8 @@ import "server-only";
 import type { Prisma } from "@prisma/client";
 
 import { fortbildungScope, type SessionUser } from "@/lib/auth";
-import { filterZuWhere, type FortbildungFilter } from "@/lib/filter";
+import { aktuellesSchuljahr } from "@/lib/datetime";
+import { filterZuWhere, leseFilter, type FortbildungFilter, type SuchParameter } from "@/lib/filter";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -25,6 +26,30 @@ export function katalogWhere(
       { status: { in: ["VEROEFFENTLICHT", "ARCHIVIERT"] } },
     ],
   };
+}
+
+/**
+ * Der Katalog startet im laufenden Schuljahr. "alle" bleibt eine bewusste
+ * Auswahl, damit frühere gehaltene Fortbildungen weiter recherchierbar sind.
+ * Liste und beide Exporte verwenden diese Funktion gemeinsam.
+ */
+export function katalogFilter(
+  filter: FortbildungFilter,
+  schuljahrParameter: string | undefined,
+  jetzt: Date = new Date(),
+): FortbildungFilter {
+  if (schuljahrParameter === "alle") return filter;
+  return { ...filter, schuljahr: filter.schuljahr ?? aktuellesSchuljahr(jetzt) };
+}
+
+/** Liest die URL für Liste und Downloads mit derselben Jahresvorgabe. */
+export function leseKatalogFilter(
+  params: SuchParameter,
+  jetzt: Date = new Date(),
+): FortbildungFilter {
+  const wert = params.schuljahr;
+  const schuljahrParameter = Array.isArray(wert) ? wert[0] : wert;
+  return katalogFilter(leseFilter(params), schuljahrParameter, jetzt);
 }
 
 /**

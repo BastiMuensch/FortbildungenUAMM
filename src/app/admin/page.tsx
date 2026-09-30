@@ -110,6 +110,8 @@ export default async function AdminDashboard({
         format: true,
         beginn: true,
         ende: true,
+        dauerKorrigiertAm: true,
+        endeVorKorrektur: true,
         maxTn: true,
         tnTatsaechlich: true,
         status: true,
@@ -172,6 +174,7 @@ export default async function AdminDashboard({
 
   const [imSchuljahr, zurFreigabe, ohneFibs, offeneMeldungen, jahrgaenge] = kennzahlen;
   const gruppen = gruppiereFortbildungen(fortbildungen);
+  const geaenderteZeiten = fortbildungen.filter((f) => f.dauerKorrigiertAm !== null).length;
 
   return (
     <div className="space-y-7">
@@ -256,6 +259,13 @@ export default async function AdminDashboard({
         <AdminFilterLeiste params={paramsMitSchuljahr} schlagworte={schlagworte.map((s) => s.name)} bezirke={bezirke} />
       </div>
 
+      {istAdmin && geaenderteZeiten > 0 ? (
+        <p role="status" className="rounded-xl border border-ferien/40 border-l-4 border-l-ferien bg-ferien/10 px-4 py-3 text-sm">
+          <strong>Zeit geändert:</strong> Bei {geaenderteZeiten} der angezeigten Fortbildungen wurde die Endzeit nachträglich korrigiert.
+          Die markierten Einträge zeigen in der Detailansicht die vorherige und die aktuelle Endzeit.
+        </p>
+      ) : null}
+
       {fortbildungen.length === 0 ? (
         <div className="border border-l-4 border-l-primary bg-card py-16 text-center">
           <Download className="mx-auto mb-3 size-6 text-muted-foreground" aria-hidden />
@@ -278,7 +288,7 @@ export default async function AdminDashboard({
                 </div>
                 {gruppe.id === "eingereicht" && istAdmin ? <Button nativeButton={false} size="sm" render={<Link href={freigabenUrl}><ShieldCheck className="size-3.5" aria-hidden />Freigaben öffnen</Link>} /> : null}
               </div>
-              <FortbildungTabelle fortbildungen={gruppe.fortbildungen} />
+              <FortbildungTabelle fortbildungen={gruppe.fortbildungen} zeigeZeitAenderungen={istAdmin} />
             </section>
           ))}
         </div>

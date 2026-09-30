@@ -17,12 +17,13 @@ import {
   organisationsformKurz,
 } from "@/constants/fortbildung";
 import { cn } from "@/lib/utils";
+import { ZeitAenderungsHinweis, type ZeitAenderung } from "@/components/admin/ZeitAenderungsHinweis";
 import {
   FibsKennzeichen,
   StatusKennzeichen,
 } from "@/components/admin/Kennzeichen";
 
-interface Zeile {
+interface Zeile extends ZeitAenderung {
   id: string;
   titel: string;
   kurztitel: string | null;
@@ -41,7 +42,7 @@ interface Zeile {
   referenten: Array<{ referent: { vorname: string; nachname: string } }>;
 }
 
-export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }) {
+export function FortbildungTabelle({ fortbildungen, zeigeZeitAenderungen = false }: { fortbildungen: Zeile[]; zeigeZeitAenderungen?: boolean }) {
   return (
     <>
       {/* Unterhalb der Desktopbreite sind Karten besser lesbar als eine
@@ -80,6 +81,7 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
                   <Badge variant="outline">aus FIBS</Badge>
                 ) : null}
                 <StatusKennzeichen status={f.status} />
+                {zeigeZeitAenderungen ? <ZeitAenderungsHinweis fortbildung={f} kompakt /> : null}
                 <FibsKennzeichen
                   inFibs={f.inFibs}
                   lehrgangsnummer={f.fibsLehrgangsnummer}
@@ -207,6 +209,7 @@ export function FortbildungTabelle({ fortbildungen }: { fortbildungen: Zeile[] }
               <TableCell className="whitespace-normal py-5">
                 <div className="flex min-w-0 flex-col items-start gap-1.5">
                   <StatusKennzeichen status={f.status} />
+                  {zeigeZeitAenderungen ? <ZeitAenderungsHinweis fortbildung={f} kompakt /> : null}
                   <FibsKennzeichen
                     inFibs={f.inFibs}
                     lehrgangsnummer={f.fibsLehrgangsnummer}

@@ -28,8 +28,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DauerKorrektur } from "@/components/admin/DauerKorrektur";
+import { ZeitAenderungsHinweis, type ZeitAenderung } from "@/components/admin/ZeitAenderungsHinweis";
 
-export interface MeldungsZeile {
+export interface MeldungsZeile extends ZeitAenderung {
   id: string;
   titel: string;
   organisationsform: string;
@@ -147,6 +149,10 @@ export function TeilnehmerMeldung({
         </p>
       ) : null}
 
+      {darfBestaetigungen ? (
+        <div className="mt-3"><ZeitAenderungsHinweis fortbildung={fortbildung} /></div>
+      ) : null}
+
       {zeigeFormular ? (
         <form action={formAction} className="mt-4 border-t pt-4">
           <div className="flex flex-wrap items-end gap-3">
@@ -222,6 +228,10 @@ export function TeilnehmerMeldung({
           </Button>
         </form>
       ) : null}
+
+      <div className="mt-4">
+        <DauerKorrektur id={fortbildung.id} beginn={fortbildung.beginn} ende={fortbildung.ende} />
+      </div>
 
       {darfBestaetigungen && istSchilf ? (
         <FibsNachtrag fortbildung={fortbildung} />

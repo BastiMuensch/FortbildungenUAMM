@@ -127,10 +127,10 @@ export async function NachbereitungsBereich({
           }
         >
           {eingebettet
-            ? "Teilnehmerzahlen nachtragen und, als Administration, SchiLf in FIBS nachtragen sowie den Versand der Teilnahmebestätigungen bestätigen."
-            : "Nach der Veranstaltung wird hier die tatsächliche Teilnehmerzahl gemeldet. Bei SchiLf trägt die Administration anschließend die Veranstaltung in FIBS nach. Danach bestätigt sie getrennt den Versand der Teilnahmebestätigungen für Referent:innen und Teilnehmende."}
+            ? "Teilnehmerzahlen nachtragen, die tatsächliche Dauer korrigieren und, als Administration, SchiLf in FIBS nachtragen sowie den Versand der Teilnahmebestätigungen bestätigen."
+            : "Nach der Veranstaltung können Sie hier die tatsächliche Teilnehmerzahl melden und die Dauer korrigieren. Bei SchiLf trägt die Administration anschließend die Veranstaltung in FIBS nach. Danach bestätigt sie getrennt den Versand der Teilnahmebestätigungen für Referent:innen und Teilnehmende."}
           {user.role === "REFERENT"
-            ? " Sie können ausschließlich für Ihre eigenen oder zugeordneten SchiLf Teilnehmerzahlen nachtragen."
+            ? " Sie können ausschließlich für Ihre eigenen oder zugeordneten SchiLf Teilnehmerzahlen nachtragen. Die Dauer anderer eigener oder zugeordneter Fortbildungen ändern Sie direkt in der jeweiligen Fortbildung."
             : ""}
         </p>
         <div className="mt-3">
@@ -223,6 +223,8 @@ const auswahl = {
   format: true,
   beginn: true,
   ende: true,
+  dauerKorrigiertAm: true,
+  endeVorKorrektur: true,
   maxTn: true,
   inFibs: true,
   fibsEingetragenAm: true,

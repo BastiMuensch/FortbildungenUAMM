@@ -184,6 +184,10 @@ model Fortbildung {
   externalId           String?   @unique
 
   // --- Nachbereitung ---
+  /// Letzte nachträgliche Endzeitkorrektur; für den Hinweis an Admins/BdBs.
+  dauerKorrigiertAm DateTime? @db.Timestamptz(3)
+  /// Endzeit unmittelbar vor der letzten Korrektur.
+  endeVorKorrektur DateTime? @db.Timestamptz(3)
   /// Tatsächliche Teilnehmerzahl, nach der Veranstaltung gemeldet.
   /// null bedeutet "noch nicht gemeldet", 0 bedeutet "niemand da gewesen".
   tnTatsaechlich                                   Int?

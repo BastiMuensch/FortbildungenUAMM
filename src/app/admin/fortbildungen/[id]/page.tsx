@@ -28,6 +28,8 @@ import { FibsKennzeichen, StatusKennzeichen } from "@/components/admin/Kennzeich
 import { FibsSchalter } from "@/components/admin/FibsSchalter";
 import { FreigabeLeiste } from "@/components/admin/FreigabeLeiste";
 import { Aenderungsverlauf } from "@/components/admin/Aenderungsverlauf";
+import { DauerKorrektur } from "@/components/admin/DauerKorrektur";
+import { ZeitAenderungsHinweis } from "@/components/admin/ZeitAenderungsHinweis";
 
 export const metadata = { title: "Fortbildung bearbeiten" };
 
@@ -201,6 +203,18 @@ export default async function FortbildungBearbeitenPage({
         </div>
       ) : null}
 
+      {freigabeberechtigt && fortbildung.dauerKorrigiertAm ? (
+        <div className="mb-6"><ZeitAenderungsHinweis fortbildung={fortbildung} /></div>
+      ) : null}
+
+      {["RVS", "ADMIN", "REFERENT"].includes(user.role) &&
+      ["VEROEFFENTLICHT", "ARCHIVIERT"].includes(fortbildung.status) &&
+      fortbildung.ende <= new Date() ? (
+        <div className="mb-6">
+          <DauerKorrektur id={id} beginn={fortbildung.beginn} ende={fortbildung.ende} />
+        </div>
+      ) : null}
+
       {darfInhaltBearbeiten ? (
         <FortbildungForm
           {...daten}
@@ -237,7 +251,8 @@ export default async function FortbildungBearbeitenPage({
           <p className="font-medium">Von der Administration freigegeben</p>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             Veröffentlichte oder archivierte Ausschreibungen können nur noch
-            von der Administration geändert werden. Die tatsächliche
+            von der Administration vollständig geändert werden. Nach dem Termin
+            können Sie oben die tatsächliche Dauer korrigieren. Die tatsächliche
             Teilnehmerzahl können Sie bei eigenen SchiLf weiterhin unter
             Nachbereitung melden.
           </p>

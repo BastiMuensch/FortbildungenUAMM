@@ -83,6 +83,7 @@ function beschreibe(eintrag: Protokolleintrag): string {
   if (details.inFibs === true) return "Als in FIBS eingetragen markiert";
   if (details.inFibs === false) return "FIBS-Markierung zurückgenommen";
   if (details.tnMeldungZurueckgenommen) return "Teilnehmermeldung zurückgenommen";
+  if (details.dauerKorrigiert) return "Tatsächliche Dauer korrigiert (Endzeit geändert)";
   if (typeof details.tnTatsaechlich === "number") {
     return `Teilnehmerzahl gemeldet: ${details.tnTatsaechlich}`;
   }

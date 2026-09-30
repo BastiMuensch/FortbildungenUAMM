@@ -134,7 +134,7 @@ export async function NachbereitungsBereich({
         <p className="mt-2 text-xs text-muted-foreground">Angezeigt: {schuljahrText}.</p>
       </div>
 
-      {!eingebettet ? <FortbildungsNavigation params={params} aktiveAnsicht="nachbereitung" darfFreigeben={istAdmin} darfNachbereiten /> : null}
+      {!eingebettet ? <FortbildungsNavigation params={params} aktiveAnsicht="nachbereitung" user={user} /> : null}
 
       <section aria-labelledby="nachbereitung-offen">
         {eingebettet ? (

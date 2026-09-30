@@ -102,7 +102,7 @@ export async function FreigabenBereich({
         <p className="mt-2 text-xs text-muted-foreground">Angezeigt: {schuljahrText}.</p>
       </div>
 
-      {!eingebettet ? <FortbildungsNavigation params={params} aktiveAnsicht="freigaben" darfFreigeben darfNachbereiten /> : null}
+      {!eingebettet ? <FortbildungsNavigation params={params} aktiveAnsicht="freigaben" user={user} /> : null}
 
       {eingereicht.length === 0 ? (
           <div className="rounded-2xl border border-l-4 border-l-primary bg-card py-16 text-center shadow-sm">

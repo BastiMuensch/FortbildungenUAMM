@@ -33,7 +33,6 @@ export default async function FortbildungenSeite({
   const ansicht: ListenAnsicht = ansichtParam === "entwuerfe" || ansichtParam === "fibs" ? ansichtParam : "alle";
   const jetzt = new Date();
   const istAdmin = darfFreigeben(user.role);
-  const darfNachbereiten = istAdmin || user.role === "REFERENT";
   const ansichtWhere = ansicht === "entwuerfe"
     ? { status: "ENTWURF" }
     : ansicht === "fibs"
@@ -115,7 +114,7 @@ export default async function FortbildungenSeite({
         </div>
       </div>
 
-      <FortbildungsNavigation params={params} aktiveAnsicht={ansicht} darfFreigeben={istAdmin} darfNachbereiten={darfNachbereiten} />
+      <FortbildungsNavigation params={params} aktiveAnsicht={ansicht} user={user} />
       <AdminFilterLeiste
         params={params}
         schlagworte={schlagworte.map((schlagwort) => schlagwort.name)}

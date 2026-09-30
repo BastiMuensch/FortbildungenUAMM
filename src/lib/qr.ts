@@ -1,9 +1,8 @@
 /**
  * QR-Code-Erzeugung nach ISO/IEC 18004.
  *
- * Bewusst ohne Fremdbibliothek: Der Aushang ist die einzige Stelle, die einen
- * QR-Code braucht, und eine Abhängigkeit weniger ist eine Abhängigkeit weniger
- * im Sicherheits- und Wartungsaufwand. Die Umsetzung wird in
+ * Bewusst ohne Fremdbibliothek: Aushänge und die MFA-Einrichtung nutzen diesen
+ * lokalen Encoder ohne externe Ressourcen. Die Umsetzung wird in
  * scripts/pruefungen.ts gegen einen echten Decoder geprüft — ein selbst
  * gebauter Encoder ohne Gegenprobe wäre fahrlässig.
  *
@@ -21,8 +20,8 @@ const EC_BITS: Record<FehlerKorrektur, number> = { L: 1, M: 0, Q: 3, H: 2 };
  * [Korrekturcodewörter je Block, Blöcke Gruppe 1, Datenwörter Gruppe 1,
  *  Blöcke Gruppe 2, Datenwörter Gruppe 2]
  *
- * Quelle: ISO/IEC 18004, Tabelle 9. Nur die tatsächlich genutzten Stufen sind
- * hinterlegt — für den Aushang ist das ausschließlich H.
+ * Quelle: ISO/IEC 18004, Tabelle 9. Aushänge nutzen H, die MFA-Einrichtung M
+ * beziehungsweise L für lange Kontobezeichnungen.
  */
 const BLOECKE: Record<FehlerKorrektur, Array<[number, number, number, number, number]>> = {
   H: [

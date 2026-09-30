@@ -1,7 +1,12 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- Ladehook isoliert Server-Kontext und Datenbank. */
 const assert = require("node:assert/strict");
 const Module = require("node:module");
+const { mock } = require("node:test");
 require("tsx/cjs");
+
+// Bereichsfilter enthalten die aktuelle Aufbewahrungsgrenze. Action und
+// Erwartungswert müssen denselben Zeitpunkt verwenden, auch über einen Millisekundenwechsel.
+mock.timers.enable({ apis: ["Date"], now: new Date("2026-09-30T12:00:00Z") });
 
 const { fortbildungScope } = require("../src/lib/berechtigungsScope");
 const { formatDatumZeitEingabe } = require("../src/lib/datetime");
@@ -144,4 +149,5 @@ async function abgelehnt(daten = formular()) {
   assert.equal((await korrigiereDauer("fortbildung", {}, formular("16.01.2025 00:30"))).erfolg, true);
   assert.equal(aenderungen[0].ende.toISOString(), "2025-01-15T23:30:00.000Z", "Winterzeit und Tageswechsel bleiben korrekt");
   console.log("Dauerkorrektur: Rollen, Bereichsfilter, Status, Zeitgrenzen, Zeitumstellung, Konflikte und erlaubte Felder bestanden.");
-})().catch((error) => { console.error(error); process.exitCode = 1; });
+})().catch((error) => { console.error(error); process.exitCode = 1; })
+  .finally(() => mock.timers.reset());

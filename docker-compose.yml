@@ -47,8 +47,9 @@ services:
       DATENSICHERUNG_SCHEDULER: ${DATENSICHERUNG_SCHEDULER:-on}
       NODE_ENV: production
     ports:
-      # Nur der lokale HTTPS-Reverse-Proxy erreicht den Anwendungsport.
-      - "127.0.0.1:3001:3000"
+      # Standard: lokaler HTTPS-Reverse-Proxy. Für Newt über die Server-IP
+      # lässt sich die Bindung in .env setzen, ohne diese Datei zu ändern.
+      - "${APP_BIND_IP:-127.0.0.1}:3001:3000"
     volumes:
       - datensicherungen:/var/lib/fortbildungsportal/sicherungen
 

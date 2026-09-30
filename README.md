@@ -519,12 +519,16 @@ unset SEED_ADMIN_EMAIL SEED_ADMIN_PASSWORD SEED_ADMIN_NAME
 ```
 
 Der App-Container hört intern weiterhin auf Port `3000`; Docker veröffentlicht
-ihn ausschließlich unter `127.0.0.1:3001` auf dem Server. Ein auf demselben
+ihn standardmäßig unter `127.0.0.1:3001` auf dem Server. Ein auf demselben
 Host laufender Reverse Proxy beziehungsweise Newt im Host-Netz erreicht ihn
-unter `http://127.0.0.1:3001`. Ein Proxy in einem getrennten Container benötigt
-eine Verbindung zum gemeinsamen Docker-Netz und verwendet dort `http://app:3000`.
-Der bisherige Zugriff über die LAN-IP des Servers ist mit dieser Konfiguration
-nicht mehr möglich. Nach außen gehört ein Reverse Proxy mit TLS davor.
+unter `http://127.0.0.1:3001`. Ein Proxy in einem getrennten Container kann
+über ein gemeinsames Docker-Netz `http://app:3000` verwenden.
+
+Wenn Newt bisher die LAN-IP des Servers auf Port `3001` anspricht, in der `.env`
+`APP_BIND_IP` auf diese LAN-IP setzen. Mit `APP_BIND_IP=0.0.0.0` bleibt die
+Freigabe auf allen IPv4-Schnittstellen wie bei älteren Installationen erhalten.
+Das Newt-Ziel bleibt dabei unverändert. Die Einstellung wird bei einem Git-Update
+nicht überschrieben. Nach außen gehört ein Reverse Proxy mit TLS davor.
 HSTS ist gesetzt, die Anwendung geht also von HTTPS aus.
 In `APP_BASE_URL` muss die öffentlich sichtbare HTTPS-Adresse stehen,
 nicht das interne Newt/Pangolin-Ziel. Docker Compose verlangt diesen Wert
@@ -539,7 +543,7 @@ docker compose up -d --no-build --force-recreate app
 ```
 
 Vor dem Update bestehender Installationen den separaten `MFA_ENCRYPTION_KEY`
-setzen und die Proxy-Verbindung an die lokale Portbindung anpassen.
+setzen und `APP_BIND_IP` passend zur bestehenden Proxy-Verbindung konfigurieren.
 Die Inbetriebnahme von Archiv und verschlüsselter Datensicherung beschreibt
 [die Betriebsanleitung](docs/datenschutz/INBETRIEBNAHME.md).
 

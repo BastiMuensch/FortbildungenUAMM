@@ -40,6 +40,17 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description: schulamt.startText,
     robots: { index: true, follow: true },
+    // Eigene, versionierte Adressen lösen alte Favicon-Caches ab. PNG und
+    // Apple-Touch-Icon ergänzen SVG für Browser mit eingeschränktem SVG-Support.
+    icons: {
+      icon: [
+        { url: "/favicon.ico?v=weiter-bilden-1", type: "image/x-icon", sizes: "16x16 32x32" },
+        { url: "/marke/favicon-v1.svg", type: "image/svg+xml", sizes: "any" },
+        { url: "/marke/favicon-v1.png", type: "image/png", sizes: "32x32" },
+      ],
+      shortcut: "/favicon.ico?v=weiter-bilden-1",
+      apple: [{ url: "/marke/apple-touch-icon-v1.png", type: "image/png", sizes: "180x180" }],
+    },
   };
 }
 

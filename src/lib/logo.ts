@@ -6,10 +6,8 @@ import path from "node:path";
 /**
  * Lädt das Logo des Schulamts für die PDF-Ausgabe.
  *
- * Erwartet wird `public/logo.png` (oder .jpg). Fehlt die Datei, wird ohne
- * Logo gezeichnet — der QR-Code bleibt vollständig und lesbar, der Aushang
- * sieht nur nüchterner aus. Bewusst kein Platzhalterbild: Ein falsches Logo
- * auf einem amtlichen Aushang wäre schlimmer als gar keins.
+ * Ein eigenes Logo unter `public/logo.png` (oder .jpg) hat Vorrang.
+ * Ohne eigenes Logo wird die lokale weiter.bilden-Bildmarke verwendet.
  */
 
 export interface GeladenesLogo {
@@ -24,9 +22,9 @@ let zwischenspeicher: GeladenesLogo | null | undefined;
 export async function ladeLogo(): Promise<GeladenesLogo | null> {
   if (zwischenspeicher !== undefined) return zwischenspeicher;
 
-  for (const datei of ["logo.png", "logo.jpg", "logo.jpeg"] as const) {
+  for (const datei of ["public/logo.png", "public/logo.jpg", "public/logo.jpeg", "public/marke/apple-touch-icon-v1.png"] as const) {
     try {
-      const pfad = path.join(process.cwd(), "public", datei);
+      const pfad = path.join(process.cwd(), datei);
       const inhalt = await readFile(pfad);
       const format = datei.endsWith(".png") ? "PNG" : "JPEG";
       const masse = format === "PNG" ? pngMasse(inhalt) : jpegMasse(inhalt);

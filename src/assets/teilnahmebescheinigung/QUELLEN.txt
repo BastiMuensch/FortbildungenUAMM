@@ -1,0 +1,6 @@
+BdB-Logo: Bayerisches Realschulnetz
+https://www.realschulebayern.de/brn-protected/user_upload/bdb.png
+Abgerufen am 01.10.2026; unverändert lokal eingebunden.
+
+Carlito Regular und Bold: unveränderte TTF-Dateien aus LibreOffice.
+Lizenz: SIL Open Font License 1.1, siehe OFL.txt.

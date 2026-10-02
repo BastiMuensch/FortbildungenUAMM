@@ -27,6 +27,8 @@ RUN apk add --no-cache age postgresql16-client \
   && chown -R nextjs:nodejs /var/lib/fortbildungsportal
 
 COPY --from=builder /app/public ./public
+# Lokal eingebettetes Logo und Schriften für die Teilnahmebescheinigungen.
+COPY --from=builder /app/src/assets/teilnahmebescheinigung ./src/assets/teilnahmebescheinigung
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json

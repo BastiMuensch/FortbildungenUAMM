@@ -6,6 +6,10 @@ const isDev = process.env.NODE_ENV !== "production";
 const scriptSrc = `'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`;
 
 const nextConfig: NextConfig = {
+  outputFileTracingIncludes: {
+    "/api/admin/export/teilnahmebescheinigung": ["./src/assets/teilnahmebescheinigung/*"],
+    "/api/admin/fortbildungen/*/aushang": ["./public/marke/apple-touch-icon-v1.png", "./public/logo.*"],
+  },
   async headers() {
     return [
       {

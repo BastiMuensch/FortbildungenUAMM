@@ -32,6 +32,8 @@ import { DauerKorrektur } from "@/components/admin/DauerKorrektur";
 import { ZeitAenderungsHinweis } from "@/components/admin/ZeitAenderungsHinweis";
 import { erlaubteAdminRueckkehr } from "@/lib/adminNavigation";
 import type { SuchParameter } from "@/lib/filter";
+import { TeilnahmebescheinigungDruck } from "@/components/admin/TeilnahmebescheinigungDruck";
+import { istBescheinigungVerfuegbar } from "@/lib/teilnahmebescheinigung";
 
 export const metadata = { title: "Fortbildung bearbeiten" };
 
@@ -216,6 +218,12 @@ export default async function FortbildungBearbeitenPage({
       fortbildung.ende <= new Date() ? (
         <div className="mb-6">
           <DauerKorrektur id={id} beginn={fortbildung.beginn} ende={fortbildung.ende} />
+        </div>
+      ) : null}
+
+      {istBescheinigungVerfuegbar(fortbildung) ? (
+        <div className="mb-6">
+          <TeilnahmebescheinigungDruck id={id} vorgeschlageneAnzahl={fortbildung.tnTatsaechlich ?? fortbildung.maxTn} />
         </div>
       ) : null}
 

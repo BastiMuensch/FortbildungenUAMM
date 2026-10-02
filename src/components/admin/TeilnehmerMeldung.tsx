@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DauerKorrektur } from "@/components/admin/DauerKorrektur";
 import { ZeitAenderungsHinweis, type ZeitAenderung } from "@/components/admin/ZeitAenderungsHinweis";
+import { TeilnahmebescheinigungDruck } from "@/components/admin/TeilnahmebescheinigungDruck";
 
 export interface MeldungsZeile extends ZeitAenderung {
   id: string;
@@ -237,6 +238,12 @@ export function TeilnehmerMeldung({
 
       {darfBestaetigungen && istSchilf ? (
         <FibsNachtrag fortbildung={fortbildung} />
+      ) : null}
+
+      {istSchilf ? (
+        <div className="mt-4">
+          <TeilnahmebescheinigungDruck id={fortbildung.id} vorgeschlageneAnzahl={fortbildung.tnTatsaechlich ?? fortbildung.maxTn} />
+        </div>
       ) : null}
 
       {darfBestaetigungen && gemeldet ? (

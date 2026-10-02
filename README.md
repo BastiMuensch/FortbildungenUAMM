@@ -128,9 +128,45 @@ damit das Logo in der Mitte nichts zerstört.
 > dass die Logo-Aussparung die Lesbarkeit nicht kostet. Genau diese Prüfung
 > hat während der Entwicklung zwei Fehler gefunden.
 
-**Logo:** Erwartet wird `public/logo.png` (oder `.jpg`). Fehlt die Datei, wird
-der Code ohne Logo gezeichnet — bewusst kein Platzhalterbild, ein falsches
-Logo auf einem amtlichen Aushang wäre schlimmer als gar keins.
+**Logo:** Der QR-Code enthält standardmäßig die weiter.bilden-Bildmarke
+(Buch mit aufsteigendem Pfeil).
+Ein eigenes `public/logo.png` (oder `.jpg`/`.jpeg`) hat Vorrang. Logo und
+Schriften der Teilnahmebescheinigungen werden auch im Docker-Image mitgeführt.
+Die gedruckte Portaladresse bleibt links vom QR-Code; der vollständige Link
+steckt im QR-Code und im anklickbaren PDF-Link. Titel und Ortsangaben werden
+vor dem Zeichnen vermessen und bei Bedarf kompakter gesetzt. Die Beschreibung
+erscheint als Auszug, wenn der Platz auf einer A4-Seite nicht reicht.
+
+`npm run test:aushang` prüft auch die gestalteten QR-Codes mit echtem Logo
+gegen einen Decoder. Favicons (ICO, SVG, PNG und Apple-Touch-Icon) stehen
+statisch im HTML-Kopf und werden unabhängig von der Datenbank ausgeliefert.
+
+### Teilnahmebescheinigungen für SchiLf
+
+In freigegebenen und archivierten SchiLf sowie in der Nachbereitung steht
+„Teilnahmebescheinigungen“ bereit. Referierende dürfen nur ihre eigenen oder
+zugeordneten Veranstaltungen innerhalb ihres Bezirksbereichs aufrufen; BdBs
+bleiben auf ihre Bezirke beschränkt. Der PDF-Download prüft dies erneut.
+
+Die Anzahl ist von 1 bis 100 frei wählbar. Vorgeschlagen wird die gemeldete
+Teilnehmerzahl, sonst die geplante Platzzahl (höchstens 100). Die PDF enthält
+bereits ein A4-Blatt pro Exemplar: alle Seiten mit **einer Kopie** drucken.
+Die Vorbereitung ist auch vor dem Termin möglich; Namen werden vor Ort
+handschriftlich eingetragen. Es werden keine Teilnehmernamen gespeichert.
+
+Logo, Schrift, Veranstaltungsdaten und die Namen aller aktiven BdBs des
+Veranstaltungsbezirks werden automatisch eingesetzt. Unter den Unterschriftslinien
+stehen die BdB-Namen; digitale Unterschriften werden nicht hinterlegt. Fehlende
+BdB-Namen oder Zuständigkeiten ergänzt die RvS unter „Bezirke und BdBs“.
+Ohne vollständige BdB-Angaben wird keine Bescheinigung ausgegeben.
+Referentennamen erscheinen wie beim Aushang nur mit gültiger Namensfreigabe.
+Korrigierte Endzeiten werden beim nächsten Download direkt berücksichtigt.
+Der FIBS-Versandvermerk wird durch einen Download nicht gesetzt.
+
+Die lokalen PDF-Ressourcen und ihre Quellen/Lizenzen liegen unter
+`src/assets/teilnahmebescheinigung/` und werden beim Build mit ausgeliefert.
+Der Download benötigt keine neue Datenbankmigration und keine externen Abrufe.
+Prüfung: `npm run test:bescheinigungen`.
 
 ### Änderungsverlauf
 

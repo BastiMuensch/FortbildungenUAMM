@@ -40,6 +40,13 @@ const langFormat = new Intl.DateTimeFormat("de-DE", {
   year: "numeric",
 });
 
+const ausgeschriebenFormat = new Intl.DateTimeFormat("de-DE", {
+  timeZone: ZEITZONE,
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
 const monatJahrFormat = new Intl.DateTimeFormat("de-DE", {
   timeZone: ZEITZONE,
   month: "long",
@@ -67,6 +74,11 @@ export function formatZeit(date: Date): string {
 /** "Freitag, 31. Juli 2026" */
 export function formatDatumLang(date: Date): string {
   return langFormat.format(date);
+}
+
+/** "31. Juli 2026" für Bescheinigungen. */
+export function formatDatumAusgeschrieben(date: Date): string {
+  return ausgeschriebenFormat.format(date);
 }
 
 /** "Juli 2026" */

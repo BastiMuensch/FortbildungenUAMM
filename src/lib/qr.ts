@@ -450,7 +450,7 @@ function strafpunkte(modul: Feld): number {
 export function qrMatrix(
   text: string,
   stufe: FehlerKorrektur = "H",
-): { module: Feld; groesse: number; version: number } {
+): { module: Feld; funktionsmodule: Feld; groesse: number; version: number } {
   const daten = new TextEncoder().encode(text);
   const version = passendeVersion(daten.length, stufe);
   const groesse = 17 + 4 * version;
@@ -516,7 +516,7 @@ export function qrMatrix(
   }
 
   void besteMaske;
-  return { module: beste!, groesse, version };
+  return { module: beste!, funktionsmodule: belegt, groesse, version };
 }
 
 function setzeFormat(modul: Feld, stufe: FehlerKorrektur, maske: number): void {

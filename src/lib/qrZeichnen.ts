@@ -30,8 +30,14 @@ export interface QrGestaltung {
 }
 
 export function zeichneQr(doc: jsPDF, text: string, stil: QrGestaltung): void {
-  const { module, groesse: n } = qrMatrix(text, "H");
+  const { module, funktionsmodule, groesse: n } = qrMatrix(text, "H");
   const modulGroesse = stil.groesse / n;
+
+  // Vier vollständige Module Ruhezone gehören zum Code, auch wenn später
+  // ein farbiger Hintergrund hinter dem Anmeldebereich verwendet wird.
+  const ruhezone = 4 * modulGroesse;
+  doc.setFillColor(255, 255, 255);
+  doc.rect(stil.x - ruhezone, stil.y - ruhezone, stil.groesse + 2 * ruhezone, stil.groesse + 2 * ruhezone, "F");
 
   doc.setFillColor(...stil.farbe);
 
@@ -49,8 +55,10 @@ export function zeichneQr(doc: jsPDF, text: string, stil: QrGestaltung): void {
     );
 
   // Aussparung für das Logo: nur so groß, dass die Fehlerkorrektur sie
-  // sicher ausgleicht (siehe Nachweis in scripts/pruefungen.ts).
-  const logoFeld = stil.logo ? Math.round(n * 0.22) : 0;
+  // sicher ausgleicht (Scanprüfung mit Logo in scripts/aushangPruefungen.cjs).
+  // Eine ungerade Modulzahl hält das Logo exakt mittig. 18 % lassen auch
+  // bei kurzen Links genügend Reserven in den einzelnen Korrekturblöcken.
+  const logoFeld = stil.logo ? Math.max(3, 2 * Math.floor(n * 0.18 / 2) + 1) : 0;
   const logoVon = Math.floor((n - logoFeld) / 2);
   const imLogo = (zeile: number, spalte: number): boolean =>
     logoFeld > 0 &&
@@ -67,6 +75,13 @@ export function zeichneQr(doc: jsPDF, text: string, stil: QrGestaltung): void {
     for (let spalte = 0; spalte < n; spalte += 1) {
       if (!module[zeile]![spalte]) continue;
       if (imSucher(zeile, spalte) || imLogo(zeile, spalte)) continue;
+
+      // Ausrichtungs- und Taktmuster müssen zusammenhängend bleiben.
+      // Einzelne runde Punkte können sonst wie zusätzliche Sucher wirken.
+      if (funktionsmodule[zeile]![spalte]) {
+        doc.rect(stil.x + spalte * modulGroesse, stil.y + zeile * modulGroesse, modulGroesse, modulGroesse, "F");
+        continue;
+      }
 
       doc.roundedRect(
         stil.x + spalte * modulGroesse + versatz,
@@ -88,7 +103,7 @@ export function zeichneQr(doc: jsPDF, text: string, stil: QrGestaltung): void {
 
     // Äußerer Ring: gefülltes Quadrat, dann weiß ausgestanzt
     doc.setFillColor(...stil.farbe);
-    doc.roundedRect(x, y, kante, kante, modulGroesse * 1.6, modulGroesse * 1.6, "F");
+    doc.roundedRect(x, y, kante, kante, modulGroesse * 0.5, modulGroesse * 0.5, "F");
 
     doc.setFillColor(255, 255, 255);
     doc.roundedRect(
@@ -96,8 +111,8 @@ export function zeichneQr(doc: jsPDF, text: string, stil: QrGestaltung): void {
       y + modulGroesse,
       kante - 2 * modulGroesse,
       kante - 2 * modulGroesse,
-      modulGroesse * 1.1,
-      modulGroesse * 1.1,
+      modulGroesse * 0.3,
+      modulGroesse * 0.3,
       "F",
     );
 
@@ -107,8 +122,8 @@ export function zeichneQr(doc: jsPDF, text: string, stil: QrGestaltung): void {
       y + 2 * modulGroesse,
       3 * modulGroesse,
       3 * modulGroesse,
-      modulGroesse * 0.9,
-      modulGroesse * 0.9,
+      modulGroesse * 0.2,
+      modulGroesse * 0.2,
       "F",
     );
   }

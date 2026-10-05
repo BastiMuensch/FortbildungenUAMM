@@ -123,6 +123,9 @@ export function FortbildungWizard({
       {/* Eine gemeinsame Datumsprüfung statt nativer Prüfung versteckter Felder. */}
       <input type="hidden" name="beschreibungHtml" value={zustand.beschreibung} />
       <input type="hidden" name="niveaustufe" value={zustand.niveaustufe} />
+      {zustand.kompetenzen.map((code) => (
+        <input key={code} type="hidden" name="kompetenzen" value={code} />
+      ))}
       {rueckkehrUrl ? <input type="hidden" name="rueckkehr" value={rueckkehrUrl} /> : null}
 
       <Fortschritt index={index} onSpringe={springe} />

@@ -19,6 +19,7 @@ import {
   ZielgruppeFelder,
 } from "./Abschnitte";
 import { useFortbildungState } from "./state";
+import { BeschreibungUebersicht, DigCompUebersicht } from "./Uebersicht";
 import type {
   FortbildungWerte,
   BezirkOption,
@@ -28,6 +29,7 @@ import type {
 } from "./types";
 
 const TABS = [
+  { id: "uebersicht", label: "Übersicht" },
   { id: "eckdaten", label: "Eckdaten" },
   { id: "beschreibung", label: "Beschreibung" },
   { id: "zielgruppe", label: "Zielgruppe" },
@@ -64,7 +66,8 @@ export function FortbildungForm({
 }) {
   const action = saveFortbildung.bind(null, fortbildung?.id ?? null);
   const [state, formAction] = useActionState<FormularState, FormData>(action, {});
-  const [tab, setTab] = useState<string>("eckdaten");
+  const [tab, setTab] = useState<string>("uebersicht");
+  const [digCompBearbeiten, setDigCompBearbeiten] = useState(false);
 
   const zustand = useFortbildungState(fortbildung, orte, bezirke.length === 1 ? bezirke[0]!.id : "");
   const pflichtSchlagworte = bezirke.find((b) => b.id === zustand.bezirkId)?.pflichtSchlagworte ?? [];
@@ -85,6 +88,16 @@ export function FortbildungForm({
   }, [fehler]);
 
   const gemeinsam = { zustand, fehler, fortbildung, darfVeroeffentlichen };
+  const digCompUebersicht = {
+    niveaustufe: zustand.niveaustufe,
+    ausgewaehlt: zustand.kompetenzen,
+    bereiche: kompetenzBereiche,
+    fehler,
+    onBearbeiten: () => {
+      setDigCompBearbeiten(true);
+      setTab("digcomp");
+    },
+  };
 
   return (
     <form action={formAction} noValidate className="space-y-6">
@@ -92,6 +105,10 @@ export function FortbildungForm({
       {/* Werte aus dem State, die kein sichtbares Formularfeld haben. */}
       <input type="hidden" name="beschreibungHtml" value={zustand.beschreibung} />
       <input type="hidden" name="niveaustufe" value={zustand.niveaustufe} />
+      {/* Die Auswahl wird auch ohne geöffneten Kompetenzeditor mitgesendet. */}
+      {zustand.kompetenzen.map((code) => (
+        <input key={code} type="hidden" name="kompetenzen" value={code} />
+      ))}
       {rueckkehrUrl ? <input type="hidden" name="rueckkehr" value={rueckkehrUrl} /> : null}
 
       <FehlerUebersicht fehler={fehler} onAbschnitt={(abschnitt) => setTab(abschnitt)} />
@@ -111,6 +128,15 @@ export function FortbildungForm({
           ))}
         </TabsList>
 
+        <TabsContent value="uebersicht" className="space-y-6 pt-6">
+          <p className="text-lg font-semibold">{zustand.titel || "Fortbildung"}</p>
+          <BeschreibungUebersicht
+            beschreibung={zustand.beschreibung}
+            onBearbeiten={() => setTab("beschreibung")}
+          />
+          <DigCompUebersicht {...digCompUebersicht} />
+        </TabsContent>
+
         <TabsContent value="eckdaten" keepMounted className="pt-6">
           <EckdatenFelder {...gemeinsam} bezirke={bezirke} />
         </TabsContent>
@@ -128,7 +154,27 @@ export function FortbildungForm({
         </TabsContent>
 
         <TabsContent value="digcomp" keepMounted className="pt-6">
-          <DigCompFelder {...gemeinsam} kompetenzBereiche={kompetenzBereiche} />
+          {digCompBearbeiten ? (
+            <div className="space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="font-semibold">DigCompEdu Bavaria bearbeiten</h2>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDigCompBearbeiten(false)}
+                >
+                  Auswahl anzeigen
+                </Button>
+              </div>
+              <DigCompFelder {...gemeinsam} kompetenzBereiche={kompetenzBereiche} />
+              <p className="text-xs text-muted-foreground">
+                Ihre Auswahl wird mit „Änderungen speichern“ gespeichert.
+              </p>
+            </div>
+          ) : (
+            <DigCompUebersicht {...digCompUebersicht} />
+          )}
         </TabsContent>
 
         <TabsContent value="referenten" keepMounted className="pt-6">

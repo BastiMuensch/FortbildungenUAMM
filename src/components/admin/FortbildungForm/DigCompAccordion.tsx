@@ -35,10 +35,6 @@ export function DigCompAccordion({
 
   return (
     <div className="space-y-3">
-      {ausgewaehlt.map((code) => (
-        <input key={code} type="hidden" name="kompetenzen" value={code} />
-      ))}
-
       <Accordion multiple defaultValue={[]} className="border px-4">
         {bereiche.map((bereich) => {
           const anzahl = bereich.children.filter((k) => gesetzt.has(k.code)).length;

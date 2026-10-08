@@ -12,7 +12,7 @@ export interface BescheinigungsDaten {
   ende: Date;
   ort: string;
   bezirk: string;
-  bdbNamen: string[];
+  bdbs: Array<{ name: string; unterschrift?: Uint8Array | null }>;
   referenten: string[];
 }
 
@@ -128,11 +128,12 @@ function planeSeite(pdf: jsPDF, daten: BescheinigungsDaten, faktor: number) {
   }
 
   // Bestätigungsbereich unten verankern; weitere BdBs erhalten weitere Zeilen.
-  const bdbZeilen = daten.bdbNamen.map((name) => umbrechen(name, 78, 11, true));
+  const bdbZeilen = daten.bdbs.map((bdb, index) => ({ zeilen: umbrechen(bdb.name, 78, 11, true), unterschrift: bdb.unterschrift, index }));
   const reihen = [];
   for (let i = 0; i < bdbZeilen.length; i += 2) {
     const namen = bdbZeilen.slice(i, i + 2);
-    reihen.push({ namen, hoehe: 23 * faktor + (Math.max(...namen.map((zeilen) => zeilen.length)) - 1) * zeilenhoehe(11) });
+    const abstandNaechsteUnterschrift = bdbZeilen.slice(i + 2, i + 4).some((bdb) => bdb.unterschrift) ? 11 * faktor : 0;
+    reihen.push({ namen, hoehe: 23 * faktor + abstandNaechsteUnterschrift + (Math.max(...namen.map(({ zeilen }) => zeilen.length)) - 1) * zeilenhoehe(11) });
   }
   const bestaetigungsZeilen = umbrechen(`Für den Schulamtsbezirk ${daten.bezirk}`, 170, 11, true);
   const bestaetigungsHoehe = (bestaetigungsZeilen.length - 1) * zeilenhoehe(11);
@@ -142,9 +143,17 @@ function planeSeite(pdf: jsPDF, daten: BescheinigungsDaten, faktor: number) {
   text(bestaetigungsZeilen, 20, fussOben, 11, true, DUNKEL);
   let fussY = fussOben + bestaetigungsHoehe + 10 * faktor;
   for (const reihe of reihen) {
-    reihe.namen.forEach((zeilen, spalte) => {
+    reihe.namen.forEach(({ zeilen, unterschrift, index }, spalte) => {
       const x = spalte === 0 ? 20 : 112;
       const linienY = fussY + 10 * faktor;
+      if (unterschrift) {
+        // Seitenverhältnis erhalten und Bild vollständig oberhalb der Linie halten.
+        const bild = pdf.getImageProperties(unterschrift);
+        const skalierung = Math.min(70 / bild.width, (15 * faktor) / bild.height);
+        const breite = bild.width * skalierung;
+        const hoehe = bild.height * skalierung;
+        schritte.push(() => pdf.addImage(unterschrift, "PNG", x + 2, linienY - hoehe - 1, breite, hoehe, `bdb-unterschrift-${index}`));
+      }
       strich(linienY, x, x + 78);
       text(zeilen, x, linienY + 7 * faktor, 11, true, DUNKEL);
       text("Beratung digitale Bildung (BdB)", x, linienY + 13 * faktor + (zeilen.length - 1) * zeilenhoehe(11), 9, false, GRAU);
@@ -158,7 +167,7 @@ export async function erstelleTeilnahmebescheinigung(daten: BescheinigungsDaten,
   if (!Number.isInteger(anzahl) || anzahl < 1 || anzahl > MAX_BESCHEINIGUNGEN) {
     throw new BescheinigungsFehler("Bitte eine Anzahl zwischen 1 und 100 wählen.");
   }
-  if (!daten.bdbNamen.length || daten.bdbNamen.some((name) => !name.trim())) {
+  if (!daten.bdbs.length || daten.bdbs.some((bdb) => !bdb.name.trim())) {
     throw new BescheinigungsFehler("Die Namen der zuständigen BdBs fehlen.");
   }
   if (!Number.isFinite(daten.beginn.getTime()) || !Number.isFinite(daten.ende.getTime()) || daten.ende <= daten.beginn) {

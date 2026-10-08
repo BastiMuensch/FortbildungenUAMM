@@ -23,8 +23,10 @@ export async function GET(anfrage: NextRequest) {
   }
 
   const parameter = anfrage.nextUrl.searchParams;
-  const eingabe = BescheinigungsAnfrageSchema.safeParse({ id: parameter.get("id"), anzahl: parameter.get("anzahl") });
-  if (!eingabe.success || parameter.getAll("id").length !== 1 || parameter.getAll("anzahl").length !== 1) {
+  const eingabe = BescheinigungsAnfrageSchema.safeParse({
+    id: parameter.get("id"), anzahl: parameter.get("anzahl"), unterschriften: parameter.get("unterschriften") ?? undefined,
+  });
+  if (!eingabe.success || parameter.getAll("id").length !== 1 || parameter.getAll("anzahl").length !== 1 || parameter.getAll("unterschriften").length > 1) {
     return fehlerAntwort(eingabe.error?.issues[0]?.message ?? "Bitte Fortbildung und Anzahl eindeutig angeben.", 400);
   }
 
@@ -37,7 +39,7 @@ export async function GET(anfrage: NextRequest) {
         name: true,
         users: {
           where: { role: "ADMIN", isActive: true },
-          select: { name: true },
+          select: { name: true, bdbUnterschrift: eingabe.data.unterschriften ? { select: { bildPng: true } } : false },
           orderBy: [{ name: "asc" }, { id: "asc" }],
         },
       } },
@@ -54,8 +56,10 @@ export async function GET(anfrage: NextRequest) {
   if (!istBescheinigungVerfuegbar(fortbildung)) {
     return fehlerAntwort("Teilnahmebescheinigungen sind nur für freigegebene oder archivierte SchiLf verfügbar.", 409);
   }
-  const bdbNamen = fortbildung.bezirk.users.map((bdb) => bdb.name?.trim() ?? "");
-  if (!bdbNamen.length || bdbNamen.some((name) => !name)) {
+  const bdbs = fortbildung.bezirk.users.map((bdb) => ({
+    name: bdb.name?.trim() ?? "", unterschrift: eingabe.data.unterschriften ? bdb.bdbUnterschrift?.bildPng ?? null : null,
+  }));
+  if (!bdbs.length || bdbs.some((bdb) => !bdb.name)) {
     return fehlerAntwort("Für diesen Schulamtsbezirk fehlen vollständige BdB-Namen. Bitte die RvS bitten, unter „Bezirke und BdBs“ die aktiven BdB-Konten und ihre Namen zu ergänzen.", 409);
   }
 
@@ -67,7 +71,7 @@ export async function GET(anfrage: NextRequest) {
       ort: fortbildung.veranstaltungsort.istOnline ? "Online" :
         [fortbildung.veranstaltungsort.name, fortbildung.veranstaltungsort.ort].filter(Boolean).join(", "),
       bezirk: fortbildung.bezirk.name,
-      bdbNamen,
+      bdbs,
       referenten: fortbildung.referenten.map(({ referent }) => `${referent.vorname} ${referent.nachname}`),
     }, eingabe.data.anzahl);
     return new NextResponse(new Uint8Array(pdf), {

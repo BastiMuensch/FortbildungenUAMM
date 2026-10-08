@@ -19,6 +19,8 @@ const jsQR = require("jsqr");
 const { erstelleAushangPdf, AushangLayoutFehler } = require("../src/lib/aushangPdf");
 const { ladeLogo } = require("../src/lib/logo");
 const { zeichneQr } = require("../src/lib/qrZeichnen");
+const { leseBeschreibungsAbsaetze, planeBeschreibung } = require("../src/lib/beschreibungPdf");
+const { jsPDF } = require("jspdf");
 const { default: RootLayout } = require("../src/app/layout");
 
 const vorlage = {
@@ -49,6 +51,41 @@ async function scanneQr(adresse, logo) {
 }
 
 (async () => {
+  const struktur = leseBeschreibungsAbsaetze(`<p>Gemeinsam &amp; praxisnah.</p><ul><li><p><strong>Einstieg</strong> und Austausch</p><ul><li>IServ kennenlernen</li><li>Notenverwaltung erproben</li></ul></li><li>Workshops<ol><li>Paddy</li><li>Mathe-Magma<br>mit Beispielen</li></ol></li></ul><p>Abschluss.</p><script>nicht drucken</script>`);
+  assert.deepEqual(struktur.map((absatz) => [absatz.ebene, absatz.listenzeichen, absatz.teile.map((teil) => teil.text).join("")]), [
+    [0, undefined, "Gemeinsam & praxisnah."],
+    [1, "•", "Einstieg und Austausch"],
+    [2, "•", "IServ kennenlernen"],
+    [2, "•", "Notenverwaltung erproben"],
+    [1, "•", "Workshops"],
+    [2, "1.", "Paddy"],
+    [2, "2.", "Mathe-Magma"],
+    [2, undefined, "mit Beispielen"],
+    [0, undefined, "Abschluss."],
+  ]);
+  assert.deepEqual(struktur[1].teile[0], { text: "Einstieg", fett: true });
+  const messung = new jsPDF({ unit: "mm" });
+  const listenabsatz = leseBeschreibungsAbsaetze(`<ul><li><strong>Ausführlicher Punkt:</strong> ${"Wort ".repeat(90)}</li></ul>`);
+  const umbruch = planeBeschreibung(messung, listenabsatz, 80, 11, 1000);
+  assert.equal(umbruch.gekuerzt, false);
+  assert.ok(umbruch.zeilen.length > 2);
+  assert.equal(umbruch.zeilen.filter((zeile) => zeile.listenzeichen).length, 1, "Umgebrochene Listenpunkte erhalten kein zweites Aufzählungszeichen.");
+  assert.ok(umbruch.zeilen.every((zeile) => zeile.einzug === umbruch.zeilen[0].einzug), "Folgezeilen müssen unter dem Text beginnen.");
+  const kurz = planeBeschreibung(messung, struktur, 80, 11, 20);
+  assert.equal(kurz.gekuerzt, true);
+  assert.ok(kurz.hoehe <= 20);
+  assert.match(kurz.zeilen.at(-1).teile.map((teil) => teil.text).join(""), / …$/);
+  assert.equal(planeBeschreibung(messung, struktur, 80, 11, 0).zeilen.length, 0);
+  const ohneLeerzeichen = planeBeschreibung(messung, leseBeschreibungsAbsaetze(`<p>${"langeswort".repeat(100)}</p>`), 40, 11, 1000);
+  for (const zeile of [...umbruch.zeilen, ...kurz.zeilen, ...ohneLeerzeichen.zeilen]) {
+    let breite = 0;
+    for (const teil of zeile.teile) {
+      messung.setFont("helvetica", teil.fett ? "bold" : "normal"); messung.setFontSize(11);
+      breite += messung.getTextWidth(teil.text);
+    }
+    const maximum = ohneLeerzeichen.zeilen.includes(zeile) ? 40 : 80 - zeile.einzug;
+    assert.ok(breite <= maximum + 0.01, "Auch lange Wörter und Auslassungszeichen müssen innerhalb der Spalte bleiben.");
+  }
   const logo = await ladeLogo();
   assert.ok(logo, "Ohne eigenes Schulamtslogo muss die weiter.bilden-Bildmarke vorhanden sein.");
   const bildmarke = await readFile("public/marke/apple-touch-icon-v1.png");
@@ -72,6 +109,18 @@ async function scanneQr(adresse, logo) {
       referenten: Array.from({ length: 5 }, (_, index) => ({ referent: { vorname: `Anna-Lena ${index + 1}`, nachname: "Müller-Lüdenscheidt" } })),
     }, adresse: adressen[2] },
     { name: "schilf", daten: { ...vorlage, organisationsform: "SCHILF", inFibs: false, fibsUrl: null, fibsLehrgangsnummer: null }, adresse: adressen[0] },
+    { name: "stichpunkte", daten: {
+      ...vorlage, titel: "Digitales Arbeiten an der Bismarckschule", organisationsform: "SCHILF", inFibs: false,
+      beschreibungHtml: `<p>Neues entdecken und praktisch erproben: Digitale Anwendungen für Unterricht und Schulorganisation gemeinsam kennenlernen.</p>
+        <ul><li><strong>Ablauf | 13:30–16:00 Uhr</strong></li>
+        <li><p><strong>13:30–14:30 Uhr: Gemeinsamer Einstieg</strong></p><ul><li>Neuigkeiten in IServ – Referent/in: Christian Müller</li><li>Einführung in die Notenverwaltung mit edoop – Referent/in: Heinrich Rothermel</li></ul></li>
+        <li><strong>14:30–14:45 Uhr: Pause</strong></li>
+        <li><strong>14:45–15:30 Uhr: Workshops</strong><ul><li><strong>14:45–15:15 Uhr:</strong> Erste Workshoprunde</li><li><strong>15:10–15:15 Uhr:</strong> Wechsel zwischen den Workshops</li><li><strong>15:15–15:45 Uhr:</strong> Zweite Workshoprunde</li></ul></li>
+        <li>Zur Auswahl stehen:<ul><li><strong>Paddy</strong> – Referent/in: Heinrich Rothermel</li><li><strong>Mathe-Magma</strong> – Referent/in: Rosalba Melis</li><li><strong>LearningView</strong> – Referent/in: Maria Schönrock</li></ul></li>
+        <li>Die Auswahl der beiden Workshops erfolgt am Veranstaltungstag nach individuellem Interesse.</li>
+        <li><strong>15:45–16:00 Uhr: Gemeinsamer Abschluss</strong></li><li>Austausch, offene Fragen und Ausblick – Moderation: Christian Müller</li></ul>`,
+    }, adresse: adressen[0] },
+    { name: "nummeriert", daten: { ...vorlage, beschreibungHtml: "<h2>Das nehmen Sie mit</h2><ol><li><p>Erster Schritt</p><p>Mit einem zweiten Absatz im gleichen Listenpunkt.</p><ul><li>Unterpunkt zum ersten Schritt</li></ul></li><li>Zweiter Schritt<br>mit einem ausdrücklichen Zeilenumbruch</li></ol><p>Ein abschließender Absatz.</p>" }, adresse: adressen[0] },
   ];
   for (const fall of faelle) {
     const pdf = erstelleAushangPdf(fall.daten, fall.adresse, logo);

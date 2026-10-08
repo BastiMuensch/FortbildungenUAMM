@@ -45,6 +45,16 @@ und Berichte.
 - **Nachbereitung**: tatsächliche Teilnehmerzahl sowie getrennte,
   protokollierte FIBS-Versandbestätigungen für Referent:innen und Teilnehmende
 - **Aushang** als A4-PDF zum Ausdrucken, mit QR-Code zur Detailseite
+- **Teilnahmebescheinigungen für SchiLf** als A4-PDF mit optionalen BdB-Unterschriften.
+  Unter **Verwaltung → Unterschriften** können BdBs ihr eigenes Unterschriftsbild
+  und die RvS die Bilder aller BdBs hinterlegen, ersetzen oder entfernen
+  (PNG/JPEG, bis 750 KB und 12 Megapixel). Die Bilder werden ohne Metadaten als
+  PNG in der Datenbank gespeichert und sind Bestandteil des Vollbackups.
+  Nur aktive, dem Veranstaltungsbezirk zugeordnete BdBs werden berücksichtigt.
+  Zum Download berechtigte Referierende erhalten die Unterschriften im PDF;
+  die Bildverwaltung bleibt BdBs und RvS vorbehalten. Ohne Bild bleibt die
+  Unterschriftslinie frei. Änderungen gelten nur für neue Downloads.
+  Es handelt sich um eingefügte Bild-Unterschriften ohne digitales Zertifikat.
 - **Änderungsverlauf** je Fortbildung
 - **Schuljahres-Umschalter** über Liste, Kennzahlen und Exporte
 - Listenansicht als getrennte Arbeitstabellen für Entwürfe, Eingereicht,

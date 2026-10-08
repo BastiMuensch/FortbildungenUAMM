@@ -67,6 +67,17 @@ model User {
   referent                            Referent?
   /// Zuständigkeiten von BdBs. RvS ist global.
   bezirke                             Bezirk[]
+  bdbUnterschrift                      BdbUnterschrift?
+}
+
+/// Separate, nicht öffentliche Bildablage für Teilnahmebescheinigungen.
+/// Wird nur bei berechtigter Verwaltung oder PDF-Erzeugung gezielt geladen.
+model BdbUnterschrift {
+  userId          String   @id
+  bildPng         Bytes
+  aktualisiertAm  DateTime @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 /// Einmal-Token für das Einrichten eines Zugangs und für das Zurücksetzen

@@ -8,7 +8,7 @@ import { bestimmeFibsAnmeldestatus } from "@/lib/fibs/status";
 import type { GeladenesLogo } from "@/lib/logo";
 import { organisationsKennzeichnungen } from "@/lib/namensfreigabe";
 import { zeichneQr } from "@/lib/qrZeichnen";
-import { htmlZuText } from "@/lib/sanitize";
+import { leseBeschreibungsAbsaetze, planeBeschreibung } from "@/lib/beschreibungPdf";
 
 type AushangFortbildung = Pick<Fortbildung,
   "titel" | "kurztitel" | "beschreibungHtml" | "organisationsform" | "format" |
@@ -31,7 +31,7 @@ const INHALT_UNTEN = QR_OBEN - 14;
 export class AushangLayoutFehler extends Error {}
 
 /** Erst vermessen, dann zeichnen: Hauptinhalt und QR-Bereich überlappen nie. */
-function planeInhalt(doc: jsPDF, fortbildung: AushangFortbildung, faktor: number) {
+function planeInhalt(doc: jsPDF, fortbildung: AushangFortbildung, absaetze: ReturnType<typeof leseBeschreibungsAbsaetze>, faktor: number) {
   const schritte: Array<() => void> = [];
   const abstand = (groesse: number) => groesse * 25.4 / 72 * 1.3;
   function zeilen(text: string, breite: number, groesse: number, fett = false): string[] {
@@ -109,20 +109,26 @@ function planeInhalt(doc: jsPDF, fortbildung: AushangFortbildung, faktor: number
   if (y + fussHoehe > INHALT_UNTEN) return null;
 
   const textgroesse = Math.max(10, 11 * faktor);
-  const beschreibung = zeilen(htmlZuText(fortbildung.beschreibungHtml), 170, textgroesse);
-  const maxZeilen = Math.max(0, Math.floor((INHALT_UNTEN - y - fussHoehe - 6) / abstand(textgroesse)));
-  const auszug = beschreibung.slice(0, maxZeilen);
-  if (beschreibung.length > auszug.length && auszug.length) {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(textgroesse);
-    auszug[auszug.length - 1] = kuerzeZeile(doc, `${auszug.at(-1)} …`, 170);
+  const beschreibung = planeBeschreibung(doc, absaetze, 170, textgroesse, INHALT_UNTEN - y - fussHoehe - 6);
+  for (const zeile of beschreibung.zeilen) {
+    y += zeile.abstandVor;
+    let x = 20 + zeile.einzug;
+    if (zeile.listenzeichen) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(textgroesse);
+      text(zeile.listenzeichen, x - doc.getTextWidth(zeile.listenzeichen) - 1.5, y, textgroesse);
+    }
+    for (const teil of zeile.teile) {
+      text(teil.text, x, y, textgroesse, teil.fett);
+      doc.setFont("helvetica", teil.fett ? "bold" : "normal");
+      doc.setFontSize(textgroesse);
+      x += doc.getTextWidth(teil.text);
+    }
+    y += beschreibung.zeilenhoehe;
   }
-  if (auszug.length) {
-    text(auszug, 20, y, textgroesse);
-    y += auszug.length * abstand(textgroesse) + 6;
-  }
+  if (beschreibung.zeilen.length) y += 6;
   text(fuss, 20, y, fussgroesse, false, GRAU);
-  return schritte;
+  return { schritte, gekuerzt: beschreibung.gekuerzt };
 }
 
 function kuerzeZeile(doc: jsPDF, text: string, breite: number): string {
@@ -134,10 +140,15 @@ function kuerzeZeile(doc: jsPDF, text: string, breite: number): string {
 
 export function erstelleAushangPdf(fortbildung: AushangFortbildung, adresse: string, logo: GeladenesLogo | null): jsPDF {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+  const absaetze = leseBeschreibungsAbsaetze(fortbildung.beschreibungHtml);
   let schritte: Array<() => void> | null = null;
   for (const faktor of [1, 0.9, 0.8, 0.7]) {
-    schritte = planeInhalt(doc, fortbildung, faktor);
-    if (schritte) break;
+    const plan = planeInhalt(doc, fortbildung, absaetze, faktor);
+    if (!plan) continue;
+    schritte = plan.schritte;
+    // Zuerst die vollständige Beschreibung versuchen; bei sehr langen Texten
+    // bleibt ein strukturierter Auszug mit Verweis auf die Veranstaltungsseite.
+    if (!plan.gekuerzt) break;
   }
   if (!schritte) throw new AushangLayoutFehler("Die Veranstaltungsangaben sind für einen einseitigen Aushang zu umfangreich. Bitte Titel, Kurztitel und Ortsangabe auf überlange Einträge prüfen.");
   doc.setFillColor(BLAU);

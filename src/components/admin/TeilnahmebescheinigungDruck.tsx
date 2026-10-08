@@ -14,12 +14,14 @@ export function TeilnahmebescheinigungDruck({ id, vorgeschlageneAnzahl }: { id: 
 
   async function herunterladen(ereignis: FormEvent<HTMLFormElement>) {
     ereignis.preventDefault();
-    const anzahl = String(new FormData(ereignis.currentTarget).get("anzahl") ?? "");
+    const formulardaten = new FormData(ereignis.currentTarget);
+    const anzahl = String(formulardaten.get("anzahl") ?? "");
+    const unterschriften = formulardaten.get("unterschriften") === "on" ? "ja" : "nein";
     setLaedt(true);
     setFehler("");
     setMeldung("");
     try {
-      const antwort = await fetch(`/api/admin/export/teilnahmebescheinigung?${new URLSearchParams({ id, anzahl })}`, { cache: "no-store" });
+      const antwort = await fetch(`/api/admin/export/teilnahmebescheinigung?${new URLSearchParams({ id, anzahl, unterschriften })}`, { cache: "no-store" });
       if (!antwort.ok) {
         const daten = await antwort.json().catch(() => null);
         throw new Error(daten?.fehler ?? "Die Bescheinigungen konnten nicht erstellt werden. Bitte erneut versuchen.");
@@ -54,6 +56,10 @@ export function TeilnahmebescheinigungDruck({ id, vorgeschlageneAnzahl }: { id: 
         Die Namen der Teilnehmenden werden nach dem Drucken eingetragen.
       </p>
       <form onSubmit={herunterladen} className="mt-4 flex flex-wrap items-end gap-3" aria-busy={laedt}>
+        <label className="flex w-full items-start gap-2 text-sm">
+          <input type="checkbox" name="unterschriften" defaultChecked disabled={laedt} className="mt-0.5 size-4 shrink-0 accent-primary" />
+          <span>Hinterlegte Unterschriften einfügen<span className="mt-1 block text-xs text-muted-foreground">Fehlende Unterschriften können nach dem Drucken ergänzt werden.</span></span>
+        </label>
         <div className="space-y-1">
           <label htmlFor={feldId} className="text-sm font-medium">Anzahl Exemplare</label>
           <Input id={feldId} name="anzahl" type="number" min={1} max={MAX_BESCHEINIGUNGEN} step={1} required

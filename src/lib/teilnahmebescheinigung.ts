@@ -6,6 +6,7 @@ export const BescheinigungsAnfrageSchema = z.object({
   id: z.string().uuid("Bitte eine gültige Fortbildung auswählen."),
   anzahl: z.string().regex(/^[1-9]\d{0,2}$/, "Bitte eine ganze Anzahl zwischen 1 und 100 eingeben.")
     .transform(Number).pipe(z.number().int().min(1).max(MAX_BESCHEINIGUNGEN, "Höchstens 100 Exemplare pro PDF.")),
+  unterschriften: z.enum(["ja", "nein"]).default("ja").transform((wert) => wert === "ja"),
 });
 
 /** Auch vor dem Termin druckbar, damit die Blätter vor Ort bereitliegen. */

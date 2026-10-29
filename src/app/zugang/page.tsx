@@ -70,6 +70,11 @@ export default async function ZugangSeite({
             </p>
           </div>
         )}
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          <Link href="/datenschutz" className="underline underline-offset-4 hover:text-foreground">
+            Datenschutzerklärung
+          </Link>
+        </p>
       </div>
     </main>
   );

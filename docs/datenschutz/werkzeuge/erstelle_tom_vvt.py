@@ -1,280 +1,262 @@
-"""Gestaltete, ausfüllbare Word-Unterlagen aus den fachlichen Markdown-Quellen.
+"""Erzeugt die verständlichen Datenschutzunterlagen aus ihren Markdown-Quellen.
 
-Mit gebündeltem Python ausführen und anschließend beide DOCX vollständig rendern.
-Gelb hinterlegte Textfelder sind editierbar; Quellenmarker bleiben unverändert.
+Layout nach den MobileReserve-Unterlagen vom Oktober 2026. Zur ersten
+Übernahme kann --vorlage auf eine unveränderte Referenzdatei zeigen.
+Folgeläufe verwenden die vorhandene Ausgabe und erhalten deren Stilpaket.
+Danach jede Ausgabe mit dem gebündelten render_docx.py visuell prüfen.
 """
+from copy import deepcopy
 from pathlib import Path
+import argparse
 import re
 
 from docx import Document
 from docx.shared import Cm, Pt, RGBColor
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
 from docx.enum.table import WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
 
 ORDNER = Path(__file__).resolve().parents[1]
-VERSION = "1.0"
-BLAU = "24485B"
+BLAU = "233D4D"
 GELB = "FFF2CC"
-
-# Die Übersicht enthält Entscheidungen und Nachweise, keine vorweggenommenen Antworten.
-OFFENE_PUNKTE = [
-    ("Regierung", "ERGÄNZEN", "Sachgebiet 40.1 und Doris Sippel stehen fest. Ergänzen: Direktkontakt, Vertretung, Schulämter, befugte Entscheidungsstelle und Aktenzeichen.", "1 und 7", "1 und 7"),
-    ("Regierung", "BESTÄTIGEN", "Beschriebene Aufgaben, Auswertungen und Rechte bestätigen; tatsächliche FIBS-Quelle und Nutzung klären. Datenfelder sind bereits beschrieben.", "TOM 02 und 05", "VVT 01 und 02"),
-    ("Regierung und Registratur", "FESTLEGEN", "Archivfrist und Fristbeginn, öffentliche Anzeigedauer sowie Fristen für Konten, Nachweise und Exporte. Die operative 400-Tage-Regel steht.", "TOM 06 und 07", "VVT 04 und 6"),
-    ("Vertragsstelle und IT", "BELEGEN", "AVV und Anlagen ablegen; konkrete Serverinstanz Nürnberg, Portaladresse und gegebenenfalls weitere Dienstleister eintragen.", "2 und TOM 04", "1 und VVT 03"),
-    ("Projektteam und Administration", "PRÜFEN", "Zugänge, BdB-MFA, Bezirksrechte und Löschlauf auf dem Server prüfen. Vollbackup: age-Schlüssel, UNC-Pfad, Rechte, Vertretung, bestätigte Ablage und Wiederherstellung belegen; technische Logs festlegen.", "TOM 01 bis 09", "VVT 03 und 6"),
-    ("Regierung, IT und Datenschutz", "ABSCHLIESSEN", "Risikovorprüfung, Meldewege und Zuständigkeit für Auskünfte festhalten; Datenschutzinformationen und Betriebsfreigabe vervollständigen.", "TOM 09 und 10", "7"),
-]
+TITEL = {
+    "TOM": "Technische und\norganisatorische Maßnahmen",
+    "VVT": "Verzeichnis von\nVerarbeitungstätigkeiten",
+    "DSFA": "Datenschutzfolgenabschätzung",
+}
 
 
-def hinterlegen(lauf, farbe=GELB):
-    eig = lauf._r.get_or_add_rPr()
-    feld = OxmlElement("w:shd")
-    feld.set(qn("w:fill"), farbe)
-    eig.append(feld)
+def element(name, **werte):
+    knoten = OxmlElement("w:" + name)
+    for schluessel, wert in werte.items():
+        knoten.set(qn("w:" + schluessel), str(wert))
+    return knoten
 
 
-def feldtext(absatz, text, fett=False):
-    """Nur echte Platzhalter hervorheben, keine Quellen oder Musterkennzeichnung."""
+def feldtext(absatz, text, fett=None):
     for teil in re.split(r"(\[[^\]]+\])", text):
         if not teil:
             continue
         lauf = absatz.add_run(teil)
-        lauf.bold = True if fett else None
-        if teil.startswith("[") and not re.fullmatch(r"\[Q\d+(?:,\s*Q\d+)*\]", teil) and teil != "[Schulamtsbezirk]":
-            lauf.text = f"[AUSFÜLLEN: {teil[1:-1]}]"
+        lauf.bold = fett
+        if teil.startswith("[") and not re.fullmatch(r"\[Q[\dQ, –-]+\]", teil):
+            lauf.text = "[ERGÄNZEN: " + teil[1:-1] + "]"
             lauf.bold = True
-            hinterlegen(lauf)
+            lauf._r.get_or_add_rPr().append(element("shd", fill=GELB))
 
 
 def text_einfuegen(absatz, text):
-    muster = r"(\*\*.+?\*\*|\[[^\]]+\]\([^)]+\)|`[^`]+`)"
-    for teil in re.split(muster, text):
+    for teil in re.split(r"(\*\*.+?\*\*|\[[^\]]+\]\([^)]+\)|`[^`]+`)", text):
         if not teil:
             continue
         if teil.startswith("**"):
-            feldtext(absatz, teil[2:-2], fett=True)
+            feldtext(absatz, teil[2:-2], True)
+        elif re.fullmatch(r"\[[^\]]+\]\([^)]+\)", teil):
+            treffer = re.fullmatch(r"\[([^\]]+)\]\(([^)]+)\)", teil)
+            link = element("hyperlink")
+            link.set(qn("r:id"), absatz.part.relate_to(treffer[2], RT.HYPERLINK, is_external=True))
+            lauf = element("r")
+            eig = element("rPr")
+            eig.append(element("color", val=BLAU))
+            eig.append(element("u", val="single"))
+            lauf.append(eig)
+            inhalt = element("t"); inhalt.text = treffer[1]; lauf.append(inhalt)
+            link.append(lauf); absatz._p.append(link)
         elif teil.startswith("`"):
             feldtext(absatz, teil[1:-1])
-        elif re.match(r"\[[^\]]+\]\(", teil):
-            treffer = re.fullmatch(r"\[([^\]]+)\]\((.+)\)", teil)
-            if not treffer[2].startswith("http"):
-                feldtext(absatz, f"{treffer[1]} ({treffer[2]})")
-                continue
-            link = OxmlElement("w:hyperlink")
-            link.set(qn("r:id"), absatz.part.relate_to(treffer[2], RT.HYPERLINK, is_external=True))
-            lauf = OxmlElement("w:r")
-            eig = OxmlElement("w:rPr")
-            farbe = OxmlElement("w:color"); farbe.set(qn("w:val"), BLAU); eig.append(farbe)
-            lauf.append(eig)
-            t = OxmlElement("w:t"); t.text = treffer[1]; lauf.append(t)
-            link.append(lauf); absatz._p.append(link)
         else:
             feldtext(absatz, teil)
 
 
-def tabelle(dokument, inhalt, breiten, schrift=9.5):
-    tab = dokument.add_table(rows=0, cols=len(breiten))
-    tab.alignment = WD_TABLE_ALIGNMENT.CENTER
-    tab.autofit = False
+def vorbereiten(ziel, vorlage, kurz):
+    dokument = Document(vorlage or (ziel if ziel.exists() else None))
+    tabellenvorlage = deepcopy(dokument.tables[0]._tbl) if dokument.tables else None
+    # Der vollständige Inhalt ist ein neuer Sachtext; fremde Kommentare und
+    # frühere Hyperlinks gehören nicht in die unabhängigen Behördenunterlagen.
+    for kind in list(dokument._element.body):
+        if kind.tag != qn("w:sectPr"):
+            dokument._element.body.remove(kind)
+    for kennung, rel in list(dokument.part.rels.items()):
+        if rel.reltype == RT.HYPERLINK or "comments" in rel.reltype:
+            dokument.part.drop_rel(kennung)
+    for abschnitt in dokument.sections:
+        abschnitt.page_width = Cm(21); abschnitt.page_height = Cm(29.7)
+        abschnitt.top_margin = Cm(2); abschnitt.bottom_margin = Cm(1.9)
+        abschnitt.left_margin = Cm(2.2); abschnitt.right_margin = Cm(2.2)
+        abschnitt.header_distance = Cm(.8); abschnitt.footer_distance = Cm(.9)
+        for bereich in [abschnitt.header, abschnitt.footer]:
+            for kind in list(bereich._element):
+                bereich._element.remove(kind)
+        abschnitt.header.add_paragraph()
+        fuss = abschnitt.footer.add_paragraph(style="Footer")
+        fuss.paragraph_format.tab_stops.add_tab_stop(Cm(16.6), WD_TAB_ALIGNMENT.RIGHT)
+        fuss.paragraph_format.space_after = Pt(0)
+        fuss.add_run(f"{kurz} · weiter.bilden · 05.10.2026\tSeite ")
+        for name, nachher in [("PAGE", " von "), ("NUMPAGES", "")]:
+            fuss._p.append(element("fldSimple", instr=name))
+            fuss.add_run(nachher)
+        for lauf in fuss.runs:
+            lauf.font.name = "Arial"; lauf.font.size = Pt(8)
+            lauf.font.color.rgb = RGBColor.from_string("666666")
+    for name, groesse, fett, vorher, nachher in [
+        ("Normal",10.5,False,0,6),("Title",23,True,0,8),
+        ("Subtitle",11,False,0,12),("Heading 1",14,True,15,7),
+        ("Heading 2",11.5,True,11,5),("Heading 3",10.5,True,8,4),
+        ("List Bullet",10.5,False,0,4),("List Number",10.5,False,0,4),
+        ("Footer",8,False,0,0),
+    ]:
+        stil = dokument.styles[name]
+        stil.font.name = "Arial"; stil.font.size = Pt(groesse)
+        stil.font.bold = fett; stil.font.italic = False; stil.font.underline = False
+        stil.font.color.rgb = RGBColor(0,0,0)
+        pf = stil.paragraph_format
+        pf.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        pf.space_before = Pt(vorher); pf.space_after = Pt(nachher)
+        pf.line_spacing = 1.12; pf.widow_control = True
+        pf.keep_with_next = name.startswith("Heading") or name in ["Title", "Subtitle"]
+        for rand in stil.element.xpath(".//w:pBdr"):
+            rand.getparent().remove(rand)
+        spracheigenschaften = stil.element.get_or_add_rPr()
+        for bisher in spracheigenschaften.xpath("./w:lang"):
+            spracheigenschaften.remove(bisher)
+        spracheigenschaften.append(element("lang", val="de-DE"))
+    eig = dokument.core_properties
+    eig.title = TITEL[kurz].replace("\n", " ")
+    eig.subject = "weiter.bilden – Fortbildungsportal Schwaben"
+    eig.author = ""; eig.last_modified_by = ""; eig.comments = ""
+    eig.keywords = "Datenschutz, Schwaben, weiter.bilden"
+    for bisher in dokument.settings.element.xpath("./w:updateFields"):
+        dokument.settings.element.remove(bisher)
+    dokument.settings.element.append(element("updateFields", val="true"))
+    return dokument, tabellenvorlage
+
+
+def tabelle(dokument, inhalt, muster):
+    from docx.table import Table
+    kopf = inhalt[0]
+    if len(kopf) == 2:
+        breiten = [4.1, 12.5]
+    elif kopf[0].startswith("Risiko"):
+        breiten = [6.0, 8.1, 2.5]
+    else:
+        breiten = [2.5, 7.5, 6.6]
+    if muster is not None:
+        xml = deepcopy(muster)
+        for kind in list(xml):
+            if kind.tag in [qn("w:tr"), qn("w:tblGrid")]:
+                xml.remove(kind)
+        gitter = element("tblGrid")
+        for breite in breiten:
+            gitter.append(element("gridCol", w=round(breite / 2.54 * 1440)))
+        xml.insert(1, gitter)
+        dokument._element.body.insert(-1, xml)
+        tab = Table(xml, dokument._body)
+    else:
+        tab = dokument.add_table(rows=0, cols=len(breiten))
+    tab.alignment = WD_TABLE_ALIGNMENT.CENTER; tab.autofit = False
     for spalte, breite in zip(tab.columns, breiten):
         spalte.width = Cm(breite)
-    grenzen = OxmlElement("w:tblBorders")
-    for seite in ["top", "left", "bottom", "right", "insideH", "insideV"]:
-        g = OxmlElement(f"w:{seite}"); g.set(qn("w:val"), "single"); g.set(qn("w:sz"), "4"); g.set(qn("w:color"), "D9D9D9"); grenzen.append(g)
-    tab._tbl.tblPr.append(grenzen)
-    for nummer, inhalte in enumerate(inhalt):
+    eig = tab._tbl.tblPr
+    for alt in eig.xpath("./w:tblBorders"):
+        eig.remove(alt)
+    raender = element("tblBorders")
+    for seite in ["top","left","bottom","right","insideH","insideV"]:
+        raender.append(element(seite,val="single",sz=4,color="D9D9D9"))
+    eig.append(raender)
+    for nummer, werte in enumerate(inhalt):
         zeile = tab.add_row()
-        eig = zeile._tr.get_or_add_trPr()
-        eig.append(OxmlElement("w:cantSplit"))
+        zeile._tr.get_or_add_trPr().append(element("cantSplit"))
         if nummer == 0:
-            eig.append(OxmlElement("w:tblHeader"))
-        for zelle, wert, breite in zip(zeile.cells, inhalte, breiten):
+            zeile._tr.get_or_add_trPr().append(element("tblHeader"))
+        for spalte, (zelle, wert, breite) in enumerate(zip(zeile.cells, werte, breiten)):
             zelle.width = Cm(breite)
             zelle.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-            zelleneig = zelle._tc.get_or_add_tcPr()
-            innen = OxmlElement("w:tcMar")
-            for seite, abstand in [("top", 100), ("left", 115), ("bottom", 100), ("right", 115)]:
-                m = OxmlElement(f"w:{seite}"); m.set(qn("w:w"), str(abstand)); m.set(qn("w:type"), "dxa"); innen.append(m)
-            zelleneig.append(innen)
-            fill = BLAU if nummer == 0 else ("F2F6F8" if nummer % 2 == 0 else "FFFFFF")
-            schattierung = OxmlElement("w:shd"); schattierung.set(qn("w:fill"), fill); zelleneig.append(schattierung)
+            zeig = zelle._tc.get_or_add_tcPr()
+            zeig.append(element("shd", fill=BLAU if nummer == 0 else ("F2F5F7" if nummer % 2 == 0 else "FFFFFF")))
+            innen = element("tcMar")
+            for seite, abstand in [("top",100),("left",110),("bottom",100),("right",110)]:
+                innen.append(element(seite,w=abstand,type="dxa"))
+            zeig.append(innen)
             p = zelle.paragraphs[0]
             p.paragraph_format.space_after = Pt(0)
-            p.paragraph_format.line_spacing = 1.06
+            p.paragraph_format.space_before = Pt(0)
+            p.paragraph_format.line_spacing = 1.08
             p.paragraph_format.keep_with_next = nummer == 0
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER if kopf[-1] == "Verbleibend" and spalte == 2 else WD_ALIGN_PARAGRAPH.LEFT
             text_einfuegen(p, wert)
             for lauf in p.runs:
-                lauf.font.size = Pt(schrift)
+                lauf.font.size = Pt(10)
                 if nummer == 0:
-                    lauf.bold = True; lauf.font.color.rgb = RGBColor(255, 255, 255)
+                    lauf.bold = True; lauf.font.color.rgb = RGBColor(255,255,255)
     p = dokument.add_paragraph()
-    p.paragraph_format.space_after = Pt(2)
-    p.paragraph_format.space_before = Pt(0)
+    p.paragraph_format.space_after = Pt(3)
     p.paragraph_format.line_spacing = 1
     p.add_run().font.size = Pt(2)
-    return tab
 
 
-def tabellenzeilen(dokument, zeilen):
-    inhalt = [[z.strip() for z in x.strip().strip("|").split("|")] for x in zeilen]
-    inhalt = [x for x in inhalt if not all(re.fullmatch(r"[-: ]+", y) for y in x)]
-    if len(inhalt[0]) == 2:
-        breiten = [3.8, 13.2]
-    elif inhalt[0][0] == "Datenkategorie":
-        breiten = [4.1, 8.1, 4.8]
-    elif inhalt[0][1] == "Federführung":
-        breiten = [7.3, 4.2, 5.5]
-    else:
-        breiten = [4.3, 5.8, 6.9]
-    tabelle(dokument, inhalt, breiten)
-
-
-def startseite(dokument, kurz):
-    titel = "Technische und\norganisatorische Maßnahmen" if kurz == "TOM" else "Verzeichnis der\nVerarbeitungstätigkeiten"
-    dokument.add_paragraph(titel, style="Title")
-    dokument.add_paragraph("Fortbildungsportal Schwaben", style="Subtitle")
-    meta = "TOM 01" if kurz == "TOM" else "VVT 01 bis 04"
-    dokument.add_paragraph(f"{meta}  ·  Version {VERSION}  ·  24. September 2026", style="Metadaten")
-    p = dokument.add_paragraph()
-    p.add_run("Zweck des Portals. ").bold = True
-    p.add_run("Die Regierung von Schwaben und die Beratung digitale Bildung planen und bewerben dienstliche Fortbildungen. Sie verwalten die zugehörigen Referenten und werten das Angebot nach Schuljahr und Schulamtsbezirk aus. Das Portal verarbeitet dafür dienstliche Angaben; personenbezogene Teilnehmerlisten sind nicht vorgesehen.")
-    p = dokument.add_paragraph()
-    p.add_run("Wozu dieses Dokument dient. ").bold = True
-    p.add_run("Die TOM erklären, wie Personen und ihre Daten geschützt werden und wer diese Maßnahmen im Betrieb verantwortet." if kurz == "TOM" else "Das VVT erklärt, wofür welche personenbezogenen Daten benötigt werden, wer sie sehen darf und wie lange sie aufbewahrt werden. Die zugehörigen TOM beschreiben den Schutz dieser Daten.")
-    dokument.add_paragraph("Bereits geschaffene Schutzmaßnahmen", style="Heading 1")
-    tabelle(dokument, [
-        ["Schutz für die Betroffenen", "Was bereits erreicht ist"],
-        ["Auswertungen bleiben im zuständigen Bezirk", "**Im Tool umgesetzt.** BdBs sehen ihre zugewiesenen Bezirke; nur ausdrücklich berechtigte Regierungskonten haben fachlichen Gesamtzugriff. Auch Downloads prüfen die Rechte."],
-        ["Öffentliche Namen bleiben freiwillig", "**Im Tool umgesetzt.** Ohne eigene Zustimmung keine Namensanzeige im Referentenfeld. Zustimmung und Widerruf werden dokumentiert und bei neuen Abrufen berücksichtigt."],
-        ["Verwaltungskonten sind zusätzlich geschützt", "**Im Tool umgesetzt.** Für Regierungs- und BdB-Konten ist neben dem Passwort ein zweiter Anmeldefaktor erforderlich."],
-        ["Schuljahre werden getrennt behandelt", "**Im Tool umgesetzt.** Nach 400 Tagen ab Schuljahresende endet der reguläre Zugriff. Ein begrenztes Archivpaket und die bestätigte Übergabe bereiten die Löschung vor."],
-        ["Weniger Weitergabe beim Seitenaufruf", "**Im Tool umgesetzt.** Keine eingebundenen fremden Analysewerkzeuge, Schriftarten oder Inhalte; öffentliche Referentenfelder sind auf freigegebene Namen begrenzt."],
-        ["Betrieb und Ablagen sind bestimmt", "**Für den Betrieb festgelegt.** Server bei netcup in Nürnberg; tägliche verschlüsselte Vollsicherung wird durch RvS mit MFA auf das Regierungslaufwerk übernommen; gesondertes Archiv bei Regierung beziehungsweise Schulamt. HTTPS ist laut Betreiber vorhanden."],
-    ], [5.3, 11.7], schrift=9.5)
-    p = dokument.add_paragraph(style="Lesehilfe")
-    p.add_run("So ist der Stand zu verstehen: ").bold = True
-    p.add_run("Im Tool umgesetzt bedeutet: Die Funktion ist in der vorliegenden Anwendung vorhanden. Ihre Einrichtung und Wirksamkeit auf dem vorgesehenen Server werden vor Betriebsfreigabe bestätigt. Festgelegte Ablagen sind noch kein Nachweis erfolgreicher Sicherungen.")
-    p = dokument.add_paragraph(style="Lesehilfe")
-    p.add_run("Begrenzte Planungsausnahme: ").bold = True
-    p.add_run("Zur Terminabstimmung dürfen planungsberechtigte Personen Veranstaltungsdaten anderer Bezirke sehen. Fremde Auswertungen, Nachbereitungsnotizen und Referentenkontakte gehören nicht zu dieser Ausnahme. Einzelheiten stehen in TOM 02 beziehungsweise VVT 01.")
-    p = dokument.add_paragraph("Wer die restlichen Angaben ergänzt", style="Heading 1")
-    p.paragraph_format.page_break_before = True
-    p = dokument.add_paragraph()
-    p.add_run("Die technische Grundlage ist vorhanden. ").bold = True
-    p.add_run("Bereits beantwortet sind Datenumfang, Rechte, freiwillige Namensanzeige, BdB-MFA und 400-Tage-Regel. Sachgebiet 40.1 ist eingetragen. Das Projektteam ergänzt auch die technischen Betriebsnachweise. Die ausführenden Personen werden benannt; vorhandene behördliche Regelungen und Prüfprotokolle können genutzt werden.")
-    zeilen = [["Wer", "Noch zu tun", "Fundstelle"]]
-    for bereich, art, text, tom, vvt in OFFENE_PUNKTE:
-        zeilen.append([bereich, f"**{art}**\n{text}", tom if kurz == "TOM" else vvt])
-    tabelle(dokument, zeilen, [3.4, 10.2, 3.4], schrift=9)
-    p = dokument.add_paragraph(style="Lesehilfe")
-    p.add_run("So bearbeiten Sie die Vorlage: ").bold = True
-    p.add_run("Gelb hinterlegte ")
-    f = p.add_run("[AUSFÜLLEN: …]"); f.bold = True; hinterlegen(f)
-    p.add_run(" durch die verbindliche Angabe ersetzen. Entscheidungen und Nachweise in den genannten Abschnitten dokumentieren. Anschließend Markierungen entfernen und die Freigabe auf der letzten Fachseite ausfüllen.")
-    p = dokument.add_paragraph(style="Lesehilfe")
-    p.add_run("Für die Freigabe wesentlich: ").bold = True
-    p.add_run("Es geht um klare Verantwortlichkeiten, begründete Fristen und einen geprüften Betriebsstart. Die Datenschutzbeauftragte berät; die verantwortliche Stelle entscheidet über den Betrieb. Ein kurzer Prüfvermerk mit Datum, Ergebnis und zuständiger Person kann mehrere Punkte gemeinsam dokumentieren.")
-
-
-def erzeugen(stamm):
-    dokument = Document()
-    s = dokument.sections[0]
-    s.page_width = Cm(21); s.page_height = Cm(29.7)
-    s.top_margin = Cm(1.9); s.bottom_margin = Cm(1.8)
-    s.left_margin = Cm(2); s.right_margin = Cm(2)
-    s.header_distance = Cm(.8); s.footer_distance = Cm(.8)
-    for rand in dokument.styles.element.xpath(".//w:pBdr"):
-        rand.getparent().remove(rand)
-    for name in ["Normal", "Title", "Subtitle", "Heading 1", "Heading 2", "Heading 3", "List Bullet"]:
-        stil = dokument.styles[name]
-        stil.font.name = "Arial"; stil.font.color.rgb = RGBColor(0, 0, 0)
-        stil.font.size = Pt(10.5)
-        stil.paragraph_format.space_after = Pt(6)
-        stil.paragraph_format.line_spacing = 1.07
-        stil.paragraph_format.widow_control = True
-    for name, groesse in [("Title", 25), ("Subtitle", 13), ("Heading 1", 16), ("Heading 2", 11.5)]:
-        stil = dokument.styles[name]; stil.font.size = Pt(groesse); stil.font.bold = True
-        stil.paragraph_format.space_before = Pt(12 if name == "Heading 2" else 0)
-        stil.paragraph_format.space_after = Pt(8)
-        stil.paragraph_format.keep_with_next = True
-    dokument.styles["Subtitle"].font.italic = False
-    dokument.styles["Title"].paragraph_format.line_spacing = 1.06
-    dokument.styles["List Bullet"].paragraph_format.space_after = Pt(5)
-    for name, groesse in [("Metadaten", 9), ("Lesehilfe", 9), ("Quellen", 9)]:
-        stil = dokument.styles.add_style(name, 1)
-        stil.base_style = dokument.styles["Normal"]
-        stil.font.name = "Arial"; stil.font.size = Pt(groesse)
-        stil.paragraph_format.line_spacing = 1.08
-        stil.paragraph_format.space_after = Pt(6)
-    kurz = "TOM" if stamm.startswith("TOM") else "VVT"
-    kopf = s.header.paragraphs[0]
-    kopf.paragraph_format.tab_stops.clear_all()
-    kopf.paragraph_format.tab_stops.add_tab_stop(Cm(17), WD_ALIGN_PARAGRAPH.RIGHT)
-    kopf.text = f"FORTBILDUNGSPORTAL SCHWABEN\t{kurz}  ·  {VERSION}"
-    kopf.runs[0].font.name = "Arial"; kopf.runs[0].font.size = Pt(8); kopf.runs[0].font.color.rgb = RGBColor(0,0,0)
-    fuss = s.footer.paragraphs[0]
-    fuss.paragraph_format.tab_stops.clear_all()
-    fuss.paragraph_format.tab_stops.add_tab_stop(Cm(17), WD_ALIGN_PARAGRAPH.RIGHT)
-    fuss.add_run("Freigabe offen  ·  Ausfüllfelder gelb markiert\t")
-    for feld, ende in [("PAGE", " / "), ("NUMPAGES", "")]:
-        element = OxmlElement("w:fldSimple"); element.set(qn("w:instr"), feld); fuss._p.append(element); fuss.add_run(ende)
-    for lauf in fuss.runs: lauf.font.name = "Arial"; lauf.font.size = Pt(8)
-    startseite(dokument, kurz)
+def erzeugen(kurz, vorlage=None):
+    stamm = f"{kurz}_Fortbildungsportal_Schwaben"
+    ziel = ORDNER / f"{stamm}.docx"
+    d, muster = vorbereiten(ziel, vorlage, kurz)
     zeilen = (ORDNER / f"{stamm}.md").read_text().splitlines()
-    i = next(n for n,z in enumerate(zeilen) if z.startswith("## 1 "))
-    quellen = False
-    kapitel = ""
+    i = 0; umbruch = False; quellen = False; einfuehrung = 0
     while i < len(zeilen):
-        z = zeilen[i].strip(); i += 1
-        if not z or z.startswith("<!--"): continue
-        if z.startswith("|"):
-            gruppe = [z]
-            while i < len(zeilen) and zeilen[i].startswith("|"):
-                gruppe.append(zeilen[i]); i += 1
-            tabellenzeilen(dokument, gruppe); continue
-        if z.startswith("## "):
-            nummeriert = bool(re.match(r"## \d+ ", z))
-            if nummeriert:
-                kapitel = z[3:]
-            p = dokument.add_paragraph(style="Heading 1" if nummeriert else "Heading 2")
-            p.paragraph_format.page_break_before = nummeriert
-            if nummeriert and not p.paragraph_format.page_break_before:
-                p.paragraph_format.space_before = Pt(18)
-            text_einfuegen(p, z[3:]); continue
-        if z.startswith("### "):
-            fortsetzungstitel = None
-            if kurz == "VVT" and kapitel.startswith("2 VVT 01") and z == "### Herkunft und Empfänger":
-                fortsetzungstitel = "VVT 01 Datenwege und Aufbewahrung"
-            elif kurz == "VVT" and kapitel.startswith("3 VVT 02") and z == "### Herkunft und Empfänger":
-                fortsetzungstitel = "VVT 02 Namensfreigabe und Widerruf"
-            elif kurz == "VVT" and kapitel.startswith("4 VVT 03") and z == "### Quellen und Empfänger":
-                fortsetzungstitel = "VVT 03 Zugriffe und Aufbewahrung"
-            if fortsetzungstitel:
-                fortsetzung = dokument.add_paragraph(fortsetzungstitel, style="Heading 1")
-                fortsetzung.paragraph_format.page_break_before = True
-            quellen = z[4:] in {"Quellen und Belege", "Rechtsquellen und Nachweise"}
-            p = dokument.add_paragraph(style="Heading 1" if quellen else "Heading 2")
-            p.paragraph_format.page_break_before = quellen
-            text_einfuegen(p, z[4:]); continue
-        # Die vier Unterschrifts-/Prüffelder erhalten jeweils eine eigene Zeile.
-        teile = z.split(" · ") if z.startswith(("**Fachlich bestätigt durch:", "**Fachlich geprüft:")) else [z]
-        for teil in teile:
-            stil = "Quellen" if quellen else "List Bullet" if teil.startswith("- ") else "Normal"
-            p = dokument.add_paragraph(style=stil)
-            text_einfuegen(p, teil[2:] if teil.startswith("- ") else teil)
-            if kurz == "VVT" and kapitel.startswith("5 VVT 04"):
-                p.paragraph_format.line_spacing = 1.02
-                p.paragraph_format.space_after = Pt(5)
-    dokument.core_properties.title = "Technische und organisatorische Maßnahmen" if kurz == "TOM" else "Verzeichnis von Verarbeitungstätigkeiten"
-    dokument.core_properties.subject = "Fortbildungsportal Schwaben"
-    dokument.core_properties.author = ""; dokument.core_properties.last_modified_by = ""
-    dokument.save(ORDNER / f"{stamm}.docx")
+        text = zeilen[i].strip(); i += 1
+        if not text: continue
+        if text == "<!-- seite -->":
+            # Thematische Trennung im Quelltext; Word darf natürlich fließen.
+            continue
+        if text == "<!-- seite-fest -->":
+            umbruch = True; continue
+        if text.startswith("# "):
+            d.add_paragraph(TITEL[kurz], "Title"); einfuehrung = 1; continue
+        if einfuehrung == 1:
+            d.add_paragraph(text,"Subtitle"); einfuehrung = 2; continue
+        if einfuehrung == 2:
+            p = d.add_paragraph(text)
+            p.paragraph_format.space_after = Pt(12)
+            for r in p.runs:
+                r.font.size = Pt(9); r.font.color.rgb = RGBColor.from_string("555555")
+            einfuehrung = 3; continue
+        if text.startswith("|"):
+            block = [text]
+            while i < len(zeilen) and zeilen[i].strip().startswith("|"):
+                block.append(zeilen[i].strip()); i += 1
+            zellen = [[t.strip() for t in zeile.strip("|").split("|")] for zeile in block]
+            zellen = [zeile for zeile in zellen if not all(re.fullmatch(r"[-: ]+", t) for t in zeile)]
+            tabelle(d, zellen, muster); continue
+        if text.startswith("##"):
+            ebene = 2 if text.startswith("###") else 1
+            p = d.add_paragraph(text.lstrip("# "), f"Heading {ebene}")
+            if umbruch:
+                p.paragraph_format.page_break_before = True
+                p.paragraph_format.space_before = Pt(0)
+                umbruch = False
+            quellen = text.startswith("### Quellen") or text.startswith("### Rechtsquellen") or text == "### Grundlagen"
+            continue
+        if text.startswith("- "):
+            p = d.add_paragraph(style="Normal" if quellen else "List Bullet")
+            text_einfuegen(p, text[2:])
+        elif re.match(r"\d+\. ",text):
+            p = d.add_paragraph(style="List Number")
+            text_einfuegen(p, re.sub(r"^\d+\. ", "", text))
+        else:
+            p = d.add_paragraph(); text_einfuegen(p,text)
+        if text.startswith("**Externe Dienste:**"):
+            p.paragraph_format.keep_together = True
+        if quellen:
+            p.paragraph_format.space_after = Pt(4)
+            for r in p.runs: r.font.size = Pt(9.5)
+    d.save(ziel)
+    print(ziel)
 
 
 if __name__ == "__main__":
-    for stamm in ["TOM_Fortbildungsportal_Schwaben", "VVT_Fortbildungsportal_Schwaben"]:
-        erzeugen(stamm)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--vorlage", type=Path)
+    parser.add_argument("--alle", action="store_true")
+    optionen = parser.parse_args()
+    for kuerzel in (["TOM", "VVT", "DSFA"] if optionen.alle else ["TOM", "VVT"]):
+        erzeugen(kuerzel, optionen.vorlage)

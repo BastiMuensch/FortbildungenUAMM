@@ -34,6 +34,15 @@ Dieser Nachweis beschreibt Prüfungen des lokalen Projektstands. Er ersetzt wede
 
 Der Windows-/SMB-Job im [Lauf 36571076023](https://github.com/BastiMuensch/FortbildungenUAMM/actions/runs/36571076023) ist erfolgreich. Der Linux-Job deckte einen Portabilitätsfehler in den hostdirekten Backup-/Restore-Skripten auf: Die Ausgabe eines fehlgeschlagenen BSD-stat-Aufrufs wurde unter GNU/Linux mit der Rechtezahl vermischt. Die Rechteermittlung verwirft jetzt fehlgeschlagene Ausgaben. Regressionstests simulieren GNU- und BSD-stat, prüfen akzeptierte 0600- und abgewiesene 0644-Rechte und schlagen mit dem vorherigen Code nachweislich fehl. Backup-, Vollbackup-Betriebsprüfungen und ESLint sind nach der Korrektur lokal erfolgreich.
 
+## Abgleich und Prüfung am 5. Oktober 2026
+
+- TOM, VVT und DSFA als Version 1.1 an den aktuellen Projektstand angeglichen: SchiLf-Teilnahmebescheinigungen, nachträgliche Dauerkorrektur, zusammengeführte BdB-Rolle, lokal erzeugter MFA-QR-Code und entferntes Telefonnummernfeld. Schuljahresfrist, Archivpaket, Vollsicherung und tatsächliche Grenzen der Protokollierung anhand der Implementierung beschrieben.
+- Namensfreigabe auf Textfassung `2026-10-05.1` erweitert. Sie nennt die SchiLf-Teilnahmebescheinigungen ausdrücklich. Ältere Zustimmungen bleiben als Nachweis erhalten, schalten die Namensanzeige aber erst nach erneuter eigener Bestätigung frei.
+- `npm run test:bescheinigungen`, `npm run typecheck` und `npm run test:namensfreigabe` erfolgreich. Die Prüfungen decken die PDF-Ausgabe, Rollen- und Bezirksgrenzen, Veröffentlichungsstatus sowie alte und aktuelle Namensfreigaben ab.
+- Für die datenbankgestützte Namensfreigabeprüfung wurden alle 22 Migrationen auf einer frischen, isolierten lokalen PostgreSQL-16-Instanz an Port 54329 angewandt. Es wurden ausschließlich synthetische Testdaten verwendet. Die Instanz wurde anschließend beendet und entfernt. Die PDF-Prüfung verwendete die gebündelte Python-Umgebung mit pdfplumber.
+- Die Word-Fassungen wurden gerendert und vollständig visuell geprüft: TOM fünf Seiten, VVT sechs Seiten und DSFA vier Seiten. Ausfüllstellen sind gelb markiert; die gemeinsame Ausfüllhilfe trennt Behördenangaben von Aufgaben des IT-Betriebs.
+- Kein produktives Deployment, keine produktive Migration und kein Durchlauf auf dem Regierungslaufwerk. Die genannten Prüfungen ergänzen die bisherigen Entwicklungsnachweise; sie ersetzen den tatsächlichen Betriebsnachweis nicht.
+
 ## Reproduzierbare Befehle
 
 Ohne Datenbank: `npm test`, `npm run lint`, `npm run typecheck`, `npm run test:mfa`, `npm run test:importfristen`, `npm run test:backup`.

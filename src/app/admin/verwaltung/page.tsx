@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { DatabaseBackup, Download, FileText, MapPin, PenLine, Settings, Tags } from "lucide-react";
+import { DatabaseBackup, Download, FileText, Mail, MapPin, PenLine, Settings, Tags } from "lucide-react";
 
 import { requireRole } from "@/lib/auth";
 
@@ -27,6 +27,7 @@ export default async function VerwaltungsSeite() {
           <VerwaltungsLink href="/admin/orte" titel="Orte & Schulen" text="Veranstaltungsorte pflegen und das Schulverzeichnis importieren." icon={MapPin} />
           <VerwaltungsLink href="/admin/schlagworte" titel="Schlagworte" text="Begriffe für Suche, Fortbildungen und den FIBS-Import verwalten." icon={Tags} />
           <VerwaltungsLink href="/admin/unterschriften" titel="Unterschriften" text="BdB-Unterschriften für Teilnahmebescheinigungen hinterlegen, ersetzen oder entfernen." icon={PenLine} />
+          <VerwaltungsLink href="/admin/kontakt" titel="Kontakt & Anfragen" text="Öffentliche E-Mail-Adressen für Kontakt und Fortbildungsanfragen je Bezirk hinterlegen." icon={Mail} />
         </div>
       </section>
 

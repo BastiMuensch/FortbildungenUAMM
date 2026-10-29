@@ -83,6 +83,44 @@ Termine; Kontaktangaben und fremde Verwaltungsseiten sind darüber nicht erreich
 Globale Rechtstexte, Systemeinstellungen und FIBS-Import verwaltet die RvS.
 Beim Import ist ein Zielbezirk ausdrücklich auszuwählen.
 
+## Kontakt und Fortbildungsanfragen
+
+Unter **Verwaltung → Kontakt & Anfragen** pflegen BdBs die öffentliche dienstliche
+E-Mail-Adresse ihrer aktiven Bezirke; die RvS kann alle aktiven Bezirke verwalten.
+Die Adresse wird ausdrücklich je Bezirk hinterlegt. Anmeldeadressen und interne
+Referentenkontakte werden nicht automatisch übernommen. Ein leeres Feld entfernt
+die öffentliche Kontaktadresse.
+
+Auf der Bezirksstartseite führt **Kontakt & Anfragen** zum Kontaktbereich.
+**Kontakt aufnehmen** und **Fortbildung anfragen** öffnen das eigene
+E-Mail-Programm. Die Fortbildungsanfrage enthält eine Vorlage für Thema, Schule,
+Zielgruppe, Zeitraum, Format und Rückkontakt. Erst im E-Mail-Programm wird die
+Nachricht versendet; im Portal werden keine Anfragen gespeichert.
+
+Die Migration `20261028120000_bezirkskontakt` ergänzt das optionale Feld
+`Bezirk.kontaktEmail`. Nach dem Einspielen müssen die gewünschten öffentlichen
+Adressen hinterlegt werden. Ohne Adresse zeigt die Bezirksseite einen Hinweis.
+
+### Update und anschließende Einrichtung
+
+1. Den neuen Anwendungsstand bereitstellen. Beim Start des aktualisierten
+   Docker-Images führt der vorhandene Startbefehl die Migrationen automatisch
+   aus. Bei einem Betrieb ohne Docker vor dem Start `npm run db:deploy`,
+   `npm run db:generate` und `npm run build` ausführen.
+2. Als zuständiger BdB oder RvS **Verwaltung → Kontakt & Anfragen** öffnen.
+3. Die gewünschte öffentliche dienstliche Adresse für jeden Bezirk eintragen
+   und **Kontaktadresse speichern** wählen. Die Adressen werden manuell
+   gepflegt; es gibt keine automatische Vorbelegung.
+4. Über **Öffentliche Bezirksseite ansehen** die Anzeige kontrollieren.
+   **Fortbildung anfragen** muss im eigenen E-Mail-Programm einen Entwurf mit
+   dem richtigen Empfänger, dem Bezirksnamen und den vorbereiteten Angaben
+   öffnen. Für diese Prüfung muss keine Nachricht versendet werden.
+
+Für diese Funktion werden weder ein SMTP-Zugang noch zusätzliche Umgebungswerte
+benötigt. Die Kontaktmigration ergänzt nur eine optionale Spalte. Bei älteren
+Installationen können zusätzlich andere, bereits vorhandene Migrationen
+ausstehen; dafür gelten die bestehenden Update- und Sicherungshinweise.
+
 ## Katalog, Berichte und Schulen
 
 Fortbildungskatalog, Auswertung und sämtliche zugehörigen Excel-/PDF-Exporte
@@ -117,7 +155,10 @@ Testkette und verweigern den Zugriff auf andere Datenbanken.
 
 `scripts/schulamtsSeitenPruefungen.cjs` prüft die öffentlichen Schulamtsseiten
 gegen einen lokalen Testserver auf Port 3019 mit derselben isolierten Datenbank,
-einschließlich fremder Filter, Detailadressen und Kalender-Abos.
+einschließlich fremder Filter, Detailadressen, Kalender-Abos und Kontaktlinks.
+`npm run test:bezirkskontakt` prüft mit derselben isolierten Testdatenbank Rollen,
+MFA, Bezirksrechte, Adressvalidierung, Veröffentlichung und Entfernen sowie die
+E-Mail-Vorlagen. Dieser Test läuft auch in der CI.
 
 Zur Inbetriebnahme die reguläre Prisma-Migration und Client-Generierung ausführen
 (`npm run db:deploy`, `npm run db:generate`), anschließend den Dienst neu starten.

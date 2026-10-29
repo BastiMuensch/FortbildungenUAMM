@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
+import { hatOffeneRechtstextAngaben } from "@/lib/validation/systemtext";
 import type { FormularState } from "@/lib/validation/fortbildung";
 
 /** Erlaubte Schlüssel — verhindert, dass über das Formular beliebige
@@ -22,9 +23,15 @@ export async function speichereSystemtext(
     return { fehler: { _: "Dieser Text kann hier nicht bearbeitet werden." } };
   }
 
-  const wert = (formData.get("wert") ?? "").toString();
+  const wert = (formData.get("wert") ?? "").toString().trim();
+  if (wert.length < 50) {
+    return { fehler: { _: "Bitte einen vollständigen Rechtstext eintragen." } };
+  }
   if (wert.length > 100_000) {
     return { fehler: { _: "Der Text ist zu lang." } };
+  }
+  if (hatOffeneRechtstextAngaben(wert)) {
+    return { fehler: { _: "Bitte zuerst die mit [OFFEN: …] markierten Angaben und Platzhalter ergänzen. Speichern veröffentlicht den Text unmittelbar." } };
   }
 
   await prisma.systemSetting.upsert({
@@ -44,5 +51,5 @@ export async function speichereSystemtext(
   revalidatePath("/admin/texte");
   revalidatePath("/admin/einrichtung");
 
-  return { erfolg: true, meldung: "Gespeichert." };
+  return { erfolg: true, meldung: "Gespeichert und veröffentlicht." };
 }

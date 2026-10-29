@@ -70,7 +70,7 @@ async function aufraeumen() {
   await aufraeumen();
   try {
     const [bezirkA, bezirkB] = await Promise.all([
-      prisma.bezirk.create({ data: { name: `${prefix} Schulamt A`, kuerzel: kuerzelA } }),
+      prisma.bezirk.create({ data: { name: `${prefix} Schulamt A`, kuerzel: kuerzelA, kontaktEmail: "bdb+anfragen@example.test" } }),
       prisma.bezirk.create({ data: { name: `${prefix} Schulamt B`, kuerzel: kuerzelB } }),
     ]);
     const ort = await prisma.veranstaltungsort.create({ data: { name: `${prefix} Online`, istOnline: true } });
@@ -100,6 +100,17 @@ async function aufraeumen() {
     assert.equal(kennzahl(ergebnis.html, "kommende Termine"), "1", "Die Kennzahl darf nur den veröffentlichten Termin von A zählen.");
     enthaeltNicht(text, titelB);
     enthaeltNicht(text, titelEntwurf);
+
+    const $kontakt = cheerio.load(ergebnis.html);
+    const kontaktLinks = $kontakt("#kontakt a[href^='mailto:']").map((_, element) => $kontakt(element).attr("href")).get();
+    assert.equal(kontaktLinks.length, 3, "Adresse, Kontakt und Fortbildungsanfrage müssen erreichbar sein.");
+    const vorlage = new URL(kontaktLinks[2]);
+    assert.equal(decodeURIComponent(vorlage.pathname), "bdb+anfragen@example.test");
+    assert.ok(vorlage.searchParams.get("subject").includes(bezirkA.name));
+    assert.ok(vorlage.searchParams.get("body").includes("Schule / Dienststelle:"));
+    ergebnis = await anfrage(`/${kuerzelB}`);
+    enthaelt(sichtbarerText(ergebnis.html), "noch keine öffentliche Kontaktadresse");
+    enthaeltNicht(ergebnis.html, "bdb+anfragen@example.test", "Keine fremde Kontaktadresse als Ersatz veröffentlichen.");
 
     ergebnis = await anfrage("/");
     assert.equal(ergebnis.antwort.status, 200, "Die Schwaben-Startseite muss erreichbar sein.");

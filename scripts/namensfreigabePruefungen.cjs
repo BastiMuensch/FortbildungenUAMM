@@ -196,11 +196,18 @@ const pdfText = (daten) => execFileSync(process.env.PDF_PYTHON || "python3", ["-
     await anmelden(inaktiverReferent);
     fehlgeschlagen(await speichereNamensfreigabe({}, zustimmung(0)));
 
-    const vorZustimmung = await oeffentlicheAusgabe();
-    assert.deepEqual(vorZustimmung.referenten, []);
-    const icsVorZustimmung = await icsText();
-    const aushangVorZustimmung = await aushangText();
-    for (const text of [icsVorZustimmung, aushangVorZustimmung]) {
+    const alteFreigabeVersion = "2026-09-24.1";
+    assert.notEqual(NAMENSFREIGABE_VERSION, alteFreigabeVersion);
+    await prisma.referent.update({ where: { id: referentAUser.referent.id }, data: {
+      oeffentlichSichtbar: true,
+      oeffentlicheEinwilligungVersion: alteFreigabeVersion,
+      oeffentlicheEinwilligungAm: new Date(),
+    } });
+    const mitAlterFreigabe = await oeffentlicheAusgabe();
+    assert.deepEqual(mitAlterFreigabe.referenten, []);
+    const icsMitAlterFreigabe = await icsText();
+    const aushangMitAlterFreigabe = await aushangText();
+    for (const text of [icsMitAlterFreigabe, aushangMitAlterFreigabe]) {
       assert.equal(text.includes("Eigen A"), false);
       pruefeKennzeichnungen(text);
       pruefeOhneKontaktdaten(text);

@@ -192,6 +192,7 @@ function Punkt({ eintrag, href, onNavigate }: { eintrag: Eintrag; href: string; 
 }
 
 function istAktiv(href: string, pfad: string): boolean {
+  if (href === "/admin/verwaltung" && pfad === "/admin/kontakt") return true;
   if (href === "/admin") return pfad === "/admin";
   if (href === "/admin/fortbildungen") return pfad.startsWith("/admin/fortbildungen") || pfad === "/admin/freigaben" || pfad === "/admin/nachbereitung";
   if (href === "/admin/katalog") return pfad.startsWith("/admin/katalog") || pfad.startsWith("/admin/auswertung") || pfad.startsWith("/admin/archiv");

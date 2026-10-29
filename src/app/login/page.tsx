@@ -35,6 +35,12 @@ export default async function LoginPage({
 
         <LoginForm weiter={weiter} />
 
+        <p className="mt-5 text-center text-sm text-muted-foreground">
+          <Link href="/datenschutz" className="underline underline-offset-4 hover:text-foreground">
+            Datenschutzerklärung
+          </Link>
+        </p>
+
         <p className="mt-8 text-center text-sm text-muted-foreground">
           <Link href="/" className="underline underline-offset-4 hover:text-foreground">
             Zurück zur Fortbildungsübersicht

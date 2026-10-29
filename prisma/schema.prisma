@@ -132,6 +132,8 @@ model Bezirk {
   /// Öffentliche Kurzadresse, zum Beispiel "gz" für Günzburg.
   kuerzel            String   @unique @default(uuid())
   aktiv              Boolean  @default(true)
+  /// Bewusst veröffentlichte dienstliche Adresse für Kontakt und Fortbildungsanfragen.
+  kontaktEmail       String?
   /// Bezirkseigene Pflichtschlagworte, die bei neuen Ausschreibungen ergänzt werden.
   pflichtSchlagworte String[] @default([])
 

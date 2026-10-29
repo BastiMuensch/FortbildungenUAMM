@@ -74,6 +74,9 @@ jobs:
       - name: Namensfreigabe mit Datenbank pruefen
         run: npm run test:namensfreigabe
 
+      - name: Bezirkskontakt mit Datenbank pruefen
+        run: npm run test:bezirkskontakt
+
       - name: MFA und Importfristen pruefen
         run: npm run test:mfa && npm run test:importfristen && npm run test:backup
 

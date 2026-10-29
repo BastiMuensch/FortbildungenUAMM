@@ -1,12 +1,12 @@
 # Datenschutzinformationen zum Referentennetzwerk digitale Bildung Schwaben
 
-**Entwurf zur behördlichen Vervollständigung – Stand 24. September 2026, Version 0.6.**
+**Entwurf zur behördlichen Vervollständigung – Stand 5. Oktober 2026, Version 0.7.**
 
 Diese Vorlage beschreibt den geplanten Zielbetrieb. Sie darf erst ausgehändigt werden, wenn die gekennzeichneten Angaben ergänzt, die Rechtsgrundlagen festgelegt und die beschriebenen Funktionen tatsächlich umgesetzt sind. Die zugehörige kurze Empfangsbestätigung ist keine Einwilligung.
 
 ## 1 Verantwortliche Stelle und Kontakt
 
-Verantwortliche Stelle: **[Regierung von Schwaben – genaue Behördenbezeichnung und Zuständigkeit gegenüber den beteiligten Schulämtern verbindlich bestätigen]**
+Verantwortliche Stelle: **Regierung von Schwaben, Sachgebiet 40.1**
 
 Anschrift: Regierung von Schwaben, Fronhof 10, 86152 Augsburg
 
@@ -18,7 +18,7 @@ Portal: **[öffentliche HTTPS-Adresse]**
 
 ## 2 Zwecke und Rechtsgrundlagen
 
-Wir verarbeiten erforderliche Angaben zur Organisation dienstlicher Fortbildungen im Referentennetzwerk digitale Bildung und in der Beratung digitale Bildung in Schwaben. Dazu gehören die Verwaltung der Referentenkonten und Zuständigkeiten, die Planung und interne Abstimmung von Veranstaltungen, die Nachbereitung, schuljahresbezogene Auswertungen und erforderliche Nachweise. Sicherheitsmaßnahmen schützen Konten, Daten und den verlässlichen Betrieb.
+Wir verarbeiten erforderliche Angaben zur Organisation dienstlicher Fortbildungen im Referentennetzwerk digitale Bildung und in der Beratung digitale Bildung in Schwaben. Dazu gehören die Verwaltung der Referentenkonten und Zuständigkeiten, die Planung und interne Abstimmung von Veranstaltungen, die Nachbereitung, schuljahresbezogene Auswertungen und erforderliche Nachweise einschließlich SchiLf-Teilnahmebescheinigungen. Sicherheitsmaßnahmen schützen Konten, Daten und den verlässlichen Betrieb.
 
 Für die erforderliche interne Planung, Durchführung, Koordinierung und Auswertung stützt sich die Verarbeitung auf Art. 6 Abs. 1 Buchst. e in Verbindung mit Abs. 3 DSGVO und Art. 4 Abs. 1 BayDSG, soweit sie zur Wahrnehmung der jeweils zugewiesenen öffentlichen Aufgabe erforderlich ist. Die Aufgabenbezüge sind die Beratung digitale Bildung in Bayern, insbesondere die Koordinierung von Fortbildungsbedarfen, Referenten und Ressourcen, die Fortbildungsplanung und Evaluation sowie die schriftliche Jahresplanung und der Bericht bis 31. Juli (KMBek vom 28. Mai 2019 Nrn. 3, 5 und 7); die Aufgaben der regionalen und lokalen Lehrerfortbildung einschließlich Betreuung des Referentennetzes (KMBek Lehrerfortbildung Abschnitt IV Nrn. 3.1, 3.1.1 und 3.2); sowie für das Referentennetzwerk die Unterstützung schulischer Fortbildungsplanungen (KMS vom 26. Juli 2021). Die verantwortliche Stelle bestätigt vor Freigabe die Zuständigkeit und Erforderlichkeit für den konkreten Umfang.
 
@@ -50,13 +50,13 @@ Je nach Aufgabe und erforderlichem Umfang:
 - aggregierte Teilnehmerzahlen, Bearbeitungsstände und erforderliche Nachbereitungsangaben;
 - erforderliche Nachweise über Änderungen, Rollenvergabe, Exporte und Archivübergaben;
 - Version und Zeitpunkt der bereitgestellten Datenschutzinformationen, gegebenenfalls Empfangsbestätigung.
-- bei freiwilliger Namensanzeige: Ja/Nein-Entscheidung für den gemeinsamen Veröffentlichungszweck auf Website, öffentlichem ICS-Feed und öffentlichen Ausschreibungs-PDFs sowie Textversion und Erteilungs- oder Widerrufszeitpunkt; eine IP-Adresse wird hierfür nicht verlangt.
+- bei freiwilliger Namensanzeige: Ja/Nein-Entscheidung für den gemeinsamen Veröffentlichungszweck auf Website, öffentlichem ICS-Feed, öffentlichen Ausschreibungs-PDFs und SchiLf-Teilnahmebescheinigungen für die jeweiligen Teilnehmenden sowie Textversion und Erteilungs- oder Widerrufszeitpunkt; eine IP-Adresse wird hierfür nicht verlangt.
 
-Die Anwendung führt keine personenbezogenen Teilnehmerlisten. Eine Teilnehmerzahl kann dennoch in Verbindung mit einer Referentenzuordnung personenbezogene Aussagen über die Tätigkeit der referierenden Person ermöglichen. Daher sind auch Auswertungen zugriffsbeschränkt.
+Die Anwendung führt keine personenbezogenen Teilnehmerlisten. Für SchiLf erzeugt sie Blanko-Bescheinigungen mit Veranstaltungsdaten, zuständigen BdB-Namen und gegebenenfalls freigegebenen Referentennamen. Teilnehmendennamen werden erst auf dem Ausdruck ergänzt. Die ausgefüllte Bescheinigung wird von der durchführenden Stelle ausgehändigt, nicht im Portal gespeichert oder versendet. Nachträgliche Dauerkorrekturen speichern die berichtigte Endzeit, die unmittelbar vorherige Endzeit und den Korrekturzeitpunkt. Eine Teilnehmerzahl kann dennoch in Verbindung mit einer Referentenzuordnung personenbezogene Aussagen über die Tätigkeit der referierenden Person ermöglichen. Daher sind auch Auswertungen zugriffsbeschränkt.
 
-Private Kontaktdaten und sensible Angaben, etwa zu Gesundheit oder Personalangelegenheiten, sollen nicht in Freitextfelder eingetragen werden. Interne Notizen werden auf notwendige organisatorische Angaben beschränkt.
+Eine Telefonnummer wird nicht erfasst. Private Kontaktdaten und sensible Angaben, etwa zu Gesundheit oder Personalangelegenheiten, sollen nicht in Freitextfelder eingetragen werden. Interne Notizen werden auf notwendige organisatorische Angaben beschränkt.
 
-**[Die finale Fassung an die tatsächlich freigegebenen Pflicht- und Zusatzfelder sowie Sicherheitsprotokolle anpassen.]**
+Für Fehlanmeldungen können E-Mail-Adresse und IP-Adresse protokolliert werden; weitere Angaben zum Serverbetrieb werden bei der Inbetriebnahme abgeglichen.
 
 ## 4 Herkunft der Daten
 
@@ -66,7 +66,7 @@ Diese Informationen werden auch Personen ohne eigenes Benutzerkonto bereitgestel
 
 ## 5 Wer intern Zugriff erhält
 
-BdBs greifen auf die ihnen zugewiesenen Schulamtsbezirke zu. Referenten greifen auf eigene oder ihnen zugeordnete Veranstaltungen innerhalb ihrer Zuständigkeit zu. Ausdrücklich berechtigte RvS-Konten können bezirksübergreifend arbeiten und auswerten. Eine zusätzliche reine Berichtsrolle wird nur eingesetzt, wenn sie beschlossen und im Rechtekonzept beschrieben ist.
+BdBs greifen auf die ihnen zugewiesenen Schulamtsbezirke zu. Referenten greifen auf eigene oder ihnen zugeordnete Veranstaltungen innerhalb ihrer Zuständigkeit zu. Ausdrücklich berechtigte RvS-Konten können bezirksübergreifend arbeiten und auswerten. Die frühere Redaktionsrolle ist in der BdB-Rolle aufgegangen.
 
 **Ausnahme für den internen Planungskalender:** Zur Abstimmung des Fortbildungsangebots und zur Vermeidung zeitlicher, räumlicher und thematischer Überschneidungen sehen angemeldete planungsberechtigte Personen bezirksübergreifend Titel, Beschreibung, Datum, Uhrzeit, Ort, Veranstaltungsform und Planungsstatus. Dies umfasst auch noch nicht veröffentlichte Entwürfe. Die Ausnahme eröffnet keine Bearbeitung fremder Veranstaltungen und keinen Zugriff auf fremde Auswertungen, tatsächliche Teilnehmerzahlen, Nachbereitungsnotizen oder persönliche Referentenkontakte. Referentennamen werden nicht als eigenes Kalenderfeld angezeigt; Freitexte sind auf erforderliche Planungsinhalte zu beschränken. Die Ausnahme gilt für die interne Planung, nicht für die öffentliche Anzeige.
 
@@ -81,9 +81,9 @@ Das Portal veröffentlicht keine persönlichen Referentenprofile, Dienststellen 
 - „Referentennetzwerk digitale Bildung – [jeweiliger Schulamtsbezirk]“;
 - „Beratung digitale Bildung – [jeweiliger Schulamtsbezirk]“.
 
-Im geplanten Zielbetrieb sollen Sie im eigenen Konto freiwillig per Ja/Nein-Auswahl entscheiden können, ob Ihr Vor- und Nachname bei Ihren eigenen zugeordneten veröffentlichten Fortbildungen portalweit erscheinen darf. Die eine Auswahl soll, auch für künftige und bezirksübergreifende eigene Zuordnungen, für den bestimmten Zweck der Namensnennung auf Website, öffentlichem ICS-Kalenderfeed und öffentlichen Ausschreibungs-PDFs gelten. Sie soll standardmäßig deaktiviert sein und jederzeit mit Wirkung für die Zukunft im eigenen Konto widerrufen werden können. Fotos, Marketing, Kontaktveröffentlichungen und weitere Zwecke sind davon nicht umfasst.
+Sie entscheiden im eigenen Konto freiwillig, ob Ihr Vor- und Nachname bei eigenen zugeordneten Fortbildungen auf Website, öffentlichem Kalenderfeed, Ausschreibungs-PDFs und auf SchiLf-Teilnahmebescheinigungen für die jeweiligen Teilnehmenden erscheinen darf. Die Auswahl gilt auch für künftige eigene Veranstaltungen in allen zugeordneten Bezirken. Sie ist zunächst ausgeschaltet und jederzeit für die Zukunft widerrufbar. Fotos, Kontaktdatenveröffentlichung und Werbung für andere Zwecke sind nicht umfasst.
 
-Nach einem Widerruf soll Ihr Name aus Website, Feed und noch öffentlich abrufbaren Ausschreibungs-PDFs entfernt oder diese durch bereinigte Fassungen ersetzt werden; zugehörige Caches sollen bereinigt werden. Bereits heruntergeladene oder gedruckte Kalenderdateien und PDFs sowie Suchmaschinenkopien lassen sich nicht vollständig zurückholen. BdBs sollen eine Namensanzeige zum Schutz der betroffenen Person stoppen können, aber keine Einwilligung für sie erteilen oder die Anzeige einschalten. Ohne nachweisbare Einwilligung soll kein Name veröffentlicht werden. Die Rechtmäßigkeit einer Veröffentlichung bis zum Widerruf bleibt unberührt.
+Die aktuelle Textfassung 2026-10-05.1 nennt die Teilnahmebescheinigungen ausdrücklich. Frühere Zustimmungen schalten die Anzeige erst wieder frei, wenn Sie der neuen Fassung selbst zustimmen. Nach Widerruf berücksichtigen neue Ausgaben Ihre Entscheidung. Bereits heruntergeladene, gedruckte oder von Dritten gespeicherte Fassungen können nicht vollständig zurückgeholt werden. BdBs dürfen eine Anzeige stoppen, aber keine Zustimmung für Sie erteilen. Die Rechtmäßigkeit früherer Veröffentlichungen bleibt vom Widerruf unberührt.
 
 Personenbezogene Referentendaten bleiben im Übrigen in berechtigten internen Ansichten und erforderlichen internen Berichten. Die öffentlichen Veranstaltungstexte werden entsprechend geprüft.
 
@@ -109,7 +109,7 @@ Eine Fortbildung wird nach ihrem Beginn in Europe/Berlin automatisch dem Schulja
 
 Beispiel: Daten des Schuljahres 2026/2027 sind regulär bis einschließlich 3. September 2028 intern verfügbar. Ab 4. September 2028 sind sie im laufenden Tool nicht mehr regulär zugänglich. Die erforderlichen Nachweise werden vorher kontrolliert in die gesonderte Aufbewahrungsablage überführt. Die entsprechenden operativen Veranstaltungsdaten werden anschließend automatisch bereinigt. Ein technischer Übergabefehler löst ein dokumentiertes, zugriffsbeschränktes Ausnahmeverfahren aus.
 
-Vor Ablauf der Frist wird je Bezirk und Schuljahr ein separates Archivpaket mit JSON-, CSV- und Hash-Datei erzeugt und extern hashgeprüft übernommen. Es enthält die erforderlichen Veranstaltungsangaben, interne Referenten-IDs und Namen sowie Höchstteilnehmerzahl, jedoch keine Referentenkontakte, Notizen oder Beschreibungen. Nach erfolgreicher Übernahme und Fristablauf werden operative Daten bereinigt. Die anschließende Aufbewahrung dauert **[verbindliche Frist und Fristbeginn ergänzen]** und erfolgt bei der Regierung von Schwaben beziehungsweise dem zuständigen Schulamt **[konkrete Ablage und Zuständigkeit]** auf Grundlage von **[Rechtsgrundlage/Aufbewahrungsregel]**. Vor der endgültigen Vernichtung werden gegebenenfalls archivrechtliche Pflichten berücksichtigt. Eine unbegrenzte Aufbewahrung ist nicht allein durch den Begriff „Archiv“ gerechtfertigt.
+Vor Ablauf der Frist wird je Bezirk und Schuljahr ein separates Archivpaket mit JSON-, CSV- und Hash-Datei erzeugt und extern hashgeprüft übernommen. Es enthält die erforderlichen Veranstaltungsangaben, interne Referenten-IDs und Namen sowie geplante Plätze und tatsächliche Teilnehmerzahlen, jedoch keine Referentenkontakte, Notizen oder Beschreibungen. Nach erfolgreicher Übernahme und Fristablauf werden operative Daten bereinigt. Die anschließende Aufbewahrung dauert **[verbindliche Frist und Fristbeginn ergänzen]** und erfolgt bei der Regierung von Schwaben beziehungsweise dem zuständigen Schulamt **[konkrete Ablage und Zuständigkeit]** auf Grundlage von **[Rechtsgrundlage/Aufbewahrungsregel]**. Vor der endgültigen Vernichtung werden gegebenenfalls archivrechtliche Pflichten berücksichtigt. Eine unbegrenzte Aufbewahrung ist nicht allein durch den Begriff „Archiv“ gerechtfertigt.
 
 Weitere Datenarten haben eigene Fristen:
 
@@ -129,7 +129,7 @@ Sie können sich außerdem beim Bayerischen Landesbeauftragten für den Datensch
 
 Für die hier beschriebene interne Verarbeitung wird keine pauschale Einwilligung eingeholt; ein Widerruf der freiwilligen Namensanzeige beendet daher nicht die gesetzlich begründete interne Verarbeitung. Gesetzliche Betroffenenrechte bleiben unberührt.
 
-**[Vor Verwendung bestätigen: Es erfolgen keine ausschließlich automatisierten Entscheidungen einschließlich Profiling mit rechtlicher oder vergleichbar erheblicher Wirkung. Andernfalls die gesetzlich erforderlichen Informationen ergänzen.]**
+Es erfolgen keine ausschließlich automatisierten Entscheidungen einschließlich Profiling mit rechtlicher oder vergleichbar erheblicher Wirkung.
 
 ## 10 Version und Aushändigung
 

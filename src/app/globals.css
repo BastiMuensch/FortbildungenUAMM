@@ -168,6 +168,9 @@ summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; bor
 .beschreibung a { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
 .beschreibung blockquote { border-left: 3px solid var(--primary); padding-left: 1rem; color: var(--muted-foreground); }
 .beschreibung code { font-family: var(--font-mono); font-size: 0.875em; background: var(--muted); padding: 0.1em 0.35em; }
+.beschreibung table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.beschreibung th, .beschreibung td { padding: 0.65rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.beschreibung th { background: var(--muted); font-weight: 600; }
 /* Auswertungsbogen: Tabellen bleiben auch ohne JavaScript lesbar. */
 .auswertung-tabelle th,
 .auswertung-tabelle td {

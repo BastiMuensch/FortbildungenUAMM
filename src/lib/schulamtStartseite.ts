@@ -13,12 +13,13 @@ export async function ladeOeffentlichenBezirk(kuerzel: string): Promise<{
   id: string;
   name: string;
   kuerzel: string;
+  kontaktEmail: string | null;
 }> {
   if (!istGueltigesSchulamtKuerzel(kuerzel)) notFound();
 
   const bezirk = await prisma.bezirk.findFirst({
     where: { kuerzel, aktiv: true },
-    select: { id: true, name: true, kuerzel: true },
+    select: { id: true, name: true, kuerzel: true, kontaktEmail: true },
   });
 
   if (!bezirk) notFound();

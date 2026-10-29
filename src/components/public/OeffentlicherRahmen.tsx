@@ -1,7 +1,7 @@
 import { bereichsPfad, bereichsKalenderAbo, type OeffentlicherBezirk } from "@/lib/oeffentlicherBereich";
 import { ladeSchulamt } from "@/lib/schulamt";
 import Link from "next/link";
-import { CalendarDays, ListFilter, LogIn } from "lucide-react";
+import { CalendarDays, ListFilter, LogIn, Mail } from "lucide-react";
 import { Marke } from "@/components/Marke";
 import { fortbildungsZusatz } from "@/lib/marke";
 
@@ -19,6 +19,9 @@ export async function OeffentlicherRahmen({
 }) {
   const schulamt = await ladeSchulamt();
   const basis = bereichsPfad(bezirk);
+  const navigation = bezirk
+    ? [...NAVIGATION.slice(0, 2), { href: "#kontakt", label: "Kontakt & Anfragen", icon: Mail }, ...NAVIGATION.slice(2)]
+    : NAVIGATION;
   return (
     <div className="flex min-h-full flex-col overflow-x-clip">
       <a
@@ -43,7 +46,7 @@ export async function OeffentlicherRahmen({
           </Link>
 
           <nav className="ml-auto flex items-stretch">
-            {NAVIGATION.map(({ href, label, icon: Icon, hervorheben }) => (
+            {navigation.map(({ href, label, icon: Icon, hervorheben }) => (
               <Link
                 key={href}
                 href={href === "/login" ? href : `${basis}${href}`}

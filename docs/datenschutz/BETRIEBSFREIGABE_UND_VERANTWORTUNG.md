@@ -1,10 +1,10 @@
 # Betriebsfreigabe, Verantwortung und laufende Verfahren
 
-Stand 24. September 2026. Diese Vorlage wird erst mit tatsächlichen Namen, Nachweisen und Ergebnissen freigegeben. Sie behauptet keine bereits erfolgte Abnahme.
+Stand 5. Oktober 2026. Diese Vorlage wird erst mit tatsächlichen Namen, Nachweisen und Ergebnissen freigegeben. Sie behauptet keine bereits erfolgte Abnahme.
 
 Bereits benannt: **Regierung von Schwaben, Sachgebiet 40.1**, und **Doris Sippel als Betriebsverantwortliche**. Die ausführende technische Administration ist damit noch nicht bestimmt. Die [Ausfüllhilfe](AUSFUELLHILFE_REGIERUNG.md) ordnet die restlichen Aufgaben zu.
 
-Das Projektteam trägt auch die technischen Betriebsnachweise zusammen. „IT-Betrieb“ bezeichnet eine Funktion, die durch benannte Personen wahrgenommen wird; damit ist keine automatische Übergabe an eine andere Abteilung gemeint. Die praktische Prüfliste für Serverzugänge, Sicherung und Wiederherstellung steht in Abschnitt 3 der Ausfüllhilfe.
+Das Projektteam trägt auch die technischen Betriebsnachweise zusammen. „IT-Betrieb“ bezeichnet eine Funktion, die durch benannte Personen wahrgenommen wird; damit ist keine automatische Übergabe an eine andere Abteilung gemeint. Die Ausfüllhilfe bündelt die praktischen Aufgaben für Serverzugänge, Sicherung und Wiederherstellung. Angaben werden einmal in dieser Betriebsakte geführt und in TOM, VVT und DSFA nur referenziert.
 
 ## Verantwortung vor Start verbindlich festlegen
 
@@ -22,18 +22,18 @@ Die Rollenregel gilt verbindlich: BdB bearbeiten eigene Bezirke und ihr jeweils 
 
 ## Datenschutzfolgenabschätzung
 
-Ergänzung vom 28.09.2026: Die [DSFA 01 Version 1.0](DSFA_Fortbildungsportal_Schwaben.md) enthält jetzt eine vorsorglich ausgearbeitete vollständige DSFA einschließlich Kriterienprüfung, Verhältnismäßigkeit, acht Risikoszenarien, Maßnahmen und erwartetem Restrisiko. Die [Word-Fassung](DSFA_Fortbildungsportal_Schwaben.docx) markiert Ergänzungen gelb. Eine zweite parallele Vorprüfung ist nicht nötig.
+Fortschreibung vom 05.10.2026: Die [DSFA 01 Version 1.1](DSFA_Fortbildungsportal_Schwaben.md) enthält jetzt eine vorsorglich ausgearbeitete vollständige DSFA einschließlich Kriterienprüfung, Verhältnismäßigkeit, sechs zusammengefassten Risikoszenarien, Maßnahmen und erwartetem Restrisiko. Die [Word-Fassung](DSFA_Fortbildungsportal_Schwaben.docx) markiert Ergänzungen gelb. Eine zweite parallele Vorprüfung ist nicht nötig.
 
 Die Analyse würdigt die bereits umgesetzten Bezirksrechte, MFA, Namensfreigabe, Schuljahresfrist und verschlüsselten Sicherungen. Sie behandelt referentenbezogene Auswertungen ausdrücklich als personenbezogen. Das erwartete Restrisiko liegt bei bestätigter Einrichtung und begrenztem Verwendungszweck im geringen bis mittleren Bereich. Eine Betriebsabnahme oder erfolgte Datenschutzberatung wird damit nicht behauptet.
 
-Sachgebiet 40.1 ergänzt Größenordnung und tatsächliche Nutzung. Die Betriebsstelle ergänzt die vorhandenen Inbetriebnahmenachweise; die Datenschutzbeauftragte wird beteiligt. Die befugte Stelle dokumentiert die Entscheidung in Abschnitt 6 der DSFA. Bereits in der gemeinsamen Betriebsakte belegte Punkte werden nur referenziert. Ein verbleibendes hohes Restrisiko würde vor Beginn eine erneute Bewertung und gegebenenfalls vorherige Konsultation nach Art. 36 DSGVO erfordern.
+Sachgebiet 40.1 ergänzt Größenordnung und tatsächliche Nutzung. Die Betriebsstelle ergänzt die vorhandenen Inbetriebnahmenachweise; die Datenschutzbeauftragte wird beteiligt. Die befugte Stelle dokumentiert die Entscheidung in Abschnitt 4 der DSFA. Bereits in der gemeinsamen Betriebsakte belegte Punkte werden nur referenziert. Ein verbleibendes hohes Restrisiko würde vor Beginn eine erneute Bewertung und gegebenenfalls vorherige Konsultation nach Art. 36 DSGVO erfordern.
 
 ## Vorfallverfahren
 
 1. Jede Person meldet einen Verdacht unverzüglich an die benannte Betriebsstelle; bei Ausfall an die Vertretung. Die Meldung enthält Zeitpunkt, System, Beobachtung und erreichbare Rückfrageperson, aber keine Passwörter oder vollständigen Tokens.
 2. Die Betriebsstelle sichert Beweise, begrenzt Zugriffe und dokumentiert Maßnahmen. Sie löscht keine relevanten Spuren, bevor der Sachverhalt bewertet ist.
 3. Fachverantwortung und Datenschutzbeauftragter bewerten betroffene Daten, Umfang, Folgen und Abhilfe. Die verantwortliche Stelle prüft eine Meldung nach Art. 33 DSGVO grundsätzlich binnen 72 Stunden ab Kenntnis und gegebenenfalls die Benachrichtigung nach Art. 34 DSGVO.
-4. Nach Abschluss werden Ursache, betroffene Systeme, Entscheidung, Meldung/Nichtmeldung, Abhilfe, Restmaßnahmen und Wirksamkeitsprüfung dokumentiert. Der Ablauf wird mindestens einmal vor Start und danach jährlich übungshalber durchgespielt.
+4. Nach Abschluss werden Ursache, betroffene Systeme, Entscheidung, Meldung/Nichtmeldung, Abhilfe, Restmaßnahmen und Wirksamkeitsprüfung dokumentiert. Die Erreichbarkeit und Zuständigkeiten werden bei Einführung und im jährlichen Betriebscheck kontrolliert; bestehende behördliche Notfallabläufe werden genutzt.
 
 ## Betroffenenrechte
 
@@ -41,7 +41,7 @@ Anträge gehen an die veröffentlichte verantwortliche Stelle und werden mit Ein
 
 ## Archiv- und Aufbewahrungsentscheidung
 
-Vor der ersten Übergabe entscheidet die zuständige Registratur/Archivstelle schriftlich: Datenumfang je Paket, Aufbewahrungszweck, Rechtsgrundlage, Fristbeginn, Dauer, Ablage und physischer Standort, Berechtigte, Vertretung, Aussonderungsdatum, Prüfung einer Anbietungspflicht und Art des Nachweises über Vernichtung oder Abgabe. Das technische Paket enthält JSON, CSV und Hash mit Veranstaltungsangaben, internen Referenten-IDs und Namen sowie Höchstteilnehmerzahl. Es enthält keine vollständigen Datenbankkopien, Passwort-Hashes, Sitzungen, Zugangstoken, MFA-Geheimnisse, Kontakte, Notizen oder Beschreibungen.
+Vor der ersten Übergabe entscheidet die zuständige Registratur/Archivstelle schriftlich: Datenumfang je Paket, Aufbewahrungszweck, Rechtsgrundlage, Fristbeginn, Dauer, Ablage und physischer Standort, Berechtigte, Vertretung, Aussonderungsdatum, Prüfung einer Anbietungspflicht und Art des Nachweises über Vernichtung oder Abgabe. Das technische Paket enthält JSON, CSV und Hash mit Veranstaltungsangaben, internen Referenten-IDs und Namen sowie geplante Plätze und tatsächliche Teilnehmerzahlen. Es enthält keine vollständigen Datenbankkopien, Passwort-Hashes, Sitzungen, Zugangstoken, MFA-Geheimnisse, Kontakte, Notizen oder Beschreibungen.
 
 Die Entscheidung darf keine unbestimmte Frist verwenden. Bis sie vorliegt, ist die produktive Archivübergabe nicht freigegeben.
 
@@ -57,7 +57,7 @@ Die Entscheidung darf keine unbestimmte Frist verwenden. Bis sie vorliegt, ist d
 | 400-Tage-Regel, Archivpaket, externe Hash-Prüfung, Bereinigung und Sperre nach Fristablauf | Test mit Fälldaten | [offen] | [eintragen] |
 | Verschlüsselte Vollsicherung, bestätigte Netzablage und erfolgreiche Testwiederherstellung | Übernahme- und Restore-Protokoll | [offen] | [eintragen] |
 | Protokoll-, Backup-, Export- und Archivfristen | Freigabeentscheidung | [offen] | [eintragen] |
-| DSFA 01, Vorfall- und Betroffenenrechteverfahren | Bewertung ausgearbeitet; Behördenberatung und Entscheidung in DSFA Abschnitt 6 | [Bestätigung offen] | [eintragen] |
+| DSFA 01, Vorfall- und Betroffenenrechteverfahren | Bewertung ausgearbeitet; Behördenberatung und Entscheidung in DSFA Abschnitt 4 | [Bestätigung offen] | [eintragen] |
 | Datenschutzinformationen, VVT und TOM entsprechen dem Ist-Betrieb | Versionsabgleich | [offen] | [eintragen] |
 
 Freigabe durch befugte Stelle: [Name/Funktion, Datum, Aktenzeichen]. Restpunkte mit Risiko, Verantwortlichkeit und Termin: [eintragen].

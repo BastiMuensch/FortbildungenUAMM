@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test:bescheinigungen": "node scripts/teilnahmebescheinigungPruefungen.cjs",
     "test:aushang": "node scripts/aushangPruefungen.cjs",
-    "test": "node --import tsx scripts/pruefungen.ts && node --import tsx scripts/auswertungPruefungen.ts && node --conditions=react-server --import tsx scripts/katalogPruefungen.ts && node --import tsx scripts/einrichtungPruefungen.ts && node scripts/dauerPruefungen.cjs && node scripts/teilnahmebescheinigungPruefungen.cjs && node scripts/unterschriftenPruefungen.cjs && node scripts/aushangPruefungen.cjs",
+    "test": "node --import tsx scripts/pruefungen.ts && node --import tsx scripts/auswertungPruefungen.ts && node --conditions=react-server --import tsx scripts/katalogPruefungen.ts && node --import tsx scripts/einrichtungPruefungen.ts && node scripts/dauerPruefungen.cjs && node scripts/teilnahmebescheinigungPruefungen.cjs && node scripts/unterschriftenPruefungen.cjs && node scripts/aushangPruefungen.cjs && node scripts/systemtextPruefungen.cjs",
+    "test:rechtstexte": "node scripts/systemtextPruefungen.cjs",
     "test:mfa": "node scripts/mfaPruefungen.cjs && node scripts/mfaQrPruefungen.cjs",
     "test:datenschutz": "node scripts/datenschutzPruefungen.cjs",
     "test:archiv": "node scripts/archivPruefungen.cjs",
@@ -27,7 +28,8 @@
     "test:importfristen": "node scripts/importFristPruefungen.cjs",
     "test:datensicherung:db": "node scripts/datensicherungIntegrationPruefungen.cjs",
     "test:vollbackup:betrieb": "node scripts/vollbackupBetriebPruefungen.cjs",
-    "test:unterschriften": "node scripts/unterschriftenPruefungen.cjs"
+    "test:unterschriften": "node scripts/unterschriftenPruefungen.cjs",
+    "test:bezirkskontakt": "node scripts/bezirkskontaktPruefungen.cjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

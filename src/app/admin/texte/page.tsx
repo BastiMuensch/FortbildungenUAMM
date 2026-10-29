@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/auth";
 import { letzterLauf } from "@/lib/retention";
 import { formatDatumZeit } from "@/lib/datetime";
 import { SystemtextFormular } from "@/components/admin/SystemtextFormular";
+import { DATENSCHUTZERKLAERUNG_ENTWURF } from "@/constants/datenschutz";
 
 export const metadata = { title: "Rechtstexte" };
 export const dynamic = "force-dynamic";
@@ -39,14 +40,17 @@ export default async function TextePage() {
         id="datenschutz"
         ueberschrift="Datenschutzerklärung"
         wert={wert("datenschutz")}
+        vorlage={DATENSCHUTZERKLAERUNG_ENTWURF}
       />
 
       <section className="border bg-muted/30 p-5">
         <h2 className="text-sm font-semibold">Löschlauf</h2>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          Vergangene Fortbildungen werden nach zwei Jahren archiviert,
-          Referentenzuordnungen nach fünf Jahren aufgelöst, Protokolle nach
-          zwölf Monaten gelöscht.
+          Fortbildungs- und Auswertungsdaten werden nach 400 vollständigen
+          Kalendertagen nach Schuljahresende für den regulären Zugriff gesperrt.
+          Die Löschung setzt eine bestätigte externe Archivübernahme voraus.
+          Anwendungs- und FIBS-Importprotokolle werden nach 365 Tagen gelöscht.
+          Für Konten, Nachweise, Serverprotokolle und Sicherungen gelten gesonderte Regeln.
         </p>
         <p className="mt-2 text-sm">
           Zuletzt gelaufen:{" "}

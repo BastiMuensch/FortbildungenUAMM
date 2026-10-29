@@ -35,6 +35,10 @@ und Berichte.
 - Detailseiten mit passendem Teilnahmehinweis: FIBS-Anmeldung für RLFB/ALP,
   schulinterne Organisation bei SchiLf
 - Kalender-Abo (ICS) unter `/api/ics`
+- **Kontakt und Fortbildungsanfragen** auf den Bezirksseiten: E-Mail an den
+  zuständigen BdB öffnen, bei Fortbildungsanfragen mit vorbereiteter Vorlage.
+  Die öffentlichen Adressen werden unter **Verwaltung → Kontakt & Anfragen**
+  je Bezirk manuell hinterlegt. [Einrichtung nach dem Update](docs/SCHWABEN.md#update-und-anschließende-einrichtung).
 
 **Für das Medienteam** (Verwaltungsbereich unter `/admin`):
 
@@ -505,10 +509,11 @@ Die Anwendung ist auf Datensparsamkeit ausgelegt:
   Content-Security-Policy in `next.config.ts` (`default-src 'self'`).
 - **Kein Cookie-Banner nötig** — es gibt nur ein technisch notwendiges
   Sitzungs-Cookie für den Verwaltungsbereich.
-- **Löschkonzept** (`src/lib/retention.ts`): Fortbildungen nach zwei Jahren
-  archiviert, Referentenzuordnungen nach fünf Jahren aufgelöst, Protokolle nach
-  zwölf Monaten gelöscht. Läuft automatisch (`src/lib/scheduler.ts`), Zeitpunkt
-  des letzten Laufs unter `/admin/texte` einsehbar.
+- **Löschkonzept** (`src/lib/retention.ts`): Nach 400 vollständigen Kalendertagen
+  nach Schuljahresende endet der reguläre Zugriff auf Fortbildungsdaten. Die
+  Löschung setzt eine bestätigte externe Archivübernahme voraus. Anwendungs-
+  und FIBS-Importprotokolle werden nach 365 Tagen gelöscht. Läuft automatisch
+  (`src/lib/scheduler.ts`); der letzte Lauf ist unter `/admin/texte` einsehbar.
 - **Protokollierung** von Anlegen, Ändern, Löschen, Anmeldung und Import
   (Rechenschaftspflicht, Art. 5 Abs. 2 DSGVO) — bewusst ohne Kopie der Daten
   selbst.

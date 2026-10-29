@@ -1,5 +1,5 @@
 /** Öffentliche Identität eines Schulamts; keine Verwaltungs- oder Kontodaten. */
-export type OeffentlicherBezirk = { id: string; name: string; kuerzel: string };
+export type OeffentlicherBezirk = { id: string; name: string; kuerzel: string; kontaktEmail?: string | null };
 
 export function bereichsPfad(bezirk?: OeffentlicherBezirk): string {
   return bezirk ? `/${bezirk.kuerzel}` : "";

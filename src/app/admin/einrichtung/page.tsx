@@ -6,6 +6,7 @@ import { EinrichtungsFormular } from "@/components/admin/EinrichtungsFormular";
 import { EinrichtungsAbschluss } from "@/components/admin/EinrichtungsAbschluss";
 import { Schulimport } from "@/components/admin/Schulimport";
 import { SystemtextFormular } from "@/components/admin/SystemtextFormular";
+import { DATENSCHUTZERKLAERUNG_ENTWURF } from "@/constants/datenschutz";
 import { Button } from "@/components/ui/button";
 import type { SuchParameter } from "@/lib/filter";
 
@@ -35,7 +36,7 @@ export default async function EinrichtungsSeite({ searchParams }: { searchParams
     {schritt === 3 ? <>
       <p className="text-sm text-muted-foreground">Ersetzen Sie die Platzhalter durch die Angaben und geprüften Texte Ihres Schulamts. Speichern Sie beide Texte einzeln, bevor Sie weitergehen. Markdown ist möglich.</p>
       <SystemtextFormular id="impressum" ueberschrift="Impressum" wert={texte.find((text) => text.id === "impressum")?.value ?? ""} />
-      <SystemtextFormular id="datenschutz" ueberschrift="Datenschutzerklärung" wert={texte.find((text) => text.id === "datenschutz")?.value ?? ""} />
+      <SystemtextFormular id="datenschutz" ueberschrift="Datenschutzerklärung" wert={texte.find((text) => text.id === "datenschutz")?.value ?? ""} vorlage={DATENSCHUTZERKLAERUNG_ENTWURF} />
       <Button nativeButton={false} render={<Link href="/admin/einrichtung?schritt=4">Weiter zur Abschlussprüfung</Link>} />
     </> : null}
     {schritt === 4 ? <section className="space-y-6 rounded-xl border bg-card p-5">

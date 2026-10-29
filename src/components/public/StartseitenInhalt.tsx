@@ -6,6 +6,7 @@ import {
   CalendarDays,
   CalendarPlus,
   Globe,
+  Mail,
   Search,
 } from "lucide-react";
 
@@ -13,6 +14,7 @@ import { prisma } from "@/lib/prisma";
 import { fortbildungKachelSelect, oeffentlicheFortbildungWhere } from "@/lib/queries";
 import { aktuellesSchuljahr, schuljahrZeitraum } from "@/lib/datetime";
 import { FortbildungKarte } from "@/components/public/FortbildungKarte";
+import { Bezirkskontakt } from "@/components/public/Bezirkskontakt";
 
 export async function StartseitenInhalt({ bezirk }: { bezirk?: OeffentlicherBezirk }) {
   const basis = bereichsPfad(bezirk);
@@ -94,6 +96,7 @@ export async function StartseitenInhalt({ bezirk }: { bezirk?: OeffentlicherBezi
               <CalendarDays className="size-3.5 text-primary" aria-hidden />
               Kalenderansicht
             </Link>
+            {bezirk ? <a href="#kontakt" className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"><Mail className="size-3.5 text-primary" aria-hidden />Kontakt & Anfragen</a> : null}
           </div>
         </div>
 
@@ -143,6 +146,8 @@ export async function StartseitenInhalt({ bezirk }: { bezirk?: OeffentlicherBezi
           </div>
         )}
       </section>
+
+      {bezirk ? <Bezirkskontakt bezirk={bezirk} /> : null}
 
       <section className="rounded-2xl border border-border bg-secondary/55 px-5 py-5 sm:px-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">

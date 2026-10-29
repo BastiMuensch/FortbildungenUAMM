@@ -6,6 +6,7 @@ import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SchulamtProfilSchema, SCHULAMT_PROFIL_SCHLUESSEL } from "@/lib/schulamtProfil";
 import { ladeSchulamt } from "@/lib/schulamt";
+import { hatOffeneRechtstextAngaben } from "@/lib/validation/systemtext";
 import { zuFeldFehlern, type FormularState } from "@/lib/validation/fortbildung";
 
 export async function speichereEinrichtung(_bisher: FormularState, formData: FormData): Promise<FormularState> {
@@ -37,7 +38,7 @@ export async function schliesseEinrichtungAb(_bisher: FormularState, formData: F
   if (!eintraege.some((eintrag) => eintrag.id === "einrichtungProfilGespeichert")) return { fehler: { _: "Bitte zuerst in Schritt 1 die Angaben zum Schulamt speichern." } };
   for (const id of ["impressum", "datenschutz"]) {
     const text = eintraege.find((eintrag) => eintrag.id === id)?.value.trim();
-    if (!text || text.length < 50 || /Platzhalter\s*[—–-]/i.test(text)) return { fehler: { _: `Bitte ${id === "impressum" ? "das Impressum" : "die Datenschutzerklärung"} in Schritt 3 vervollständigen und speichern.` } };
+    if (!text || text.length < 50 || hatOffeneRechtstextAngaben(text)) return { fehler: { _: `Bitte ${id === "impressum" ? "das Impressum" : "die Datenschutzerklärung"} in Schritt 3 vervollständigen und speichern.` } };
   }
   await prisma.$transaction([
     prisma.systemSetting.upsert({ where: { id: "einrichtungStatus" }, create: { id: "einrichtungStatus", value: "fertig" }, update: { value: "fertig" } }),

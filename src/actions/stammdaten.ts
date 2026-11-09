@@ -260,14 +260,16 @@ const OrtSchema = z.object({
   ort: z.string().trim().max(100).optional().transform((w) => w || null),
   strasse: z.string().trim().max(150).optional().transform((w) => w || null),
   schulnummer: z.string().trim().max(20).optional().transform((w) => w || null),
+  schulamtId: z.string().uuid("Bitte ein gültiges Schulamt auswählen.").nullable(),
 });
 
 export async function speichereOrt(
   _bisher: FormularState,
   formData: FormData,
 ): Promise<FormularState> {
+  let user;
   try {
-    await rolle();
+    user = await requireRole("RVS", "ADMIN");
   } catch (error) {
     const fehler = alsFehler(error);
     if (fehler) return fehler;
@@ -279,10 +281,16 @@ export async function speichereOrt(
     ort: formData.get("ort") ?? "",
     strasse: formData.get("strasse") ?? "",
     schulnummer: formData.get("schulnummer") ?? "",
+    schulamtId: formData.get("schulamtId") || null,
   });
 
   if (!geparst.success) return { fehler: zuFeldFehlern(geparst.error) };
 
+  if (geparst.data.schulnummer && !geparst.data.schulamtId) return { fehler: { schulamtId: "Bitte für die Schule ein Schulamt auswählen." } };
+  if (geparst.data.schulamtId) {
+    try { await pruefeBezirk(user, geparst.data.schulamtId); }
+    catch (error) { if (error instanceof AuthError) return { fehler: { schulamtId: error.message } }; throw error; }
+  }
   const vorhanden = await prisma.veranstaltungsort.findFirst({
     where: { name: geparst.data.name, ort: geparst.data.ort },
   });

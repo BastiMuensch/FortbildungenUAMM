@@ -2,6 +2,7 @@ import { Globe, Power } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import { requireRole, fortbildungScope } from "@/lib/auth";
+import { ladeBezirke } from "@/lib/bezirke";
 import { setzeOrtAktiv } from "@/actions/stammdaten";
 import { OrtFormular } from "@/components/admin/OrtFormular";
 import { Schulimport } from "@/components/admin/Schulimport";
@@ -20,6 +21,7 @@ export const metadata = { title: "Veranstaltungsorte" };
 
 export default async function OrtePage() {
   const user = await requireRole("RVS", "ADMIN");
+  const bezirke = await ladeBezirke(user);
 
   const orte = await prisma.veranstaltungsort.findMany({
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
@@ -29,6 +31,7 @@ export default async function OrtePage() {
       ort: true,
       strasse: true,
       schulnummer: true,
+      schulamt: { select: { name: true } },
       istOnline: true,
       aktiv: true,
       _count: { select: { fortbildungen: { where: fortbildungScope(user) } } },
@@ -50,8 +53,8 @@ export default async function OrtePage() {
         </p>
       </div>
 
-      <Schulimport />
-      <OrtFormular />
+      <Schulimport bezirke={bezirke} />
+      <OrtFormular bezirke={bezirke} />
 
       <div className="overflow-x-auto border">
         <Table>
@@ -60,6 +63,7 @@ export default async function OrtePage() {
               <TableHead className="min-w-56">Name</TableHead>
               <TableHead>Ort</TableHead>
               <TableHead>Adresse</TableHead>
+              <TableHead>Schulamt</TableHead>
               <TableHead className="text-right">Termine</TableHead>
               <TableHead className="w-32">Status</TableHead>
             </TableRow>
@@ -86,6 +90,9 @@ export default async function OrtePage() {
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {o.strasse ?? "—"}
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {o.schulamt?.name ?? (o.istOnline ? "—" : "Noch nicht zugeordnet")}
                 </TableCell>
                 <TableCell className="text-right zahl">
                   {o._count.fortbildungen}

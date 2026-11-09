@@ -408,6 +408,39 @@ Transaktion. Regierung und BdBs können importieren; Referenten
 haben keinen Zugriff. Die Schulamtskonfiguration ist ausschließlich für
 Administratoren zugänglich.
 
+Vor der Vorschau ist das zuständige Schulamt auszuwählen. Regierung und BdBs
+sehen ihre berechtigten aktiven Schulämter; beide Import-Aktionen prüfen diese
+Berechtigung erneut. Die Auswahl ist Bestandteil der Vorschau-Prüfsumme.
+Die Schule speichert ihre Zuordnung in `Veranstaltungsort.schulamtId` als
+Relation zu `Bezirk`. Ein Import in ein anderes Schulamt wird als Konflikt
+abgewiesen. Das gemeinsame Ortsverzeichnis zeigt die Schulamtszuordnung an;
+beim einzelnen Anlegen ist ebenfalls eine Auswahl möglich.
+
+Die Migrationen vom 09.11.2026 ergänzen das Feld und Augsburg-Land. Sie ordnen
+nur die 52 bekannten UAMM-Schulen des ursprünglichen Seeds anhand von Name
+und Ort zu und ergänzen 51 eindeutige Schulnummern. Andere Bestandsorte bleiben
+zunächst ohne Schulamt. Bestehende Werte werden nicht überschrieben.
+Der gemeinsame Altort „Grund- und Mittelschule Memmingerberg“ bleibt mit seinen
+Fortbildungen erhalten; die amtliche Importdatei führt die beiden Schulen
+unter getrennten Nummern. Es gibt keine automatische Aufteilung alter Termine.
+`Fortbildung.veranstaltungsortId` und `Fortbildung.bezirkId` werden weder von
+diesen Migrationen noch vom Schulimport verändert. Eine Schulamtszuordnung
+der Schule ändert nicht den Ausschreibungsbezirk ihrer Veranstaltungen.
+
+Importdateien mit Quellenhinweisen liegen unter
+`outputs/schulimport-augsburg-land/` (64 Schulen) und
+`outputs/schulimport-memmingen-unterallgaeu/` (53 Schulen).
+Vor dem Start der neuen Version wie üblich `npm run db:deploy` und
+`npm run db:generate` ausführen. Die Dateien anschließend mit dem jeweils
+passenden Schulamt in der Vorschau prüfen und übernehmen.
+
+`scripts/schulimportDatenbankPruefungen.cjs` prüft die echten Migrationen und
+Server Actions einschließlich unveränderter Fortbildungsdaten. Der Test
+akzeptiert ausschließlich eine leere Wegwerf-Datenbank `schulimport_test`
+mit Benutzer `schulimporttest`, Port `54339` und Unix-Socket unter
+`/tmp/schulimport-pruefung`. Aufruf mit
+`DATABASE_URL='postgresql://schulimporttest@localhost:54339/schulimport_test?host=/tmp/schulimport-pruefung' npm run test:schulimport:db`.
+
 ## Bayerische Ferien und Feiertage
 
 `src/lib/ferien.ts` enthält beides:

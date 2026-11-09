@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { BISHERIGES_SCHULAMT, NEUTRALES_SCHULAMT, SCHWABEN_SCHULAMT, SchulamtProfilSchema } from "../src/lib/schulamtProfil";
-import { leseSchulCsv, planeSchulimport, type BestehenderSchulort } from "../src/lib/schulimport";
+import { leseSchulCsv, planeSchulimport as planeImport, type BestehenderSchulort } from "../src/lib/schulimport";
+
+const schulamtId = "amt-uamm";
+const planeSchulimport = (csv: string, bestand: BestehenderSchulort[], ziel = schulamtId) => planeImport(csv, bestand, ziel);
 
 const kopf = "schulnummer;name;strasse;ort\n";
-const ort: BestehenderSchulort = { id: "schule-1", name: "Grundschule Beispiel", schulnummer: "0012", strasse: "Schulstraße 1", ort: "Beispielstadt", istOnline: false, aktiv: true, _count: { fortbildungen: 3 } };
+const ort: BestehenderSchulort = { id: "schule-1", schulamtId, name: "Grundschule Beispiel", schulnummer: "0012", strasse: "Schulstraße 1", ort: "Beispielstadt", istOnline: false, aktiv: true, _count: { fortbildungen: 3 } };
 assert.equal(SchulamtProfilSchema.parse(BISHERIGES_SCHULAMT).startText, "Suche für das neue Fortbildungsangebot für Grund- und Mittelschulen in Memmingen und dem Unterallgäu.");
 assert.equal(SCHWABEN_SCHULAMT.startText, "Suche für das neue Fortbildungsangebot für Grund- und Mittelschulen in Schwaben.");
 assert.equal(SchulamtProfilSchema.parse({ ...NEUTRALES_SCHULAMT, zielgruppe: "Realschulen", angebotsRegion: "Musterstadt" }).startText, "Suche für das neue Fortbildungsangebot für Realschulen in Musterstadt.");
@@ -48,5 +51,19 @@ assert.ok(planeSchulimport(standard, [ort, { ...ort, id: "doppelt" }]).fehler.le
 assert.ok(planeSchulimport(standard, [{ ...ort, schulnummer: "9999" }]).fehler.length);
 assert.ok(planeSchulimport(`${kopf}0012;Andere Schule;;Anderer Ort`, [ort, { ...ort, id: "anders", name: "Andere Schule", ort: "Anderer Ort", schulnummer: "0013" }]).fehler.length);
 assert.ok(planeSchulimport(`${kopf}0012;Neuer Name;;Neustadt\n;Grundschule Beispiel;;Beispielstadt`, [ort]).fehler.length);
+
+const altbestand = { ...ort, schulamtId: null };
+const altbestandVorher = structuredClone(altbestand);
+const zuordnung = planeSchulimport(standard, [altbestand]);
+assert.equal(zuordnung.zeilen[0].aktion, "aktualisieren");
+assert.equal(zuordnung.zeilen[0].id, altbestand.id, "Die bestehende Orts-ID und damit die Verknüpfung der Fortbildungen bleiben erhalten.");
+assert.equal(zuordnung.zeilen[0].daten.schulamtId, schulamtId);
+assert.deepEqual(altbestand, altbestandVorher, "Die Planung verändert den Bestand nicht.");
+assert.equal(planeSchulimport(standard, []).zeilen[0].daten.schulamtId, schulamtId);
+assert.ok(planeSchulimport(standard, [], "").fehler.length, "Ohne Schulamt ist kein Import möglich.");
+assert.ok(planeSchulimport(standard, [ort], "amt-augsburg-land").fehler.length, "Ein Import ordnet keine Schulen anderer Schulämter um.");
+assert.equal(planeSchulimport(standard, [ort], "amt-augsburg-land").zeilen.length, 0);
+assert.notDeepEqual(planeSchulimport(standard, [], "amt-augsburg-land"), planeSchulimport(standard, []), "Die Schulamtsauswahl gehört zum geprüften Plan.");
+assert.equal(planeSchulimport(standard, [{ ...altbestand, aktiv: false }]).zeilen[0].vorher?.aktiv, false);
 
 console.log("Einrichtung: Zielgruppentext, Profilvalidierung, CSV-Sonderzeichen, Größenbegrenzung, Dubletten, Schulnummern, Aktualisierung und Bestandsschutz bestanden.");

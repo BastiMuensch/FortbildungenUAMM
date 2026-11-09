@@ -105,7 +105,9 @@ async function seedOrte(importiereUamm: boolean) {
     // Wiederholtes Seeden überschreibt weder Importe noch manuell gepflegte Adressen.
     if (!bestehend) await prisma.veranstaltungsort.create({ data: {
       name: ort.name, ort: ort.ort ?? null, strasse: ort.strasse ?? null,
+      schulnummer: ort.schulnummer ?? null,
       istOnline: ort.istOnline ?? false, sortOrder: ort.sortOrder ?? 10,
+      schulamtId: importiereUamm && !ort.istOnline && (ort.sortOrder ?? 0) >= 10 ? UAMM_BEZIRK_ID : null,
     } });
   }
   console.log(`  Veranstaltungsorte: ${orte.length} Starteinträge geprüft`);

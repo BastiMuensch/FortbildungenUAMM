@@ -16,15 +16,16 @@ export interface SchulimportZeile { zeile: number; daten: SchulimportDatensatz }
 export interface SchulimportFehler { zeile: number; meldung: string }
 export interface BestehenderSchulort {
   id: string; name: string; ort: string | null; strasse: string | null;
-  schulnummer: string | null; istOnline: boolean; aktiv: boolean;
+  schulnummer: string | null; schulamtId: string | null; istOnline: boolean; aktiv: boolean;
   _count: { fortbildungen: number };
 }
 export interface SchulimportPlanzeile extends SchulimportZeile {
+  daten: SchulimportDatensatz & { schulamtId: string };
   aktion: "neu" | "aktualisieren" | "unveraendert";
   id: string | null;
   vorher: BestehenderSchulort | null;
 }
-export interface SchulimportPlan { zeilen: SchulimportPlanzeile[]; fehler: SchulimportFehler[] }
+export interface SchulimportPlan { schulamtId: string; zeilen: SchulimportPlanzeile[]; fehler: SchulimportFehler[] }
 
 /** CSV-Zustandsautomat: Semikolon/Komma, BOM, CRLF und doppelte Anführungszeichen. */
 function zerlegeCsv(text: string, trenner: string): Array<{ zeile: number; werte: string[] }> {
@@ -90,9 +91,13 @@ export function leseSchulCsv(text: string): { zeilen: SchulimportZeile[]; fehler
 }
 
 /** Keine Löschung, keine automatische Reaktivierung und keine leeren Überschreibungen. */
-export function planeSchulimport(csv: string, bestand: BestehenderSchulort[]): SchulimportPlan {
+export function planeSchulimport(csv: string, bestand: BestehenderSchulort[], schulamtId: string): SchulimportPlan {
   const gelesen = leseSchulCsv(csv);
-  const plan: SchulimportPlan = { zeilen: [], fehler: [...gelesen.fehler] };
+  const plan: SchulimportPlan = { schulamtId, zeilen: [], fehler: [...gelesen.fehler] };
+  if (!schulamtId.trim()) {
+    plan.fehler.push({ zeile: 0, meldung: "Bitte ein Schulamt auswählen." });
+    return plan;
+  }
   const verwendet = new Set<string>();
   for (const eintrag of gelesen.zeilen) {
     const { daten } = eintrag;
@@ -103,13 +108,16 @@ export function planeSchulimport(csv: string, bestand: BestehenderSchulort[]): S
     }
     const vorher = nummerTreffer[0] ?? nameTreffer[0] ?? null;
     if (vorher?.istOnline) { plan.fehler.push({ zeile: eintrag.zeile, meldung: "Der Online-Veranstaltungsort kann nicht als Schule importiert werden." }); continue; }
+    if (vorher?.schulamtId && vorher.schulamtId !== schulamtId) {
+      plan.fehler.push({ zeile: eintrag.zeile, meldung: "Diese Schule ist bereits einem anderen Schulamt zugeordnet. Bitte die Datei und die Schulamtsauswahl prüfen." }); continue;
+    }
     if (vorher?.schulnummer && daten.schulnummer && schluessel(vorher.schulnummer) !== schluessel(daten.schulnummer)) {
       plan.fehler.push({ zeile: eintrag.zeile, meldung: "Diese Schule besitzt bereits eine andere Schulnummer. Bitte im Verzeichnis prüfen." }); continue;
     }
     if (vorher && verwendet.has(vorher.id)) { plan.fehler.push({ zeile: eintrag.zeile, meldung: "Mehrere CSV-Zeilen würden denselben vorhandenen Ort ändern." }); continue; }
     if (vorher) verwendet.add(vorher.id);
-    const ergaenzt = { ...daten, schulnummer: daten.schulnummer || vorher?.schulnummer || "", strasse: daten.strasse || vorher?.strasse || "" };
-    const geaendert = vorher && (Object.keys(ergaenzt) as Array<keyof SchulimportDatensatz>).some((feld) => ergaenzt[feld] !== (vorher[feld] ?? ""));
+    const ergaenzt = { ...daten, schulamtId, schulnummer: daten.schulnummer || vorher?.schulnummer || "", strasse: daten.strasse || vorher?.strasse || "" };
+    const geaendert = vorher && (Object.keys(ergaenzt) as Array<keyof typeof ergaenzt>).some((feld) => ergaenzt[feld] !== (vorher[feld] ?? ""));
     plan.zeilen.push({ ...eintrag, daten: ergaenzt, vorher, id: vorher?.id ?? null, aktion: !vorher ? "neu" : geaendert ? "aktualisieren" : "unveraendert" });
   }
   return plan;

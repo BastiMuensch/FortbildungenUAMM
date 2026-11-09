@@ -1,0 +1,56 @@
+Schulverzeichnis Augsburg-Land für den Schulimport
+Abrufdatum: 09.11.2026
+
+Umfang
+64 Schuldatensätze aus dem Abschnitt Augsburg-Land (Kennzeichen AL):
+46 Grundschulen, 16 Mittelschulen und 2 private Volksschulen.
+Die beiden privaten Einrichtungen sind die International School Augsburg in
+Gersthofen (8591) und die Montessori-Volksschule Dinkelscherben (8678).
+Stadt Augsburg, Förderschulen und andere Schularten sind nicht enthalten.
+Außenstellen sind keine zusätzlichen Schulen. Schulen mit unterschiedlichen
+Schulnummern bleiben auch bei gemeinsamer Adresse getrennte Datensätze.
+
+Hauptquelle für Schulnummern, amtliche Namen und Hauptanschriften
+Regierung von Schwaben: Grundschulen/Mittelschulen/Private Volksschulen,
+Abschnitt Augsburg-Land:
+https://www.regierung.schwaben.bayern.de/fachverfahren/schulverzeichnisse/grundschulen/index.php
+Kein verlässlicher Aktualisierungsstand des gesamten Verzeichnisses angegeben.
+Das Abrufdatum ist keine Zusicherung des Schulbetriebs im Schuljahr 2026/27.
+
+Abgleich mit dem Schulverzeichnis des Landkreises
+https://www.landkreis-augsburg.de/fileadmin/user_upload/Schulen/Grund-_und_Mittelschulen_im_Landkreis_Augsburg.pdf
+Die einzelnen Schulen entsprechen der Liste der Regierung. Die Parkschule
+Stadtbergen wird beim Import entsprechend ihren zwei Schulnummern getrennt.
+Abweichende Namensvarianten wurden zugunsten der Regierungsquelle aufgelöst.
+Zusätzliche Außenstellen aus dem PDF wurden nicht als eigene Schulen angelegt.
+
+Zwei Adresskorrekturen gegenüber der Regierungsquelle
+8635 Grundschule Gablingen: Holzhauser Weg 5 (statt Holzhauser Weg 1).
+Bestätigt durch das Kultusministerium und die Gemeinde:
+https://www.km.bayern.de/schule/8635
+https://www.gablingen.de/kW7126/Grundschule%20Gablingen
+
+8677 Grundschule Königsbrunn-West: Kemptener Straße 101
+(statt Mindelheimer Straße 26).
+Bestätigt durch das Kultusministerium und das Landkreisverzeichnis:
+https://www.km.bayern.de/schule/8677
+
+Hinweis zur Gesamtzahl
+Die allgemeine Landkreis-Webseite nennt 46 Grundschulen und 17 Mittelschulen:
+https://www.landkreis-augsburg.de/bildung-familie/bildung/schule/
+In den beiden konkreten Schulverzeichnissen sind dagegen 16 Mittelschulen
+einzeln aufgeführt. Die Importdatei folgt den nachprüfbaren Einzelangaben;
+eine zusätzliche siebzehnte Mittelschule wurde nicht ergänzt.
+Die Mittelschule Thierhaupten (8667) ist in beiden Verzeichnissen und auf der
+Gemeindeseite genannt. Ihr aktueller Unterrichtsbetrieb wurde nicht separat
+bestätigt; der Einzelabruf im KM-Schulverzeichnis war nicht zugänglich.
+https://www.thierhaupten.de/schulen/
+
+Importformat und Verwendung
+UTF-8 mit BOM, Semikolon, Kopfzeile: schulnummer;name;strasse;ort
+Nach Ort und Name sortiert. Keine Postleitzahlen, Personen- oder Kontaktdaten.
+64 eindeutige Schulnummern und 64 eindeutige Kombinationen aus Name und Ort.
+Die Datei ist für die vorhandene Importfunktion vorbereitet.
+Unter Veranstaltungsorte die CSV auswählen, Vorschau erstellen und die
+angezeigten Änderungen prüfen. Danach Geprüfte Schulen übernehmen wählen.
+Es wurde keine Datenbankänderung und kein Import in das laufende Tool ausgeführt.

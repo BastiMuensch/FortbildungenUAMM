@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function OrtFormular() {
+export function OrtFormular({ bezirke }: { bezirke: { id: string; name: string }[] }) {
   const [state, formAction] = useActionState<FormularState, FormData>(
     speichereOrt,
     {},
@@ -46,6 +46,13 @@ export function OrtFormular() {
         </div>
       </div>
 
+      <label className="mt-3 block text-sm font-medium">Schulamt
+        <select name="schulamtId" defaultValue="" className="mt-2 block w-full rounded-md border bg-background p-2" aria-invalid={Boolean(fehler.schulamtId)}>
+          <option value="">Allgemeiner Veranstaltungsort ohne Schulamt</option>
+          {bezirke.map((bezirk) => <option key={bezirk.id} value={bezirk.id}>{bezirk.name}</option>)}
+        </select>
+      </label>
+      {fehler.schulamtId ? <p role="alert" className="text-sm text-destructive">{fehler.schulamtId}</p> : null}
       <div className="mt-3">
         <AnlegenKnopf />
       </div>

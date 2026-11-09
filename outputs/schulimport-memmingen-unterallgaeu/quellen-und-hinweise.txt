@@ -1,0 +1,42 @@
+Schulverzeichnis Memmingen-Unterallgäu
+Abrufdatum: 09.11.2026
+
+53 Schulen: 37 Grundschulen (einschließlich 2 privater Grundschulen)
+und 16 Mittelschulen. Davon 10 Schulen im Abschnitt Stadt Memmingen und
+43 Schulen im Abschnitt Unterallgäu des amtlichen Regierungsverzeichnisses.
+
+Hauptquelle für Schulnummern, amtliche Namen und Anschriften:
+https://www.regierung.schwaben.bayern.de/fachverfahren/schulverzeichnisse/grundschulen/index.php
+
+Abgleich mit den Verzeichnissen der Staatlichen Schulämter:
+https://schulamt.unterallgaeu.de/schulamt/schulverzeichnis/grundschulen-und-mittelschulen/im-landkreis-unterallgaeu
+https://schulamt.unterallgaeu.de/schulamt/schulverzeichnis/grundschulen-und-mittelschulen/in-der-stadt-memmingen
+
+Die beiden privaten Grundschulen sind St. Aloysius in Memmingen (8421)
+und die St.-Josef-Schule in Mindelheim (3296).
+Die beiden regionalen Abschnitte werden für die im Tool bestehende gemeinsame
+Schulamtszuordnung Memmingen-Unterallgäu in einer Importdatei zusammengeführt.
+
+Die Regierungsquelle führt Grundschule und Mittelschule Memmingerberg
+als getrennte Schulen mit den Nummern 8417 und 8875. Der bisherige gemeinsame
+Ort im Tool wird weder gelöscht noch aufgeteilt. An ihm verknüpfte
+Fortbildungen bleiben dort verknüpft.
+
+Namen und Ortsbezeichnungen folgen der Regierungsquelle. Das umfasst
+unter anderem Egg a.d.Günz, Kirchheim i.Schw., Kronburg und
+Memmingen-Amendingen. Schulnummern ermöglichen die Wiedererkennung auch
+bei abweichenden früheren Namen. Die neue Bestandsmigration ergänzt diese
+Nummern bei den eindeutig erkennbaren ursprünglichen UAMM-Schulorten.
+
+Import: Zuerst die neue Version mit den Datenbankmigrationen installieren.
+Unter Veranstaltungsorte das Schulamt Memmingen-Unterallgäu auswählen,
+die CSV auswählen und Vorschau erstellen. Danach die geprüften Schulen
+übernehmen. Ausschreibungsbezirke und Ortsverknüpfungen bestehender
+Fortbildungen bleiben erhalten. Schulnamen und Adressen können sich gemäß
+der geprüften Vorschau aktualisieren.
+
+Format: UTF-8 mit BOM, Semikolon, vier Spalten:
+schulnummer;name;strasse;ort
+53 eindeutige Schulnummern, keine doppelten Kombinationen aus Name und Ort.
+Keine Postleitzahlen oder persönlichen Kontaktdaten.
+Das Abrufdatum ist kein vom Herausgeber zugesicherter Aktualisierungsstand.

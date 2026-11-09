@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/auth";
+import { ladeBezirke } from "@/lib/bezirke";
 import { istEinrichtungOffen, ladeSchulamt } from "@/lib/schulamt";
 import { prisma } from "@/lib/prisma";
 import { EinrichtungsFormular } from "@/components/admin/EinrichtungsFormular";
@@ -14,9 +15,9 @@ export const metadata = { title: "Einrichtung" };
 const SCHRITTE = ["Schulamt", "Schulen", "Rechtstexte", "Abschluss"];
 
 export default async function EinrichtungsSeite({ searchParams }: { searchParams: Promise<SuchParameter> }) {
-  await requireRole("RVS");
+  const user = await requireRole("RVS");
   const params = await searchParams;
-  const [profil, offen] = await Promise.all([ladeSchulamt(), istEinrichtungOffen()]);
+  const [profil, offen, bezirke] = await Promise.all([ladeSchulamt(), istEinrichtungOffen(), ladeBezirke(user)]);
   const schrittWert = Array.isArray(params.schritt) ? params.schritt[0] : params.schritt;
   const schritt = /^[1-4]$/.test(schrittWert ?? "") ? Number(schrittWert) : offen ? 1 : 0;
   const [texte, orte, suchbegriffe] = await Promise.all([
@@ -30,7 +31,7 @@ export default async function EinrichtungsSeite({ searchParams }: { searchParams
     {schritt <= 1 ? <EinrichtungsFormular profil={profil} assistent={schritt === 1} /> : null}
     {schritt === 2 ? <>
       <p className="text-sm">{orte} aktive Schulen / Veranstaltungsorte sind bereits vorhanden. Der Online-Ort ist separat eingerichtet.</p>
-      <Schulimport />
+      <Schulimport bezirke={bezirke} />
       <div className="flex flex-wrap gap-4 text-sm"><Link className="underline" href="/admin/orte">Verzeichnis ansehen oder Orte einzeln anlegen</Link><Link className="underline" href="/admin/einrichtung?schritt=3">Weiter zu den Rechtstexten (Schulimport auch später möglich)</Link></div>
     </> : null}
     {schritt === 3 ? <>

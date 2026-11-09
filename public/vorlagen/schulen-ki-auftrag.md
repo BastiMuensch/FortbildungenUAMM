@@ -49,8 +49,8 @@ auflisten. Quellen und Abrufdatum ebenfalls getrennt von der CSV nennen.
 
 ## Nach der Erstellung
 
-Die Datei im Fortbildungsportal unter „Veranstaltungsorte“ (oder als RvS im
-Installationsassistenten unter „Schulen“) auswählen
+Im Fortbildungsportal unter „Veranstaltungsorte“ (oder als RvS im
+Installationsassistenten unter „Schulen“) das zuständige Schulamt und die Datei auswählen
 und „Vorschau erstellen“ aufrufen. Erst nach Prüfung der angezeigten
 Änderungen „Geprüfte Schulen übernehmen“ wählen.
 
@@ -61,6 +61,7 @@ Nicht aufgeführte Schulen werden nicht entfernt. Stillgelegte Schulen werden
 nicht automatisch aktiviert. Änderungen an vorhandenen Orten gelten auch
 für bereits damit verknüpfte Veranstaltungen.
 
-Die Schulen werden in das gemeinsame Veranstaltungsortverzeichnis aufgenommen.
-Diese CSV weist weder Benutzer noch Fortbildungen einem Schulamt zu; der
-Ausschreibungsbezirk wird später an der jeweiligen Fortbildung festgelegt.
+Die Schulen werden dem beim Import ausgewählten Schulamt zugeordnet.
+Bereits einem anderen Schulamt zugeordnete Schulen werden als Konflikt angezeigt
+und nicht umgeordnet. Bestehende Fortbildungen behalten ihre Veranstaltungsorte
+und Ausschreibungsbezirke. Benutzerzuordnungen werden nicht verändert.

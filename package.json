@@ -29,7 +29,8 @@
     "test:datensicherung:db": "node scripts/datensicherungIntegrationPruefungen.cjs",
     "test:vollbackup:betrieb": "node scripts/vollbackupBetriebPruefungen.cjs",
     "test:unterschriften": "node scripts/unterschriftenPruefungen.cjs",
-    "test:bezirkskontakt": "node scripts/bezirkskontaktPruefungen.cjs"
+    "test:bezirkskontakt": "node scripts/bezirkskontaktPruefungen.cjs",
+    "test:schulimport:db": "node scripts/schulimportDatenbankPruefungen.cjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

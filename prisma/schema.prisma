@@ -139,6 +139,7 @@ model Bezirk {
 
   users                         User[]
   referenten                    Referent[]
+  schulen                       Veranstaltungsort[]
   fortbildungen                 Fortbildung[]
   referentenRegistrierungslinks ReferentenRegistrierungslink[]
   archivpakete                 Archivpaket[]
@@ -269,6 +270,10 @@ model Veranstaltungsort {
   strasse     String?
   /// Amtliche Schulnummer, sofern bekannt
   schulnummer String?
+  /// Zuständiges Schulamt der Schule; unabhängig vom Ausschreibungsbezirk einer Fortbildung.
+  /// Bei allgemeinen Orten und noch nicht zugeordnetem Altbestand leer.
+  schulamtId  String?
+  schulamt    Bezirk? @relation(fields: [schulamtId], references: [id], onDelete: Restrict)
   /// Genau ein Datensatz ("Online") trägt hier true — Pflicht für eSessions
   istOnline   Boolean @default(false)
   aktiv       Boolean @default(true)
@@ -277,6 +282,7 @@ model Veranstaltungsort {
   fortbildungen Fortbildung[]
 
   @@unique([name, ort])
+  @@index([schulamtId])
 }
 
 // ---------------------------------------------------------------------------
